@@ -1,0 +1,95 @@
+<!-- pages/merchant/index/index.wxml -->
+<view class="container">
+  <!-- 掌柜顶部信息 -->
+  <view class="merchant-header">
+    <view class="shop-name-row">
+      <view class="shop-title-wrap" bindtap="openShopPicker">
+        <text class="shop-title">{{currentShop.name || '维琼鲜肉铺'}}</text>
+        <view class="switch-badge" wx:if="{{myShops.length > 1}}">
+          <text>切换管理门店</text>
+          <text class="arrow">▼</text>
+        </view>
+      </view>
+      <view class="tag-status {{currentShop.status === 1 ? 'tag-open' : 'tag-close'}}">
+        {{currentShop.status === 1 ? '营业中' : '休息中'}}
+      </view>
+    </view>
+    <view class="shop-meta-box">
+      <text class="shop-sub ellipsis">📍 {{currentShop.address || '未配置地址'}}</text>
+      <text class="shop-sub">🛵 配送半径: {{currentShop.maxDeliveryDistance || '5'}}km | 起送: ¥{{currentShop.minOrderAmount || '0'}}</text>
+    </view>
+  </view>
+
+  <!-- 功能菜单九宫格 -->
+  <view class="card menu-grid-card">
+    <text class="grid-title">掌柜核心经营管理</text>
+    <view class="grid-body">
+      <!-- 1. 订单管理 -->
+      <view class="grid-item" bindtap="goToOrders" data-status="">
+        <view class="item-icon-wrap icon-orders">📦</view>
+        <text class="item-name">订单管理</text>
+        <text class="item-desc">接单/拒单/配送/核销</text>
+      </view>
+
+      <!-- 2. 分类管理 -->
+      <view class="grid-item" bindtap="goToCategoryList">
+        <view class="item-icon-wrap icon-category">📑</view>
+        <text class="item-name">分类管理</text>
+        <text class="item-desc">鲜肉品类增删改</text>
+      </view>
+
+      <!-- 3. 商品管理 -->
+      <view class="grid-item" bindtap="goToProductList">
+        <view class="item-icon-wrap icon-goods">🥩</view>
+        <text class="item-name">鲜肉商品管理</text>
+        <text class="item-desc">上下架/修改价格库存</text>
+      </view>
+
+      <!-- 4. 店铺设置与配送距离 -->
+      <view class="grid-item" bindtap="goToShopSetting">
+        <view class="item-icon-wrap icon-shop">⚙️</view>
+        <text class="item-name">商铺与配送范围</text>
+        <text class="item-desc">设置配送公里/坐标定位</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 返回顾客端与退出管理按钮 -->
+  <view class="back-box">
+    <button class="btn-secondary back-btn" bindtap="backToCustomer">
+      返回顾客选肉前台
+    </button>
+    <button class="logout-admin-btn" bindtap="logoutAdmin">
+      退出管理员登录
+    </button>
+  </view>
+
+  <!-- 切换管理门店弹窗 -->
+  <view class="modal-mask" wx:if="{{showShopPicker}}" bindtap="closeShopPicker">
+    <view class="modal-panel" catchtap="preventBubble">
+      <view class="panel-header">
+        <text class="panel-title">🏪 选择要管理的鲜肉铺分店</text>
+        <text class="close-x" bindtap="closeShopPicker">✕</text>
+      </view>
+      <scroll-view class="shop-list-scroll" scroll-y>
+        <view 
+          wx:for="{{myShops}}" 
+          wx:key="id" 
+          class="shop-card {{currentShop.id === item.id ? 'shop-card-active' : ''}}"
+          bindtap="onSelectAdminShop"
+          data-id="{{item.id}}"
+        >
+          <view class="card-top">
+            <text class="card-name">{{item.name}}</text>
+            <text class="card-status {{item.status === 1 ? 'st-open' : 'st-close'}}">{{item.status === 1 ? '营业中' : '休息中'}}</text>
+          </view>
+          <text class="card-addr">📍 {{item.address}}</text>
+          <view class="card-bottom">
+            <text class="card-meta">配送半径: {{item.maxDeliveryDistance || 5}}km</text>
+            <text class="card-check" wx:if="{{currentShop.id === item.id}}">✓ 当前管辖</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+</view>

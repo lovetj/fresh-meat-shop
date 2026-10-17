@@ -1,0 +1,137 @@
+<!-- pages/merchant/products/edit/index.wxml -->
+<view class="container">
+  <form bindsubmit="onSubmitForm">
+    <!-- 基础信息卡片 -->
+    <view class="card form-card">
+      <view class="section-title">🥩 基础信息</view>
+
+      <!-- 所属门店 -->
+      <view class="form-item">
+        <text class="label required">所属门店</text>
+        <picker range="{{shopList}}" range-key="name" value="{{shopIndex}}" bindchange="onShopChange">
+          <view class="picker-val {{shopIndex >= 0 ? '' : 'placeholder'}}">
+            {{shopIndex >= 0 ? shopList[shopIndex].name : '请选择归属鲜肉铺分店'}}
+          </view>
+        </picker>
+      </view>
+
+      <!-- 所属分类 -->
+      <view class="form-item">
+        <text class="label required">所属分类</text>
+        <view wx:if="{{categories.length > 0}}">
+          <picker range="{{categories}}" range-key="name" value="{{categoryIndex}}" bindchange="onCategoryChange">
+            <view class="picker-val {{categoryIndex >= 0 ? '' : 'placeholder'}}">
+              <block wx:if="{{categoryIndex >= 0 && categories[categoryIndex]}}">
+                <text wx:if="{{categories[categoryIndex].icon}}">{{categories[categoryIndex].icon}} </text>
+                <text>{{categories[categoryIndex].name}}</text>
+              </block>
+              <block wx:else>请选择鲜肉分类</block>
+            </view>
+          </picker>
+        </view>
+        <view wx:else class="no-cat-box" bindtap="goToManageCategory">
+          <text class="no-cat-text">当前门店暂无分类，点击前往创建分类</text>
+          <text class="no-cat-arrow">→</text>
+        </view>
+      </view>
+
+      <!-- 商品名称 -->
+      <view class="form-item">
+        <text class="label required">商品名称</text>
+        <input class="input" name="name" placeholder="如：特选雪花猪前腿夹心肉" value="{{product.name}}"/>
+      </view>
+
+      <!-- 封面图片 -->
+      <view class="form-item form-item-img">
+        <text class="label required">商品主图</text>
+        <view class="img-picker-wrap">
+          <view wx:if="{{product.coverImage}}" class="img-preview-box">
+            <image class="preview-img" src="{{product.displayCoverImage || product.coverImage}}" mode="aspectFill" bindtap="previewCover"/>
+            <view class="del-img" catchtap="removeCover">✕</view>
+          </view>
+          <view wx:else class="upload-btn" bindtap="chooseAndUploadImage">
+            <text class="plus">+</text>
+            <text class="tip">拍照 / 相册</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 价格与库存卡片 -->
+    <view class="card form-card">
+      <view class="section-title">💰 价格与库存</view>
+
+      <view class="form-item">
+        <text class="label required">销售单价 (元)</text>
+        <input class="input" name="price" type="digit" placeholder="如：32.80" value="{{product.price}}"/>
+      </view>
+
+      <view class="form-item">
+        <text class="label">计价单位</text>
+        <input class="input" name="unit" placeholder="默认：斤" value="{{product.unit || '斤'}}"/>
+      </view>
+
+      <view class="form-item">
+        <text class="label">划线原价 (元)</text>
+        <input class="input" name="originalPrice" type="digit" placeholder="选填，如：38.00" value="{{product.originalPrice}}"/>
+      </view>
+
+      <view class="form-item">
+        <text class="label required">商品库存</text>
+        <input class="input" name="stock" type="number" placeholder="默认：999" value="{{product.stock !== undefined ? product.stock : 999}}"/>
+      </view>
+
+      <view class="form-item">
+        <text class="label">展示排序</text>
+        <input class="input" name="sortOrder" type="number" placeholder="数字越大越靠前" value="{{product.sortOrder || 0}}"/>
+      </view>
+    </view>
+
+    <!-- 肉铺特色：加工切法与规格选项 -->
+    <view class="card form-card">
+      <view class="section-header-row">
+        <view class="section-title">🔪 鲜肉切法与加工规格</view>
+        <text class="add-spec-btn" bindtap="onAddSpec">+ 添加规格</text>
+      </view>
+      <text class="section-desc">顾客下单时可选的规格及切工要求（例如：整块/切片/绞肉/煲汤块）</text>
+
+      <view class="specs-list">
+        <view wx:for="{{specsList}}" wx:key="name" class="spec-tag-item">
+          <text class="spec-text">{{item.name}}</text>
+          <text class="spec-del" catchtap="onRemoveSpec" data-index="{{index}}">✕</text>
+        </view>
+        <view wx:if="{{specsList.length === 0}}" class="spec-empty">暂无规格，建议添加常用切法</view>
+      </view>
+    </view>
+
+    <!-- 描述说明卡片 -->
+    <view class="card form-card">
+      <view class="section-title">📝 详细介绍</view>
+
+      <view class="form-item">
+        <text class="label">一句话卖点</text>
+        <input class="input" name="summary" placeholder="如：当日清晨直供，肥瘦黄金比例3:7" value="{{product.summary}}"/>
+      </view>
+
+      <view class="form-item-block">
+        <text class="label">烹饪/加工建议与详情</text>
+        <textarea class="textarea" name="description" placeholder="建议红烧、包饺子、慢炖等烹饪做法与鲜度说明..." value="{{product.description}}"/>
+      </view>
+
+      <view class="form-item form-item-switch">
+        <text class="label">是否立即上架</text>
+        <switch checked="{{product.isOnSale === 1}}" color="#FF6B6B" bindchange="onSaleChange"/>
+      </view>
+    </view>
+
+    <!-- 底部操作按钮栏 -->
+    <view class="bottom-submit-bar {{isEdit ? 'bar-two-btns' : ''}}">
+      <button wx:if="{{isEdit}}" class="btn-delete-prod" type="button" catchtap="onDeleteCurrentProduct">
+        删除商品
+      </button>
+      <button class="btn-submit" form-type="submit" loading="{{submitting}}">
+        {{isEdit ? '保存修改' : '立即发布商品'}}
+      </button>
+    </view>
+  </form>
+</view>

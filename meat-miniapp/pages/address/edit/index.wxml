@@ -1,0 +1,46 @@
+<!-- pages/address/edit/index.wxml -->
+<view class="container">
+  <!-- 微信地图一键快捷定位选择器 -->
+  <view class="location-btn-card" bindtap="chooseLocationOnMap">
+    <view class="loc-left">
+      <text class="loc-icon">🎯</text>
+      <view class="loc-text">
+        <text class="loc-title">在地图上选择位置 (推荐)</text>
+        <text class="loc-sub">点击自动获取小区/写字楼地址与高精度经纬度</text>
+      </view>
+    </view>
+    <text class="loc-arrow">选择 ></text>
+  </view>
+
+  <view class="card form-card">
+    <view class="form-row">
+      <text class="form-label">收货人</text>
+      <input class="form-input" placeholder="姓名" value="{{formData.contactName}}" bindinput="onInputName"/>
+    </view>
+
+    <view class="form-row">
+      <text class="form-label">手机号码</text>
+      <input class="form-input" type="number" placeholder="手机号" value="{{formData.contactPhone}}" bindinput="onInputPhone"/>
+    </view>
+
+    <view class="form-row">
+      <text class="form-label">详细地址</text>
+      <input class="form-input" placeholder="街道门牌、小区楼栋房号" value="{{formData.address}}" bindinput="onInputAddress"/>
+    </view>
+
+    <!-- 经纬度信息只读展示 -->
+    <view class="form-row" wx:if="{{formData.longitude && formData.latitude}}">
+      <text class="form-label">地图坐标</text>
+      <text class="coords-text">{{formData.longitude}}, {{formData.latitude}}</text>
+    </view>
+
+    <view class="form-row default-switch-row">
+      <text class="form-label">设为默认收货地址</text>
+      <switch checked="{{formData.isDefault === 1}}" color="#FF6B6B" bindchange="onDefaultChange"/>
+    </view>
+  </view>
+
+  <view class="submit-box">
+    <button class="btn-primary save-btn" bindtap="onSave">保存并使用</button>
+  </view>
+</view>

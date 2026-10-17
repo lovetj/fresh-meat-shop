@@ -1,0 +1,275 @@
+/* pages/order-detail/order-detail.wxss - 订单详情页 */
+
+.container {
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+  background-color: var(--bg-cream);
+  min-height: 100vh;
+}
+
+/* ================= 1. 顶部Q萌状态渐变横幅 ================= */
+.status-banner {
+  background: linear-gradient(135deg, #FF6B6B 0%, #FFA07A 100%);
+  padding: 36rpx 30rpx 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #FFFFFF;
+  border-radius: 0 0 36rpx 36rpx;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 107, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.status-banner::after {
+  content: "🥩";
+  position: absolute;
+  right: 120rpx;
+  bottom: -20rpx;
+  font-size: 100rpx;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.status-left {
+  flex: 1;
+}
+
+.banner-title {
+  font-size: 38rpx;
+  font-weight: 800;
+  display: block;
+  letter-spacing: 1rpx;
+}
+
+.banner-sub {
+  font-size: 24rpx;
+  color: #FFF3F0;
+  margin-top: 8rpx;
+  display: block;
+  line-height: 1.4;
+}
+
+.status-icon {
+  font-size: 72rpx;
+  margin-left: 20rpx;
+  animation: floatPiggy 3s ease-in-out infinite;
+}
+
+/* ================= 2. 配送/自取信息卡片 ================= */
+.delivery-card {
+  margin-top: -20rpx;
+  position: relative;
+  z-index: 10;
+}
+
+.delivery-type-tag {
+  display: inline-block;
+  font-size: 20rpx;
+  padding: 4rpx 14rpx;
+  border-radius: var(--radius-round);
+  font-weight: 700;
+  margin-bottom: 12rpx;
+}
+
+.user-info-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.user-name {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.user-phone {
+  font-size: 26rpx;
+  color: var(--text-sub);
+}
+
+.address-row {
+  margin-top: 10rpx;
+}
+
+.address-text {
+  font-size: 26rpx;
+  color: var(--text-main);
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.dist-row {
+  margin-top: 8rpx;
+}
+
+.dist-text {
+  font-size: 22rpx;
+  color: #D48806;
+  background-color: #FFFBE6;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  display: inline-block;
+}
+
+/* ================= 3. 商品与费用明细卡片 ================= */
+.card-title {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.goods-item {
+  display: flex;
+  padding: 16rpx 0;
+  border-bottom: 2rpx solid #FFF5F2;
+}
+
+.goods-item:last-of-type {
+  border-bottom: none;
+}
+
+.goods-img {
+  width: 130rpx;
+  height: 130rpx;
+  border-radius: var(--radius-img);
+  background-color: #FFF5F2;
+  flex-shrink: 0;
+  border: 2rpx solid #FFE4E4;
+}
+
+.goods-detail {
+  flex: 1;
+  margin-left: 20rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.goods-name {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.goods-spec {
+  font-size: 22rpx;
+  color: var(--text-sub);
+  background-color: #FFF9F0;
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+  align-self: flex-start;
+  margin-top: 4rpx;
+}
+
+.goods-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.price-val {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--price-color);
+}
+
+.quantity-val {
+  font-size: 24rpx;
+  color: var(--text-sub);
+}
+
+.remark-row {
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 2rpx dashed #FFE0D6;
+  font-size: 24rpx;
+  line-height: 1.4;
+}
+
+.remark-label {
+  color: #D48806;
+  font-weight: 700;
+}
+
+.remark-content {
+  color: var(--text-main);
+}
+
+.fee-item, .info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10rpx 0;
+  font-size: 26rpx;
+  color: var(--text-sub);
+}
+
+.fee-val, .info-val {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.fee-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 2rpx dashed #FFE0D6;
+  margin-top: 14rpx;
+  padding-top: 18rpx;
+}
+
+.total-label {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.total-val {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: var(--price-color);
+}
+
+.copy-btn {
+  font-size: 22rpx;
+  color: var(--primary);
+  background-color: #FFF0F0;
+  padding: 2rpx 14rpx;
+  border-radius: var(--radius-round);
+  margin-left: 12rpx;
+  font-weight: 600;
+}
+
+/* ================= 4. 底部悬浮胶囊操作栏 ================= */
+.bottom-actions {
+  position: fixed;
+  left: 20rpx;
+  right: 20rpx;
+  bottom: calc(20rpx + env(safe-area-inset-bottom));
+  height: 112rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16rpx;
+  padding: 0 16rpx;
+  background-color: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  border: 2rpx solid #FFEAEA;
+  border-radius: var(--radius-round);
+  box-shadow: 0 12rpx 36rpx rgba(255, 107, 107, 0.22);
+  z-index: 100;
+  animation: slideUp 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.bottom-actions button {
+  height: 82rpx;
+  line-height: 82rpx;
+  padding: 0 40rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  margin: 0;
+  border-radius: var(--radius-round);
+}

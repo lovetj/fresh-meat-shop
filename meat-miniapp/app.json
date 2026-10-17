@@ -1,0 +1,58 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/orders/orders",
+    "pages/mine/mine",
+    "pages/login/login",
+    "pages/product-detail/product-detail",
+    "pages/checkout/checkout",
+    "pages/order-detail/order-detail",
+    "pages/address/list/index",
+    "pages/address/edit/index",
+    "pages/merchant/index/index",
+    "pages/merchant/orders/orders",
+    "pages/merchant/products/list/index",
+    "pages/merchant/products/edit/index",
+    "pages/merchant/category/index",
+    "pages/merchant/shop-setting/index"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FF6B6B",
+    "navigationBarTitleText": "维琼鲜肉铺 🥩",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#FFF9F0"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#8A8A8A",
+    "selectedColor": "#FF6B6B",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "鲜肉选购"
+      },
+      {
+        "pagePath": "pages/orders/orders",
+        "text": "订单"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的"
+      }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "您的位置信息将用于核对肉铺配送距离及填写收货地址"
+    }
+  },
+  "requiredPrivateInfos": [
+    "getLocation",
+    "chooseLocation"
+  ],
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

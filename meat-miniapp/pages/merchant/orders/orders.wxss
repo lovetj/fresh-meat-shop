@@ -1,0 +1,306 @@
+/* pages/merchant/orders/orders.wxss - 维琼鲜肉铺 掌柜订单管理 */
+
+.container {
+  padding-bottom: 40rpx;
+  background-color: var(--bg-cream);
+  min-height: 100vh;
+}
+
+/* ================= 1. 顶部状态筛选胶囊 ================= */
+.status-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  background-color: #FFFFFF;
+  padding: 16rpx 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(255, 107, 107, 0.08);
+  gap: 12rpx;
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  font-size: 26rpx;
+  color: var(--text-sub);
+  padding: 14rpx 0;
+  background-color: var(--bg-pink);
+  border-radius: var(--radius-round);
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.tab-item.tab-active {
+  background: var(--primary-gradient);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 14rpx rgba(255, 107, 107, 0.3);
+  font-weight: 800;
+}
+
+/* ================= 2. 订单列表与卡片 ================= */
+.order-list {
+  padding: 20rpx 24rpx;
+  box-sizing: border-box;
+}
+
+.order-card {
+  margin: 0 0 24rpx;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-card);
+  padding: 26rpx 24rpx;
+  box-shadow: var(--shadow-warm);
+  border: 2rpx solid #FFF2EF;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 18rpx;
+  border-bottom: 2rpx dashed #FFF0ED;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.delivery-badge {
+  font-size: 20rpx;
+  padding: 4rpx 14rpx;
+  border-radius: var(--radius-round);
+  font-weight: 800;
+}
+
+.order-shop-badge {
+  font-size: 20rpx;
+  background-color: #FFF3E0;
+  color: #E65100;
+  border: 1rpx solid #FFE0B2;
+  padding: 4rpx 10rpx;
+  border-radius: 8rpx;
+  font-weight: 700;
+}
+
+.order-no {
+  font-size: 24rpx;
+  color: var(--text-sub);
+}
+
+.status-name {
+  font-size: 26rpx;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* 顾客与收货信息 */
+.receiver-box {
+  padding: 18rpx 0;
+  border-bottom: 2rpx solid #FFF5F2;
+}
+
+.rec-name-row {
+  display: flex;
+  align-items: center;
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 10rpx;
+}
+
+.rec-name {
+  margin-right: 16rpx;
+}
+
+.rec-phone {
+  margin-right: 16rpx;
+  color: var(--text-sub);
+}
+
+.call-btn {
+  font-size: 22rpx;
+  color: var(--sky-blue);
+  background-color: #EBF4FF;
+  padding: 4rpx 16rpx;
+  border-radius: var(--radius-round);
+  font-weight: 700;
+}
+
+.rec-addr {
+  font-size: 24rpx;
+  color: var(--text-main);
+  display: block;
+  line-height: 1.4;
+  margin-bottom: 6rpx;
+}
+
+.rec-dist {
+  font-size: 22rpx;
+  color: var(--primary);
+  display: inline-block;
+  background-color: #FFF0F0;
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+  font-weight: 600;
+}
+
+.remark-box {
+  margin-top: 10rpx;
+  background-color: #FFFBE6;
+  padding: 10rpx 14rpx;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+  border: 1rpx dashed #FFE58F;
+}
+
+.remark-tag {
+  color: #D48806;
+  font-weight: 800;
+}
+
+.remark-val {
+  color: var(--text-main);
+}
+
+/* 商品清单 */
+.items-wrap {
+  padding: 18rpx 0;
+}
+
+.goods-row {
+  display: flex;
+  margin-bottom: 14rpx;
+}
+
+.goods-row:last-child {
+  margin-bottom: 0;
+}
+
+.goods-img {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: var(--radius-img);
+  background-color: #FFF5F2;
+  flex-shrink: 0;
+  border: 2rpx solid #FFE4E4;
+}
+
+.goods-info {
+  flex: 1;
+  margin-left: 18rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.goods-title {
+  font-size: 26rpx;
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.goods-spec {
+  font-size: 22rpx;
+  color: var(--text-sub);
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.price {
+  font-size: 26rpx;
+  font-weight: 800;
+  color: var(--price-color);
+}
+
+.qty {
+  font-size: 22rpx;
+  color: var(--text-sub);
+}
+
+/* ================= 3. 底部金额与操作按钮 ================= */
+.order-footer {
+  padding-top: 18rpx;
+  border-top: 2rpx solid #FFF5F2;
+}
+
+.total-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  font-size: 24rpx;
+  margin-bottom: 18rpx;
+}
+
+.pay-type {
+  color: var(--text-sub);
+  margin-right: 12rpx;
+}
+
+.total-label {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.total-val {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: var(--price-color);
+}
+
+/* 操作胶囊按钮 */
+.actions-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16rpx;
+}
+
+.actions-row button {
+  margin: 0;
+  padding: 0 32rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  font-size: 24rpx;
+  font-weight: 800;
+  border-radius: var(--radius-round);
+  transition: all 0.2s ease;
+}
+
+.actions-row button:active {
+  transform: scale(0.94);
+}
+
+.btn-reject {
+  background-color: #FFFFFF;
+  border: 2rpx solid #E0E0E0;
+  color: var(--text-sub);
+}
+
+.btn-accept {
+  background: linear-gradient(135deg, #6BCB77 0%, #85E091 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 14rpx rgba(107, 203, 119, 0.3);
+}
+
+.btn-deliver {
+  background: linear-gradient(135deg, #4D96FF 0%, #6BAAFF 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 14rpx rgba(77, 150, 255, 0.3);
+}
+
+.btn-finish {
+  background: var(--primary-gradient);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 14rpx rgba(255, 107, 107, 0.3);
+}
+
+.load-more {
+  text-align: center;
+  padding: 30rpx 0;
+  font-size: 24rpx;
+  color: var(--text-light);
+}

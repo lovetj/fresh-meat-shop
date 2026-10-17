@@ -1,0 +1,130 @@
+<!-- pages/merchant/products/list/index.wxml -->
+<view class="container">
+  <!-- 门店切换栏：与「分类管理」页保持一致 -->
+  <view class="shop-switch-bar">
+    <view class="shop-switch-left">
+      <text class="shop-tag">当前门店</text>
+      <picker range="{{shopList}}" range-key="name" value="{{shopIndex}}" bindchange="onShopChange">
+        <view class="shop-picker-val">
+          <text class="shop-name-highlight">{{shopList[shopIndex] ? shopList[shopIndex].name : '加载中...'}}</text>
+          <text class="shop-arrow" wx:if="{{shopList.length > 1}}">▼ 切换</text>
+        </view>
+      </picker>
+    </view>
+    <view class="shop-badge-info" bindtap="goToCategoryManager">🏷️ 分类管理</view>
+  </view>
+
+  <!-- 搜索与添加商品操作条 -->
+  <view class="top-bar">
+    <view class="search-box">
+      <icon type="search" size="14" color="#999999"/>
+      <input class="search-input" placeholder="搜索鲜肉名称..." value="{{keyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm"/>
+      <view class="clear-icon" wx:if="{{keyword}}" bindtap="onClearSearch">✕</view>
+    </view>
+    <button class="add-btn" bindtap="goToAdd">+ 新增肉品</button>
+  </view>
+
+  <!-- 店铺鲜肉分类横向展示栏 -->
+  <view class="category-bar">
+    <scroll-view class="category-scroll" scroll-x enable-flex enhanced show-scrollbar="{{false}}">
+      <!-- 全部分类标签 -->
+      <view class="category-item {{selectedCategoryId === '' ? 'cat-active' : ''}}" bindtap="onSelectCategory" data-id="">
+        <text class="cat-name">全部鲜肉</text>
+      </view>
+
+      <!-- 门店所属分类列表 -->
+      <view 
+        wx:for="{{categories}}" 
+        wx:key="id" 
+        class="category-item {{selectedCategoryId === item.id ? 'cat-active' : ''}}" 
+        bindtap="onSelectCategory" 
+        data-id="{{item.id}}"
+      >
+        <text class="cat-icon" wx:if="{{item.icon}}">{{item.icon}}</text>
+        <text class="cat-name">{{item.name}}</text>
+        <text class="cat-badge-off" wx:if="{{item.status === 0}}">已停用</text>
+      </view>
+
+      <!-- 若无分类提示去添加 -->
+      <view wx:if="{{categories.length === 0}}" class="category-empty-tip" bindtap="goToCategoryManager">
+        <text>+ 当前门店尚未创建分类，点击去创建</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 上下架状态筛选 Tab -->
+  <view class="filter-tabs">
+    <view class="tab-item {{statusFilter === '' ? 'tab-active' : ''}}" bindtap="onSwitchStatus" data-status="">
+      全部状态
+    </view>
+    <view class="tab-item {{statusFilter === 1 ? 'tab-active' : ''}}" bindtap="onSwitchStatus" data-status="1">
+      在售中
+    </view>
+    <view class="tab-item {{statusFilter === 0 ? 'tab-active' : ''}}" bindtap="onSwitchStatus" data-status="0">
+      已下架
+    </view>
+  </view>
+
+  <!-- 商品列表 -->
+  <scroll-view class="product-list" scroll-y bindscrolltolower="onLoadMore">
+    <view wx:if="{{productList.length === 0 && !loading}}" class="empty-box">
+      <text class="empty-icon">🥩</text>
+      <text class="empty-text">当前分类下暂无鲜肉商品</text>
+      <view class="empty-actions">
+        <button class="empty-btn add" bindtap="goToAdd">+ 新增肉品</button>
+      </view>
+    </view>
+
+    <view wx:for="{{productList}}" wx:key="id" class="card product-card">
+      <image class="prod-img" src="{{item.coverImage}}" mode="aspectFill"/>
+      
+      <view class="prod-content">
+        <view class="prod-top">
+          <view class="title-wrap">
+            <text class="status-tag {{item.isOnSale === 1 ? 'tag-sale' : 'tag-offsale'}}">{{item.isOnSale === 1 ? '在售' : '下架'}}</text>
+            <text class="prod-title">{{item.name}}</text>
+          </view>
+          <view class="prod-meta">
+            <text class="prod-cat">分类: {{item.categoryName || '未指定'}}</text>
+            <text class="prod-summary" wx:if="{{item.summary}}">{{item.summary}}</text>
+          </view>
+        </view>
+
+        <view class="prod-mid">
+          <view class="price-wrap">
+            <text class="symbol">¥</text>
+            <text class="price">{{item.price}}</text>
+            <text class="unit">/{{item.unit}}</text>
+            <text class="orig-price" wx:if="{{item.originalPrice}}">¥{{item.originalPrice}}</text>
+          </view>
+          <view class="stock-box" catchtap="onQuickEditStock" data-id="{{item.id}}" data-stock="{{item.stock}}">
+            <text class="stock-label">库存: </text>
+            <text class="stock-val {{item.stock < 10 ? 'stock-low' : ''}}">{{item.stock}}</text>
+            <text class="edit-stock-icon">✏️</text>
+          </view>
+        </view>
+
+        <!-- 底部管理操作条 -->
+        <view class="prod-bottom">
+          <view class="switch-wrap">
+            <text class="switch-label">{{item.isOnSale === 1 ? '已上架' : '已下架'}}</text>
+            <view class="switch-box">
+              <switch checked="{{item.isOnSale === 1}}" color="#FF6B6B" bindchange="onToggleSale" data-id="{{item.id}}"/>
+            </view>
+          </view>
+
+          <!-- 用 view 代替 button：避免 button 默认的块级宽度/居中 margin 把按钮撑满整行 -->
+          <view class="btns-wrap">
+            <view class="btn-action btn-edit" catchtap="goToEdit" data-id="{{item.id}}">编辑</view>
+            <view class="btn-action btn-del" catchtap="onDeleteProduct" data-id="{{item.id}}" data-name="{{item.name}}">删除</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="load-more" wx:if="{{productList.length > 0}}">
+      <text wx:if="{{hasMore}}">上拉加载更多...</text>
+      <text wx:else>已加载全部商品</text>
+    </view>
+  </scroll-view>
+</view>

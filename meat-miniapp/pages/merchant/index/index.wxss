@@ -1,0 +1,345 @@
+/* pages/merchant/index/index.wxss - 维琼鲜肉铺 商家掌柜工作台 */
+
+.container {
+  padding-bottom: 60rpx;
+  background-color: var(--bg-cream);
+}
+
+/* ================= 1. 掌柜顶部信息（简洁暖色） ================= */
+.merchant-header {
+  background: linear-gradient(150deg, #FFF3EC 0%, #FFE4DC 100%);
+  padding: 40rpx 32rpx 56rpx;
+  border-radius: 0 0 36rpx 36rpx;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 107, 0.12);
+  position: relative;
+  overflow: hidden;
+}
+
+.merchant-header::after {
+  content: "🏪";
+  position: absolute;
+  right: 20rpx;
+  bottom: -10rpx;
+  font-size: 110rpx;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.shop-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.shop-title {
+  font-size: 38rpx;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: 0.5rpx;
+}
+
+.tag-status {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44rpx;
+  padding: 0 20rpx;
+  box-sizing: border-box;
+  font-size: 22rpx;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  border-radius: var(--radius-round);
+  font-weight: 700;
+}
+
+.shop-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+}
+
+.switch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+  background: rgba(255, 107, 107, 0.15);
+  border: 1.5rpx solid rgba(255, 107, 107, 0.4);
+  color: #D32F2F;
+  font-size: 20rpx;
+  font-weight: 700;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+}
+
+.switch-badge .arrow {
+  font-size: 16rpx;
+}
+
+.shop-meta-box {
+  position: relative;
+  z-index: 1;
+  margin-top: 14rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ================= 弹窗样式 ================= */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4rpx);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+}
+
+.modal-panel {
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 36rpx 36rpx 0 0;
+  padding: 32rpx;
+  max-height: 70vh;
+  box-sizing: border-box;
+  animation: slideUp 0.25s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 24rpx;
+  border-bottom: 2rpx solid #F0ECE4;
+}
+
+.panel-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.close-x {
+  font-size: 32rpx;
+  color: #999;
+  padding: 8rpx;
+}
+
+.shop-list-scroll {
+  max-height: 52vh;
+  margin-top: 20rpx;
+}
+
+.shop-card {
+  background: #FDFBF7;
+  border: 2rpx solid #EFEAE0;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+}
+
+.shop-card-active {
+  border-color: #FF6B6B;
+  background: #FFF5F5;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+}
+
+.card-name {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.card-status {
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.st-open {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.st-close {
+  background: #EEEEEE;
+  color: #999999;
+}
+
+.card-addr {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 22rpx;
+  color: #888;
+}
+
+.card-check {
+  color: #D32F2F;
+  font-weight: 700;
+}
+
+.tag-open {
+  background-color: #6BCB77;
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 12rpx rgba(107, 203, 119, 0.35);
+}
+
+.tag-close {
+  background-color: #C9C9C9;
+  color: #FFFFFF;
+}
+
+.shop-sub {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-top: 12rpx;
+  font-size: 23rpx;
+  color: var(--text-sub);
+}
+
+/* ================= 2. 功能管理四宫格 ================= */
+.menu-grid-card {
+  /* 上移与顶部渐变头衔接（原待办卡片位置） */
+  margin-top: -24rpx;
+  padding: 28rpx 24rpx;
+}
+
+.grid-title {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 24rpx;
+  display: block;
+  border-bottom: 2rpx solid #FFF5F2;
+  padding-bottom: 18rpx;
+}
+
+.grid-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+}
+
+.grid-item {
+  background-color: #FFFDFC;
+  border-radius: 20rpx;
+  padding: 30rpx 20rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border: 2rpx solid #FFEBE6;
+  box-shadow: 0 4rpx 14rpx rgba(255, 107, 107, 0.06);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.grid-item:active {
+  transform: scale(0.95);
+  background-color: var(--bg-pink);
+}
+
+.item-icon-wrap {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: var(--radius-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 46rpx;
+  margin-bottom: 16rpx;
+}
+
+.icon-orders {
+  background-color: #EBF4FF;
+  border: 2rpx solid #BAE7FF;
+}
+
+.icon-goods {
+  background-color: #FFF0F0;
+  border: 2rpx solid #FFD0D0;
+}
+
+.icon-category {
+  background-color: #FFF9E6;
+  border: 2rpx solid #FFE58F;
+}
+
+.icon-shop {
+  background-color: #EAF8EE;
+  border: 2rpx solid #B7EB8F;
+}
+
+.item-name {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.item-desc {
+  font-size: 20rpx;
+  color: var(--text-sub);
+  margin-top: 6rpx;
+}
+
+/* ================= 4. 返回顾客端按钮 ================= */
+.back-box {
+  margin: 40rpx 24rpx 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.back-btn {
+  height: 84rpx;
+  line-height: 84rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  border-radius: var(--radius-round);
+}
+
+.logout-admin-btn {
+  margin: 0;
+  height: 80rpx;
+  line-height: 78rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #8C8C8C;
+  background-color: #F5F5F5;
+  border: 1rpx solid #E8E8E8;
+  border-radius: var(--radius-round);
+}

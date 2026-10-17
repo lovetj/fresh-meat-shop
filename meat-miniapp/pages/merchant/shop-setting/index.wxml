@@ -1,0 +1,117 @@
+<!-- pages/merchant/shop-setting/index.wxml -->
+<view class="container">
+  <form bindsubmit="onSubmitShopInfo">
+    <!-- 基础营业信息 -->
+    <view class="card form-card">
+      <view class="section-title">🏪 门店营业基础信息</view>
+
+      <view class="form-item">
+        <text class="label required">店铺名称</text>
+        <input class="input" name="name" placeholder="如：维琼鲜肉铺 (总店)" value="{{shop.name}}"/>
+      </view>
+
+      <view class="form-item">
+        <text class="label required">客服/联系电话</text>
+        <input class="input" name="phone" placeholder="如：13800000000" value="{{shop.phone}}"/>
+      </view>
+
+      <view class="form-item">
+        <text class="label required">每日营业时间</text>
+        <view class="time-picker-group">
+          <picker mode="time" value="{{startTime}}" bindchange="onStartTimeChange">
+            <view class="time-picker-btn">
+              <text class="time-val">{{startTime || '06:00'}}</text>
+            </view>
+          </picker>
+          <text class="time-separator">至</text>
+          <picker mode="time" value="{{endTime}}" bindchange="onEndTimeChange">
+            <view class="time-picker-btn">
+              <text class="time-val">{{endTime || '19:30'}}</text>
+            </view>
+          </picker>
+        </view>
+        <input name="businessHours" value="{{shop.businessHours}}" style="display:none;"/>
+      </view>
+
+      <view class="form-item form-item-switch">
+        <text class="label">营业状态</text>
+        <view class="switch-box">
+          <text class="status-txt {{shop.status === 1 ? 'txt-open' : 'txt-close'}}">
+            {{shop.status === 1 ? '正常营业' : '暂停歇业'}}
+          </text>
+          <switch checked="{{shop.status === 1}}" color="#FF6B6B" bindchange="onStatusChange"/>
+        </view>
+      </view>
+
+      <view class="form-item-block">
+        <text class="label">店铺公告 (顾客端顶部展示)</text>
+        <textarea class="textarea" name="notice" placeholder="如：每日清晨现宰鲜肉直达，支持切片绞肉，同城5公里极速送达！" value="{{shop.notice}}"/>
+      </view>
+    </view>
+
+    <!-- 门店实体定位设置 -->
+    <view class="card form-card">
+      <view class="section-header-row">
+        <view class="section-title">📍 门店地址</view>
+        <button class="choose-loc-btn" bindtap="chooseLocationOnMap">🗺️ 地图选点</button>
+      </view>
+      <text class="section-desc">此坐标用于计算顾客下单收货地址距离，请务必准确定位</text>
+
+      <view class="form-item">
+        <text class="label required">门店详细地址</text>
+        <input class="input" name="address" placeholder="如：广东省广州市天河区石牌东路88号" value="{{shop.address}}"/>
+      </view>
+
+      <view class="form-item">
+        <text class="label required">经度 (Longitude)</text>
+        <input class="input" name="longitude" type="digit" placeholder="如：113.342123" value="{{shop.longitude}}"/>
+      </view>
+
+      <view class="form-item">
+        <text class="label required">纬度 (Latitude)</text>
+        <input class="input" name="latitude" type="digit" placeholder="如：23.134567" value="{{shop.latitude}}"/>
+      </view>
+    </view>
+
+    <!-- 同城配送规则配置 -->
+    <view class="card form-card">
+      <view class="section-title">🛵 同城配送规则与范围</view>
+
+      <view class="form-item">
+        <view class="label-wrap">
+          <text class="label required">最大配送距离 (公里)</text>
+          <text class="sub-label">超出该距离将禁止顾客选择商家配送</text>
+        </view>
+        <input class="input highlight-input" name="maxDeliveryDistance" type="digit" placeholder="如：5.0" value="{{shop.maxDeliveryDistance}}"/>
+      </view>
+
+      <view class="form-item">
+        <view class="label-wrap">
+          <text class="label">起送金额 (元)</text>
+          <text class="sub-label">订单肉品满此金额方可配送</text>
+        </view>
+        <input class="input" name="minOrderAmount" type="digit" placeholder="默认：20.00" value="{{shop.minOrderAmount}}"/>
+      </view>
+
+      <view class="form-item">
+        <view class="label-wrap">
+          <text class="label">基础配送费 (元)</text>
+          <text class="sub-label">每笔配送订单额外收取的运费</text>
+        </view>
+        <input class="input" name="deliveryFee" type="digit" placeholder="默认：3.00" value="{{shop.deliveryFee}}"/>
+      </view>
+    </view>
+
+    <!-- 配送距离计算原理说明 -->
+    <view class="rule-tip-card">
+      <view class="rule-tip-title">ℹ️ 配送距离校验机制说明</view>
+      <text class="rule-tip-p">1. 系统基于 Haversine 大圆距离公式对顾客填写的收货地址经纬度与店铺门店坐标进行实时高精度测距。</text>
+      <text class="rule-tip-p">2. 当测算距离 > 设置的最大配送距离时，结算页将自动禁用【商家配送】，并友好提示顾客切换为【到店自取】。</text>
+    </view>
+
+    <!-- 底部保存按钮 -->
+    <view class="bottom-submit-bar">
+      <button class="btn-submit" form-type="submit" loading="{{submitting}}">保存店铺设置</button>
+    </view>
+  </form>
+</view>

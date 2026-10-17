@@ -1,0 +1,534 @@
+/* pages/merchant/products/list/index.wxss - 维琼鲜肉铺 掌柜鲜肉商品管理 */
+
+.container {
+  padding-bottom: 40rpx;
+  background-color: var(--bg-cream, #FFFBF5);
+  min-height: 100vh;
+}
+
+/* 门店切换栏：样式与「分类管理」页 .shop-switch-bar 保持一致 */
+.shop-switch-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  background: linear-gradient(135deg, #FFF3EE 0%, #FFEBE4 100%);
+  border-radius: var(--radius-card, 20rpx);
+  padding: 16rpx 24rpx;
+  margin: 20rpx 24rpx 16rpx;
+  border: 2rpx solid #FFD9CE;
+  box-shadow: 0 4rpx 14rpx rgba(255, 107, 107, 0.08);
+}
+
+.shop-switch-left {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.shop-tag {
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  background-color: var(--primary, #FF6B6B);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  flex: none;
+}
+
+.shop-picker-val {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  min-width: 0;
+}
+
+.shop-name-highlight {
+  font-size: 26rpx;
+  font-weight: 800;
+  color: var(--text-main, #333333);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-arrow {
+  font-size: 20rpx;
+  color: var(--primary, #FF6B6B);
+  background-color: #FFFFFF;
+  padding: 2rpx 12rpx;
+  border-radius: var(--radius-round, 999rpx);
+  font-weight: 700;
+  border: 1rpx solid #FFCCD0;
+  flex: none;
+}
+
+/* 右侧胶囊：此处作为「分类管理」入口，视觉与分类页的门店标签一致 */
+.shop-badge-info {
+  font-size: 20rpx;
+  color: #D46B08;
+  background-color: #FFF6EC;
+  padding: 4rpx 14rpx;
+  border-radius: var(--radius-round, 999rpx);
+  border: 1rpx solid #FFE5CE;
+  font-weight: 600;
+  flex: none;
+}
+
+.shop-badge-info:active {
+  opacity: 0.7;
+}
+
+/* 顶部搜索与添加胶囊 */
+.top-bar {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  background-color: #FFFFFF;
+  gap: 16rpx;
+}
+
+.search-box {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-pink, #FFF5F2);
+  border-radius: var(--radius-round, 999rpx);
+  padding: 10rpx 24rpx;
+  border: 2rpx solid #FFE4E4;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 24rpx;
+  margin-left: 12rpx;
+  color: var(--text-main, #333333);
+}
+
+.clear-icon {
+  font-size: 24rpx;
+  color: var(--text-sub, #666666);
+  padding: 0 8rpx;
+}
+
+.add-btn {
+  /* 用固定高度 + flex 居中，避免 button 默认行高/内边距把按钮撑宽、文字偏上 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: auto;
+  height: 56rpx;
+  padding: 0 22rpx;
+  line-height: 1;
+  white-space: nowrap;
+  background: var(--primary-gradient, linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%));
+  color: #FFFFFF;
+  font-size: 22rpx;
+  font-weight: 800;
+  border-radius: var(--radius-round, 999rpx);
+  margin: 0;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.3);
+  flex-shrink: 0;
+}
+
+/* 店铺专属分类横向滚动条 */
+.category-bar {
+  position: relative;
+  /* 层级高于上方搜索条，避免原生滚动视图被相邻白底区域压住 */
+  z-index: 5;
+  background-color: #FFFFFF;
+  padding: 12rpx 16rpx;
+  border-bottom: 2rpx solid #FFF5F2;
+}
+
+.category-scroll {
+  /* 必须给确定高度：scroll-view 高度为 auto 时分类胶囊会溢出并被上方搜索条盖住 */
+  width: 100%;
+  height: 72rpx;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.category-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 10rpx 24rpx;
+  background-color: #F8F8F8;
+  border-radius: 30rpx;
+  margin-right: 14rpx;
+  border: 1rpx solid #ECECEC;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.category-item.cat-active {
+  background-color: #FFF0ED;
+  border-color: #FF6B6B;
+}
+
+.cat-icon {
+  font-size: 24rpx;
+  margin-right: 8rpx;
+}
+
+.cat-name {
+  font-size: 24rpx;
+  color: #555555;
+  font-weight: 600;
+}
+
+.cat-active .cat-name {
+  color: #FF6B6B;
+  font-weight: 800;
+}
+
+.cat-badge-off {
+  font-size: 18rpx;
+  background-color: #E0E0E0;
+  color: #888888;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+  margin-left: 8rpx;
+}
+
+.category-empty-tip {
+  font-size: 24rpx;
+  color: #FF6B6B;
+  background-color: #FFF2EE;
+  padding: 10rpx 20rpx;
+  border-radius: 20rpx;
+  border: 1rpx dashed #FF6B6B;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 状态切换胶囊栏 */
+.filter-tabs {
+  display: flex;
+  background-color: #FFFFFF;
+  padding: 14rpx 24rpx;
+  gap: 16rpx;
+  border-bottom: 2rpx solid #FFF5F2;
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--text-sub, #666666);
+  padding: 10rpx 0;
+  background-color: #F8F8F8;
+  border-radius: var(--radius-round, 999rpx);
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.tab-item.tab-active {
+  background: var(--primary-gradient, linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%));
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.25);
+}
+
+/* 商品卡片列表 */
+.product-list {
+  padding: 20rpx 24rpx;
+  box-sizing: border-box;
+}
+
+.empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  margin-bottom: 20rpx;
+}
+
+.empty-text {
+  font-size: 26rpx;
+  color: #999999;
+  margin-bottom: 30rpx;
+}
+
+.empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20rpx;
+}
+
+.empty-btn {
+  /* 覆盖 app.wxss 中的 72rpx 行高与上下内边距，固定尺寸并用 flex 精确垂直居中 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: auto;
+  height: 64rpx;
+  padding: 0 32rpx;
+  border-radius: 30rpx;
+  line-height: 1;
+  margin: 0;
+  font-size: 24rpx;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.empty-btn.add {
+  background: var(--primary-gradient, linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%));
+  color: #FFFFFF;
+}
+
+.empty-btn.cat {
+  background-color: #FFF2EE;
+  color: var(--primary, #FF6B6B);
+  border: 1rpx solid #FFB8A8;
+}
+
+.product-card {
+  display: flex;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-card, 20rpx);
+  padding: 22rpx;
+  margin: 0 0 22rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  border: 2rpx solid #FFF2EF;
+}
+
+.prod-img {
+  width: 170rpx;
+  height: 170rpx;
+  border-radius: var(--radius-img, 14rpx);
+  background-color: #FFF5F2;
+  flex-shrink: 0;
+  border: 2rpx solid #FFE4E4;
+}
+
+.prod-content {
+  flex: 1;
+  margin-left: 20rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.title-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.status-tag {
+  /* 固定高度 + 与内容盒等高的行高实现精确垂直居中；
+     white-space: nowrap 防止 text 组件保留换行/空白后撑成多行 */
+  display: inline-block;
+  height: 32rpx;
+  line-height: 30rpx;
+  border: 1rpx solid transparent;
+  font-size: 20rpx;
+  padding: 0 14rpx;
+  border-radius: var(--radius-round, 999rpx);
+  margin-right: 10rpx;
+  flex-shrink: 0;
+  font-weight: 700;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.tag-sale {
+  background-color: #EAF8EE;
+  color: #389E0D;
+  border-color: #B7EB8F;
+}
+
+.tag-offsale {
+  background-color: #F5F5F5;
+  color: #8C8C8C;
+  border-color: transparent;
+}
+
+.prod-title {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--text-main, #333333);
+}
+
+.prod-meta {
+  margin-top: 6rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.prod-cat {
+  font-size: 22rpx;
+  color: var(--primary, #FF6B6B);
+  font-weight: 600;
+}
+
+.prod-summary {
+  font-size: 20rpx;
+  color: var(--text-light, #999999);
+  margin-top: 2rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 440rpx;
+}
+
+.prod-mid {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 10rpx 0;
+}
+
+.price-wrap {
+  display: flex;
+  align-items: baseline;
+}
+
+.symbol {
+  font-size: 22rpx;
+  color: var(--price-color, #FF4757);
+  font-weight: 800;
+}
+
+.price {
+  font-size: 32rpx;
+  color: var(--price-color, #FF4757);
+  font-weight: 800;
+}
+
+.unit {
+  font-size: 22rpx;
+  color: var(--text-sub, #666666);
+  margin-left: 2rpx;
+}
+
+.orig-price {
+  font-size: 20rpx;
+  color: #BBBBBB;
+  text-decoration: line-through;
+  margin-left: 10rpx;
+}
+
+.stock-box {
+  display: flex;
+  align-items: center;
+  background-color: #FFF9F5;
+  padding: 4rpx 16rpx;
+  border-radius: var(--radius-round, 999rpx);
+  font-size: 22rpx;
+  border: 1rpx solid #FFE5DB;
+}
+
+.stock-label {
+  color: var(--text-sub, #666666);
+}
+
+.stock-val {
+  color: var(--text-main, #333333);
+  font-weight: 700;
+  margin: 0 4rpx;
+}
+
+.stock-low {
+  color: var(--price-color, #FF4757);
+  font-weight: 800;
+}
+
+.edit-stock-icon {
+  font-size: 20rpx;
+  margin-left: 4rpx;
+}
+
+.prod-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+  padding-top: 14rpx;
+  border-top: 2rpx solid #FFF5F2;
+}
+
+.switch-wrap {
+  display: flex;
+  align-items: center;
+  /* 不参与收缩，避免文案与开关被压成上下两行 */
+  flex: none;
+  white-space: nowrap;
+}
+
+.switch-label {
+  font-size: 22rpx;
+  line-height: 1.2;
+  color: var(--text-sub, #666666);
+  margin-right: 8rpx;
+  font-weight: 600;
+}
+
+/* 缩放后的 switch 布局盒仍是原始尺寸，用定宽容器收掉多余空白 */
+.switch-box {
+  display: flex;
+  align-items: center;
+  width: 72rpx;
+  height: 44rpx;
+  overflow: hidden;
+}
+
+.switch-box switch {
+  transform: scale(0.7);
+  transform-origin: left center;
+}
+
+.btns-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: none;
+  margin-left: auto;
+}
+
+.btn-action {
+  /* 固定宽度：两个按钮等宽对齐，不会被子内容或默认样式撑开 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 96rpx;
+  height: 50rpx;
+  margin: 0;
+  padding: 0;
+  font-size: 22rpx;
+  line-height: 1;
+  text-align: center;
+  border-radius: var(--radius-round, 999rpx);
+  font-weight: 700;
+}
+
+.btn-action:active {
+  opacity: 0.7;
+}
+
+.btn-edit {
+  background-color: #EBF4FF;
+  color: var(--sky-blue, #2F86EB);
+}
+
+.btn-del {
+  background-color: #FFF0F0;
+  color: var(--primary, #FF6B6B);
+}
+
+.load-more {
+  text-align: center;
+  padding: 30rpx 0;
+  font-size: 24rpx;
+  color: var(--text-light, #999999);
+}

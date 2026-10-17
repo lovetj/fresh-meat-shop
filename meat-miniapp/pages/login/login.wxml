@@ -1,0 +1,121 @@
+<!-- pages/login/login.wxml - 微信原生授权登录 -->
+<view class="login-page">
+  <!-- 品牌区 -->
+  <view class="brand-area">
+    <view class="brand-deco">🥩</view>
+    <view class="brand-deco-2">🐷</view>
+    <view class="brand-logo">🐷</view>
+    <text class="brand-name">维琼鲜肉铺</text>
+    <text class="brand-slogan">登录后同步订单、收货地址与鲜肉偏好</text>
+  </view>
+
+  <!-- 授权卡片 -->
+  <view class="login-card">
+    <!-- 微信头像授权（open-type="chooseAvatar"） -->
+    <view class="avatar-area">
+      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <image wx:if="{{avatarUrl}}" class="avatar-img" src="{{avatarUrl}}" mode="aspectFill"/>
+        <view wx:else class="avatar-placeholder">
+          <text class="avatar-icon">👤</text>
+          <text class="avatar-tip">点击获取微信头像</text>
+        </view>
+      </button>
+      <view class="avatar-camera" wx:if="{{avatarUrl}}">📷</view>
+    </view>
+
+    <!-- 微信昵称授权（type="nickname"，聚焦后弹出微信昵称气泡） -->
+    <view class="input-row {{nicknameFocus ? 'focusing' : ''}}">
+      <text class="input-label">昵称</text>
+      <input
+        class="input"
+        type="nickname"
+        value="{{nickName}}"
+        placeholder="{{nickName ? nickName : (avatarUrl ? '点击键盘上方昵称气泡一键填入' : '微信授权后自动填入')}}"
+        placeholder-class="input-placeholder"
+        focus="{{nicknameFocus}}"
+        bindinput="onNicknameInput"
+        bindblur="onNicknameBlur"
+        bindconfirm="onNicknameBlur"
+      />
+    </view>
+
+    <!-- 协议同意 -->
+    <view class="agree-row" bindtap="onToggleAgree">
+      <view class="agree-check {{agreed ? 'checked' : ''}}">
+        <text wx:if="{{agreed}}">✓</text>
+      </view>
+      <text class="agree-text">我已阅读并同意《用户协议》和《隐私政策》</text>
+    </view>
+
+    <!-- 登录按钮：未授权头像时，按钮本身即微信头像授权入口 -->
+    <button
+      class="login-btn"
+      open-type="{{avatarUrl ? '' : 'chooseAvatar'}}"
+      bindchooseavatar="onChooseAvatar"
+      bindtap="onLogin"
+      loading="{{loading}}"
+      disabled="{{loading}}"
+    >
+      {{loading ? '登录中...' : (isUpdate ? '保存头像昵称' : '微信授权登录')}}
+    </button>
+
+    <view class="skip-btn" bindtap="onSkip">暂不登录，先逛逛</view>
+
+    <!-- 掌柜管理员专属通道入口 -->
+    <view class="admin-entry-divider">
+      <view class="divider-line"></view>
+      <text class="divider-text">店铺管理</text>
+      <view class="divider-line"></view>
+    </view>
+
+    <view class="admin-entry-link" bindtap="openAdminModal">
+      <text class="admin-entry-icon">🔐</text>
+      <text class="admin-entry-text">肉铺掌柜 · 账号密码登录</text>
+    </view>
+  </view>
+
+  <text class="login-tip">微信授权仅获取公开头像与昵称，用于订单配送与称重沟通</text>
+
+  <!-- ================= 超级管理员账号密码登录弹窗 ================= -->
+  <view class="modal-mask" wx:if="{{showAdminModal}}" bindtap="closeAdminModal">
+    <view class="modal-dialog" catchtap="preventBubble">
+      <view class="modal-header">
+        <text class="modal-title">🔐 掌柜管理员登录</text>
+        <text class="modal-close" bindtap="closeAdminModal">✕</text>
+      </view>
+      <view class="modal-body">
+        <view class="modal-tips">
+          肉铺掌柜专属工作台，登录后可管理商品、处理订单、配置店铺，登录态保持7天。
+        </view>
+        <view class="form-item">
+          <text class="form-label">管理账号</text>
+          <input 
+            class="form-input" 
+            placeholder="请输入管理账号" 
+            value="{{adminForm.username}}" 
+            bindinput="onInputUsername"
+          />
+        </view>
+        <view class="form-item">
+          <text class="form-label">登录密码</text>
+          <view class="pwd-field">
+            <input 
+              class="form-input pwd-input" 
+              password="{{!showAdminPwd}}" 
+              placeholder="请输入管理密码" 
+              value="{{adminForm.password}}" 
+              bindinput="onInputPassword"
+            />
+            <view class="pwd-toggle" catchtap="toggleAdminPwd">
+              <text class="pwd-eye">{{showAdminPwd ? '🙈' : '👁️'}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel-btn" bindtap="closeAdminModal">取消</button>
+        <button class="modal-btn submit-btn" loading="{{submittingAdmin}}" bindtap="submitAdminLogin">立即登录</button>
+      </view>
+    </view>
+  </view>
+</view>

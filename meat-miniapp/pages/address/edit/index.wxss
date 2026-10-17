@@ -1,0 +1,104 @@
+/* pages/address/edit/index.wxss - 地址编辑 */
+
+.container {
+  padding: 24rpx;
+  background-color: var(--bg-cream);
+  min-height: 100vh;
+}
+
+.location-btn-card {
+  background: linear-gradient(135deg, #FFF0F0, #FFE6E6);
+  border: 2rpx dashed var(--primary);
+  border-radius: var(--radius-card);
+  padding: 26rpx 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+  box-shadow: var(--shadow-warm);
+}
+
+.loc-left {
+  display: flex;
+  align-items: center;
+}
+
+.loc-icon {
+  font-size: 44rpx;
+  margin-right: 18rpx;
+  animation: floatPiggy 3s ease-in-out infinite;
+}
+
+.loc-title {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--primary);
+  display: block;
+}
+
+.loc-sub {
+  font-size: 22rpx;
+  color: var(--text-sub);
+  margin-top: 4rpx;
+  display: block;
+}
+
+.loc-arrow {
+  font-size: 24rpx;
+  color: var(--primary);
+  font-weight: 800;
+  background-color: #FFFFFF;
+  padding: 4rpx 14rpx;
+  border-radius: var(--radius-round);
+}
+
+.form-card {
+  padding: 12rpx 26rpx;
+  margin: 0;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-warm);
+  border: 2rpx solid #FFF0ED;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  padding: 26rpx 0;
+  border-bottom: 2rpx solid #FFF5F2;
+}
+
+.form-label {
+  width: 170rpx;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.form-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: var(--text-main);
+}
+
+.coords-text {
+  font-size: 24rpx;
+  color: var(--text-light);
+}
+
+.default-switch-row {
+  justify-content: space-between;
+  border-bottom: none;
+}
+
+.submit-box {
+  margin-top: 50rpx;
+}
+
+.save-btn {
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 32rpx;
+  font-weight: 800;
+  border-radius: var(--radius-round);
+}

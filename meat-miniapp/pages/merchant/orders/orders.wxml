@@ -1,0 +1,97 @@
+<!-- pages/merchant/orders/orders.wxml -->
+<view class="container">
+  <!-- 顶部状态切换标签 -->
+  <view class="status-tabs">
+    <view wx:for="{{tabs}}" wx:key="status" class="tab-item {{currentStatus === item.status ? 'tab-active' : ''}}" bindtap="onSwitchTab" data-status="{{item.status}}">
+      <text>{{item.label}}</text>
+    </view>
+  </view>
+
+  <!-- 订单列表 -->
+  <scroll-view class="order-list" scroll-y bindscrolltolower="onLoadMore">
+    <view wx:if="{{orderList.length === 0 && !loading}}" class="empty-box">
+      <text class="empty-icon">📦</text>
+      <text class="empty-text">当前状态暂无订单</text>
+    </view>
+
+    <view wx:for="{{orderList}}" wx:key="id" class="card order-card" bindtap="goToDetail" data-id="{{item.id}}">
+      <view class="order-header">
+        <view class="header-left">
+          <text class="delivery-badge {{item.deliveryType === 1 ? 'badge-orange' : 'badge-red'}}">
+            {{item.deliveryTypeDesc}}
+          </text>
+          <text class="order-shop-badge" wx:if="{{item.shopName}}">🏪 {{item.shopName}}</text>
+          <text class="order-no">{{item.orderNo}}</text>
+        </view>
+        <text class="status-chip st-{{item.status}}">{{item.statusDesc}}</text>
+      </view>
+
+      <!-- 顾客与配送收货信息 -->
+      <view class="receiver-box">
+        <view class="rec-name-row">
+          <text class="rec-name">👤 {{item.receiverName}}</text>
+          <text class="rec-phone">📞 {{item.receiverPhone}}</text>
+          <text class="call-btn" catchtap="makePhoneCall" data-phone="{{item.receiverPhone}}">拨打</text>
+        </view>
+        <text class="rec-addr">📍 {{item.receiverAddress}}</text>
+        <text class="rec-dist" wx:if="{{item.deliveryType === 2 && item.deliveryDistance > 0}}">
+          测距: 约 {{item.deliveryDistance}} km (配送费 ¥{{item.deliveryFee}})
+        </text>
+        <view class="remark-box" wx:if="{{item.remark}}">
+          <text class="remark-tag">加工备注: </text>
+          <text class="remark-val">{{item.remark}}</text>
+        </view>
+      </view>
+
+      <!-- 商品清单明细 -->
+      <view class="items-wrap">
+        <view class="goods-row" wx:for="{{item.items}}" wx:key="id" wx:for-item="goods">
+          <image class="goods-img" src="{{goods.productImage}}" mode="aspectFill"/>
+          <view class="goods-info">
+            <text class="goods-title">{{goods.productName}}</text>
+            <text class="goods-spec">所选规格: {{goods.specInfo}}</text>
+            <view class="price-row">
+              <text class="price">¥{{goods.price}}</text>
+              <text class="qty">x {{goods.quantity}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 底部汇总与商家操作按钮 -->
+      <view class="order-footer">
+        <view class="total-row">
+          <text class="pay-type">[{{item.payTypeDesc}} - {{item.payStatusDesc}}]</text>
+          <text class="total-label">实收合计：</text>
+          <text class="total-val">¥{{item.payAmount}}</text>
+        </view>
+
+        <!-- 商家操作按钮组 -->
+        <view class="actions-row" catchtap="preventBubble">
+          <!-- 待接单(1) 时：拒单 / 接单 -->
+          <button class="btn-reject" wx:if="{{item.status === 1}}" catchtap="onRejectOrder" data-id="{{item.id}}">
+            拒单
+          </button>
+          <button class="btn-accept" wx:if="{{item.status === 1}}" catchtap="onAcceptOrder" data-id="{{item.id}}">
+            立即接单
+          </button>
+
+          <!-- 已接单待发货/自提(2) 时：开始配送 / 通知备好 -->
+          <button class="btn-deliver" wx:if="{{item.status === 2}}" catchtap="onDeliverOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
+            {{item.deliveryType === 1 ? '通知备齐可自提' : '开始同城配送'}}
+          </button>
+
+          <!-- 配送中(3) 或 自提(2) 时：确认送达/核销完成 -->
+          <button class="btn-finish" wx:if="{{item.status === 3 || (item.status === 2 && item.deliveryType === 1)}}" catchtap="onFinishOrder" data-id="{{item.id}}">
+            {{item.deliveryType === 1 ? '到店提货核销' : '确认送达完成'}}
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <view class="load-more" wx:if="{{orderList.length > 0}}">
+      <text wx:if="{{hasMore}}">上拉加载更多...</text>
+      <text wx:else>已加载全部管理订单</text>
+    </view>
+  </scroll-view>
+</view>

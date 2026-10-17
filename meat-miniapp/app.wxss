@@ -1,0 +1,713 @@
+/**
+ * 萌治愈风格 全局公共样式 app.wxss
+ * 风格定位：圆润、软萌、温暖治愈、卡通肉铺
+ * 设计文档：暖珊瑚红 #FF6B6B / 奶油黄 #FFD93D / 薄荷绿 #6BCB77 / 天空蓝 #4D96FF
+ */
+
+page {
+  /* ================= 1. 色彩变量 ================= */
+  --primary: #FF6B6B;             /* 主色：暖珊瑚红/番茄红 */
+  --primary-light: #FF8E8E;       /* 浅珊瑚红 */
+  --primary-gradient: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%);
+  --primary-active: #FA5252;      /* 按压主色 */
+  --primary-soft: #FFF0F0;        /* 主色柔和底 */
+
+  --cream-yellow: #FFD93D;        /* 辅助色：奶油黄(待支付/高亮) */
+  --mint-green: #6BCB77;          /* 辅助色：薄荷绿(新鲜/自取/已完成) */
+  --sky-blue: #4D96FF;            /* 辅助色：天空蓝(配送/待接单) */
+
+  --bg-cream: #FFF9F0;            /* 页面背景：奶油白 */
+  --bg-pink: #FFF0F0;             /* 浅粉背景/未选中胶囊底 */
+  --card-bg: #FFFFFF;             /* 卡片纯白 */
+
+  --text-main: #3D3D3D;           /* 主文字：深炭灰(比死黑更温和) */
+  --text-sub: #8A8A8A;            /* 次要文字 */
+  --text-light: #B4B4B4;          /* 辅助提示文字 */
+  --price-color: #FF4757;         /* 价格强调色 */
+
+  /* ================= 2. 圆角变量 ================= */
+  --radius-card: 24rpx;           /* 卡片圆角 */
+  --radius-btn: 40rpx;            /* 胶囊按钮圆角 */
+  --radius-img: 20rpx;            /* 图片圆角 */
+  --radius-tag: 16rpx;            /* 标签圆角 */
+  --radius-modal: 36rpx;          /* 弹窗圆角 */
+  --radius-round: 999rpx;         /* 纯圆形/全胶囊 */
+
+  /* ================= 3. 阴影变量（柔和暖色，不用硬黑） ================= */
+  --shadow-warm: 0 8rpx 24rpx rgba(255, 107, 107, 0.12);
+  --shadow-soft: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 12rpx 32rpx rgba(255, 107, 107, 0.22);
+
+  /* ================= 4. 间距变量（8rpx 基准栅格） ================= */
+  --space-xs: 8rpx;
+  --space-sm: 16rpx;
+  --space-md: 24rpx;
+  --space-lg: 32rpx;
+  --space-xl: 48rpx;
+  --gutter: 24rpx;                /* 页面左右安全边距 */
+
+  /* ================= 5. 字号变量 ================= */
+  --fs-title: 40rpx;              /* 大标题 */
+  --fs-section: 32rpx;            /* 区块标题 */
+  --fs-body: 28rpx;               /* 正文 */
+  --fs-sub: 24rpx;                /* 次要 */
+  --fs-mini: 20rpx;               /* 标签 */
+
+  /* 基础页面设置 */
+  background-color: var(--bg-cream);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Arial Rounded MT Bold", "Comfortaa", sans-serif;
+  color: var(--text-main);
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 盒模型重置 */
+view, text, image, input, textarea, button, scroll-view, label {
+  box-sizing: border-box;
+}
+
+/* 按钮基础重置 */
+button {
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  line-height: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+button::after {
+  border: none;
+}
+
+/* ================= 通用布局辅助 ================= */
+
+/* 页面容器：底部预留自定义 tabBar 高度 */
+.page-shell {
+  min-height: 100vh;
+  padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
+}
+
+/* 双列网格 */
+.grid-2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+/* 主题颜色类 */
+.theme-color {
+  color: var(--primary) !important;
+}
+
+.theme-bg {
+  background: var(--primary-gradient) !important;
+  color: #FFFFFF !important;
+}
+
+/* ================= 胶囊按钮系统 ================= */
+
+/* 主按钮：珊瑚红渐变 + 胶囊大圆角 + 点击微缩放反馈 */
+.btn-primary {
+  background: var(--primary-gradient);
+  color: #FFFFFF;
+  border-radius: var(--radius-btn);
+  font-size: 30rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-float);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+  padding: 0 36rpx;
+}
+
+.btn-primary:active {
+  transform: scale(0.96);
+  opacity: 0.92;
+}
+
+/* 次要按钮：奶油描边款 */
+.btn-secondary {
+  background-color: #FFFFFF;
+  color: var(--text-main);
+  border: 2rpx solid #FFD0D0;
+  border-radius: var(--radius-btn);
+  font-size: 28rpx;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0 32rpx;
+}
+
+.btn-secondary:active {
+  transform: scale(0.96);
+  background-color: var(--bg-pink);
+}
+
+/* 小胶囊按钮 */
+.btn-mini {
+  padding: 0 24rpx;
+  height: 52rpx;
+  line-height: 52rpx;
+  font-size: 24rpx;
+  border-radius: var(--radius-btn);
+}
+
+/* 禁用按钮状态 */
+.btn-disabled {
+  background: #E8E8E8 !important;
+  color: #B4B4B4 !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+/* 通用按压反馈（给任意可点击容器加 .press） */
+.press {
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.press:active {
+  transform: scale(0.96);
+}
+
+/* ================= 萌系卡片容器 ================= */
+
+.card {
+  background-color: var(--card-bg);
+  border-radius: var(--radius-card);
+  margin: var(--space-md) var(--gutter);
+  padding: 28rpx 24rpx;
+  box-shadow: var(--shadow-warm);
+  border: 2rpx solid rgba(255, 235, 230, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 卡片内区块标题 */
+.section-title {
+  font-size: var(--fs-section);
+  font-weight: 800;
+  color: var(--text-main);
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+/* 虚线分隔 */
+.divider-dashed {
+  height: 0;
+  border-top: 2rpx dashed #FFE4DC;
+  margin: var(--space-sm) 0;
+}
+
+/* ================= 萌趣价格排版 ================= */
+
+.price-tag {
+  color: var(--price-color);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: baseline;
+  letter-spacing: -0.5rpx;
+}
+
+.price-symbol {
+  font-size: 24rpx;
+  font-weight: 700;
+  margin-right: 2rpx;
+}
+
+.price-value {
+  font-size: 38rpx;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.price-unit {
+  font-size: 22rpx;
+  color: var(--text-sub);
+  margin-left: 4rpx;
+  font-weight: normal;
+}
+
+.price-original {
+  font-size: 22rpx;
+  color: var(--text-light);
+  text-decoration: line-through;
+  margin-left: 10rpx;
+  font-weight: normal;
+}
+
+/* ================= 胶囊分类标签（横向滚动） ================= */
+
+.chip-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background-color: var(--bg-cream);
+  padding: 12rpx 0 12rpx;
+}
+
+.chip-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.chip-inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 0 var(--gutter);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 64rpx;
+  padding: 0 30rpx;
+  border-radius: var(--radius-round);
+  background-color: var(--bg-pink);
+  color: var(--text-main);
+  font-size: 26rpx;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 2rpx solid transparent;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.chip:active {
+  transform: scale(0.94);
+}
+
+.chip-active {
+  background: var(--primary-gradient);
+  color: #FFFFFF;
+  font-weight: 800;
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 6rpx 16rpx rgba(255, 107, 107, 0.28);
+  transform: translateY(-2rpx);
+}
+
+/* ================= 萌系角标与状态标签 ================= */
+
+.badge-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20rpx;
+  padding: 4rpx 14rpx;
+  border-radius: var(--radius-tag);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* 新鲜 */
+.tag-fresh,
+.badge-green {
+  background-color: #EAF8EE;
+  color: #389E0D;
+  border: 1rpx solid rgba(107, 203, 119, 0.35);
+}
+
+/* 特价 / 促销 */
+.tag-sale,
+.badge-red {
+  background-color: var(--primary-soft);
+  color: #FF5252;
+  border: 1rpx solid rgba(255, 82, 82, 0.25);
+}
+
+/* 待支付 - 奶油黄 */
+.badge-yellow {
+  background-color: #FFF9E6;
+  color: #D48806;
+  border: 1rpx solid rgba(255, 217, 61, 0.45);
+}
+
+/* 待接单 - 天空蓝 */
+.badge-blue {
+  background-color: #EBF4FF;
+  color: #2F72D6;
+  border: 1rpx solid rgba(77, 150, 255, 0.3);
+}
+
+/* 已完成 / 已取消 - 柔和灰 */
+.badge-gray {
+  background-color: #F5F5F5;
+  color: #8C8C8C;
+  border: 1rpx solid #EDEDED;
+}
+
+/* 自取 - 暖橙 */
+.badge-orange {
+  background-color: #FFF2E8;
+  color: #D4380D;
+  border: 1rpx solid rgba(250, 140, 22, 0.25);
+}
+
+/* 订单状态胶囊：不同状态不同柔和底色（st-0 ~ st-6） */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 44rpx;
+  padding: 0 18rpx;
+  border-radius: var(--radius-round);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.st-0 { background-color: #FFF9E6; color: #D48806; }  /* 待支付 */
+.st-1 { background-color: #EBF4FF; color: #2F72D6; }  /* 待接单 */
+.st-2 { background-color: #F3EEFF; color: #7C5CD6; }  /* 已接单/备货 */
+.st-3 { background-color: #EAF8EE; color: #389E0D; }  /* 配送中 */
+.st-4 { background-color: #F5F5F5; color: #8C8C8C; }  /* 已完成 */
+.st-5 { background-color: #F5F5F5; color: #8C8C8C; }  /* 已取消 */
+.st-6 { background-color: #FFF1F0; color: #E03131; }  /* 已拒单 */
+
+/* ================= 空状态可爱卡通组件 ================= */
+
+.empty-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 110rpx;
+  margin-bottom: 24rpx;
+  animation: floatPiggy 3s ease-in-out infinite;
+  display: block;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: var(--text-sub);
+  margin-bottom: 12rpx;
+  font-weight: 500;
+}
+
+.empty-sub {
+  font-size: 24rpx;
+  color: var(--text-light);
+}
+
+.empty-btn {
+  margin-top: 28rpx;
+  height: 72rpx;
+  padding: 0 40rpx;
+  line-height: 72rpx;
+  border-radius: var(--radius-round);
+  background: var(--primary-gradient);
+  color: #FFFFFF;
+  font-size: 26rpx;
+  font-weight: 700;
+  box-shadow: var(--shadow-float);
+}
+
+/* ================= 骨架屏（圆角占位） ================= */
+
+.skeleton {
+  background: linear-gradient(90deg, #FFF3EE 25%, #FFFAF6 37%, #FFF3EE 63%);
+  background-size: 400% 100%;
+  animation: skeletonShine 1.4s ease infinite;
+  border-radius: 12rpx;
+}
+
+.skeleton-img {
+  width: 100%;
+  height: 300rpx;
+  border-radius: var(--radius-img);
+}
+
+.skeleton-line {
+  height: 24rpx;
+  margin-top: 16rpx;
+}
+
+.skeleton-line.short {
+  width: 55%;
+}
+
+/* 加载中：卡通旋转肉块 */
+.loading-meat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 40rpx 0;
+  font-size: 24rpx;
+  color: var(--text-sub);
+}
+
+.loading-meat .meat {
+  font-size: 40rpx;
+  display: inline-block;
+  animation: meatSpin 1.6s linear infinite;
+}
+
+/* 分页触底加载动画：翻跟头的肉块 + 呼吸文字 */
+.loading-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 6rpx 20rpx;
+}
+
+.loading-meat-icon {
+  display: inline-block;
+  font-size: 34rpx;
+  line-height: 1;
+  animation: meatFlip 1.2s ease-in-out infinite;
+}
+
+.loading-more-text {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  animation: loadingPulse 1.2s ease-in-out infinite;
+}
+
+/* 首屏整页加载动画 */
+.page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+  width: 100%;
+  padding: 130rpx 0;
+}
+
+.page-loading .loading-meat-icon {
+  font-size: 76rpx;
+}
+
+.page-loading .loading-more-text {
+  font-size: 26rpx;
+}
+
+@keyframes meatFlip {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50% { transform: rotate(-180deg) translateY(-10rpx); }
+}
+
+@keyframes loadingPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ================= 弹窗 / 轻提示 ================= */
+
+/* 底部弹层遮罩 */
+.modal-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(61, 61, 61, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* 底部弹出面板 */
+.modal-sheet {
+  width: 100%;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-modal) var(--radius-modal) 0 0;
+  padding: 32rpx 28rpx calc(32rpx + env(safe-area-inset-bottom));
+  animation: bounceUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 居中弹窗 */
+.modal-center {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 82%;
+  background-color: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 36rpx 30rpx;
+  z-index: 1000;
+  text-align: center;
+  box-shadow: 0 16rpx 48rpx rgba(255, 107, 107, 0.2);
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 轻量气泡提示（需 JS 控制显示） */
+.toast-bubble {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1200;
+  min-width: 240rpx;
+  padding: 32rpx 40rpx;
+  background-color: rgba(61, 61, 61, 0.9);
+  color: #FFFFFF;
+  border-radius: 28rpx;
+  font-size: 26rpx;
+  text-align: center;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ================= 单行与多行截断 ================= */
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ellipsis-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* ================= 交互动效 Keyframes ================= */
+
+/* 0. 页面切换柔和淡入 */
+.container,
+.page-shell {
+  animation: pageFadeIn 0.28s ease-out;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 1. 页面柔和平滑淡入 */
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 2. 弹窗弹跳上升 */
+.bounce-up {
+  animation: bounceUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes bounceUp {
+  0% { transform: translateY(100%); opacity: 0.5; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* 3. 居中弹窗弹跳出现 */
+.pop-in {
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.82); opacity: 0; }
+  60% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 4. 卡通小猪/空状态轻柔漂浮 */
+@keyframes floatPiggy {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-16rpx) rotate(4deg); }
+}
+
+/* 5. 轻量弹跳（加入成功/下单成功） */
+.bounce-soft {
+  animation: bounceSoft 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bounceSoft {
+  0% { transform: scale(0.6); opacity: 0; }
+  50% { transform: scale(1.12); opacity: 1; }
+  75% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+/* 6. 对勾描边动画（需配合 SVG/文本） */
+.check-pop {
+  animation: checkPop 0.5s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes checkPop {
+  0% { transform: scale(0) rotate(-25deg); opacity: 0; }
+  70% { transform: scale(1.15) rotate(0deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+/* 7. 特惠标签轻微呼吸高亮（克制） */
+.pulse-glow {
+  animation: pulseGlow 2.6s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.24);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 14rpx 2rpx rgba(255, 107, 107, 0.2);
+  }
+}
+
+/* 8. 公告跑马灯 */
+.marquee-run {
+  animation: marqueeRun 14s linear infinite;
+}
+
+@keyframes marqueeRun {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* 9. 卡通旋转 Loading */
+.meat-rotate {
+  display: inline-block;
+  animation: meatSpin 1.6s linear infinite;
+}
+
+@keyframes meatSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 10. 骨架屏流光 */
+@keyframes skeletonShine {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* 11. 选中态轻微上浮（tabBar / 分类） */
+.lift {
+  animation: liftUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes liftUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8rpx); }
+}
+
+/* 12. 底部结算栏滑入 */
+.slide-up {
+  animation: slideUp 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(120%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}

@@ -1,0 +1,128 @@
+<!-- pages/order-detail/order-detail.wxml -->
+<view class="container">
+  <!-- 顶部状态横幅 -->
+  <view class="status-banner theme-bg">
+    <view class="status-left">
+      <text class="banner-title">{{order.statusDesc}}</text>
+      <text class="banner-sub" wx:if="{{order.status === 0}}">请在尽快完成支付，肉铺将及时备肉</text>
+      <text class="banner-sub" wx:elif="{{order.status === 1}}">肉铺已收到订单，掌柜即将接单切肉</text>
+      <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 1}}">鲜肉已备齐，请凭电话到店自提</text>
+      <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 2}}">肉铺已接单，师傅正在排单切配</text>
+      <text class="banner-sub" wx:elif="{{order.status === 3}}">骑手/掌柜专人配送中，请保持电话畅通</text>
+      <text class="banner-sub" wx:elif="{{order.status === 4}}">鲜肉订单已完成，祝您用餐愉快！</text>
+      <text class="banner-sub" wx:elif="{{order.status === 5}}">订单已取消{{order.cancelReason ? '：' + order.cancelReason : ''}}</text>
+      <text class="banner-sub" wx:elif="{{order.status === 6}}">商家已拒单{{order.rejectReason ? '：' + order.rejectReason : ''}}</text>
+    </view>
+    <view class="status-icon">
+      <text wx:if="{{order.status === 0}}">⏳</text>
+      <text wx:elif="{{order.status === 1}}">📝</text>
+      <text wx:elif="{{order.status === 2}}">🥩</text>
+      <text wx:elif="{{order.status === 3}}">🛵</text>
+      <text wx:elif="{{order.status === 4}}">🎉</text>
+      <text wx:else>❌</text>
+    </view>
+  </view>
+
+  <!-- 配送 / 自取信息卡片 -->
+  <view class="card delivery-card">
+    <view class="delivery-type-tag {{order.deliveryType === 1 ? 'badge-orange' : 'badge-red'}}">
+      {{order.deliveryTypeDesc}}
+    </view>
+    <view class="user-info-row">
+      <text class="user-name">{{order.receiverName}}</text>
+      <text class="user-phone">{{order.receiverPhone}}</text>
+    </view>
+    <view class="address-row">
+      <text class="address-text">📍 {{order.receiverAddress}}</text>
+    </view>
+    <view class="dist-row" wx:if="{{order.deliveryType === 2 && order.deliveryDistance > 0}}">
+      <text class="dist-text">配送测算距离: 约 {{order.deliveryDistance}} km</text>
+    </view>
+  </view>
+
+  <!-- 商品明细 -->
+  <view class="card items-card">
+    <text class="card-title">商品清单</text>
+    <view class="goods-item" wx:for="{{order.items}}" wx:key="id">
+      <image class="goods-img" src="{{item.productImage}}" mode="aspectFill"/>
+      <view class="goods-detail">
+        <text class="goods-name">{{item.productName}}</text>
+        <text class="goods-spec">规格: {{item.specInfo}}</text>
+        <view class="goods-price-row">
+          <text class="price-val">¥{{item.price}}</text>
+          <text class="quantity-val">x {{item.quantity}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 备注信息 -->
+    <view class="remark-row" wx:if="{{order.remark}}">
+      <text class="remark-label">顾客备注：</text>
+      <text class="remark-content">{{order.remark}}</text>
+    </view>
+  </view>
+
+  <!-- 费用明细 -->
+  <view class="card fee-card">
+    <text class="card-title">费用信息</text>
+    <view class="fee-item">
+      <text class="fee-label">商品总额</text>
+      <text class="fee-val">¥{{order.goodsAmount}}</text>
+    </view>
+    <view class="fee-item">
+      <text class="fee-label">同城配送费</text>
+      <text class="fee-val">¥{{order.deliveryFee}}</text>
+    </view>
+    <view class="fee-item">
+      <text class="fee-label">支付方式</text>
+      <text class="fee-val">{{order.payTypeDesc}} ({{order.payStatusDesc}})</text>
+    </view>
+    <view class="fee-total-row">
+      <text class="total-label">实付款</text>
+      <text class="total-val">¥{{order.payAmount}}</text>
+    </view>
+  </view>
+
+  <!-- 订单编号与时间流水 -->
+  <view class="card info-card">
+    <text class="card-title">订单信息</text>
+    <view class="info-item">
+      <text class="info-label">订单编号：</text>
+      <text class="info-val selectable">{{order.orderNo}}</text>
+      <text class="copy-btn" bindtap="copyOrderNo">复制</text>
+    </view>
+    <view class="info-item">
+      <text class="info-label">下单时间：</text>
+      <text class="info-val">{{order.createTime}}</text>
+    </view>
+    <view class="info-item" wx:if="{{order.payTime}}">
+      <text class="info-label">支付时间：</text>
+      <text class="info-val">{{order.payTime}}</text>
+    </view>
+    <view class="info-item" wx:if="{{order.acceptTime}}">
+      <text class="info-label">接单时间：</text>
+      <text class="info-val">{{order.acceptTime}}</text>
+    </view>
+    <view class="info-item" wx:if="{{order.deliverTime}}">
+      <text class="info-label">{{order.deliveryType === 1 ? '备好时间：' : '发货时间：'}}</text>
+      <text class="info-val">{{order.deliverTime}}</text>
+    </view>
+    <view class="info-item" wx:if="{{order.finishTime}}">
+      <text class="info-label">完成时间：</text>
+      <text class="info-val">{{order.finishTime}}</text>
+    </view>
+  </view>
+
+  <!-- 底部操作按钮 -->
+  <view class="bottom-actions" wx:if="{{order.canPay || order.canCancel || order.canConfirm}}">
+    <button class="btn-secondary" wx:if="{{order.canCancel}}" bindtap="onCancelOrder">
+      取消订单
+    </button>
+    <button class="btn-primary" wx:if="{{order.canPay}}" bindtap="onPayOrder">
+      立即支付 (¥{{order.payAmount}})
+    </button>
+    <button class="btn-primary" wx:if="{{order.canConfirm}}" bindtap="onConfirmOrder">
+      确认收货
+    </button>
+  </view>
+</view>

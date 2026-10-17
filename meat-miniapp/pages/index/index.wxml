@@ -1,0 +1,243 @@
+<page-meta page-style="{{pageStyle}}"></page-meta>
+<!-- pages/index/index.wxml -->
+<view class="page-shell">
+  <!-- ================= 顶部卡通店铺横幅 ================= -->
+  <view class="shop-banner">
+    <view class="banner-deco">🐷</view>
+    <view class="banner-deco-2">🥩</view>
+
+    <view class="shop-brand-row">
+      <view class="shop-title-wrap" bindtap="openShopModal">
+        <text class="shop-name ellipsis">{{shopInfo.name || '维琼鲜肉铺'}}</text>
+        <view class="switch-shop-badge">
+          <text>切换门店</text>
+          <text class="switch-arrow">▼</text>
+        </view>
+      </view>
+      <view class="shop-status {{shopInfo.status === 1 ? 'is-open' : 'is-close'}}">
+        <text class="status-dot"></text>
+        <text>{{shopInfo.status === 1 ? '营业中' : '休息中'}}</text>
+      </view>
+    </view>
+
+    <text class="shop-slogan">每日现宰 · 支持切片绞肉 · 同城鲜送到家</text>
+
+    <view class="shop-meta-row">
+      <text class="meta-item">⏰ {{shopInfo.businessHours || '06:30 - 20:00'}}</text>
+      <text class="meta-item">🛵 {{shopInfo.maxDeliveryDistance || '5'}}km 内可达</text>
+    </view>
+
+    <view class="shop-addr" bindtap="openShopLocation">
+      <text class="addr-text ellipsis">📍 {{shopInfo.address || '正在加载地址...'}}</text>
+      <text class="addr-nav">导航 ></text>
+    </view>
+
+    <!-- 公告跑马灯 -->
+    <view class="notice-bar" wx:if="{{shopInfo.notice}}">
+      <text class="notice-label">📢</text>
+      <view class="notice-track">
+        <text class="notice-marquee marquee-run">{{shopInfo.notice}}　　{{shopInfo.notice}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- ================= 搜索胶囊 ================= -->
+  <view class="search-box">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input class="search-input" placeholder="搜索今日新鲜猪肉、排骨..." value="{{keyword}}" bindinput="onKeywordInput" bindconfirm="onSearch" confirm-type="search"/>
+      <text class="clear-btn" wx:if="{{keyword}}" bindtap="onClearKeyword">✕</text>
+    </view>
+  </view>
+
+  <!-- ================= 吸顶胶囊分类栏 ================= -->
+  <view class="chip-bar">
+    <scroll-view class="chip-scroll" scroll-x enable-flex enhanced show-scrollbar="{{false}}">
+      <view class="chip-inner">
+        <view class="chip {{currentCategoryId === '0' ? 'chip-active' : ''}}" bindtap="onSelectCategory" data-id="0">
+          全部鲜肉
+        </view>
+        <view wx:for="{{categories}}" wx:key="id" class="chip {{currentCategoryId === item.id ? 'chip-active' : ''}}" bindtap="onSelectCategory" data-id="{{item.id}}">
+          <text class="chip-icon" wx:if="{{item.icon}}">{{item.icon}}</text>
+          <text class="chip-name">{{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- ================= 双列商品网格 ================= -->
+  <!-- 骨架屏 -->
+  <view class="goods-grid" wx:if="{{loading && goodsList.length === 0}}">
+    <view class="goods-card" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+      <view class="skeleton skeleton-img"></view>
+      <view class="goods-body">
+        <view class="skeleton skeleton-line"></view>
+        <view class="skeleton skeleton-line short"></view>
+        <view class="skeleton skeleton-line short"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 商品卡片 -->
+  <view class="goods-grid" wx:if="{{!(loading && goodsList.length === 0)}}">
+    <view wx:for="{{goodsList}}" wx:key="id" class="goods-card" bindtap="goToDetail" data-id="{{item.id}}">
+      <view class="goods-thumb-wrap">
+        <image class="goods-thumb" src="{{item.coverImage}}" mode="aspectFill"/>
+        <view class="corner-badge {{item.originalPrice ? 'badge-sale' : 'badge-fresh'}}">
+          {{item.originalPrice ? '特价' : '新鲜'}}
+        </view>
+      </view>
+
+      <view class="goods-body">
+        <text class="goods-name ellipsis-2">{{item.name}}</text>
+        <text class="goods-summary ellipsis">{{item.summary || '当日清晨直供 · 冷鲜排酸'}}</text>
+
+        <view class="goods-tags">
+          <text class="mini-tag">已售 {{item.sales || 0}}</text>
+          <text class="mini-tag mini-tag-warn" wx:if="{{item.stock < 10}}">仅剩 {{item.stock}} {{item.unit}}</text>
+        </view>
+
+        <!-- 价格与加购按钮同一行：按钮固定在右下角 -->
+        <view class="goods-price-row">
+          <view class="price-tag">
+            <text class="price-symbol">¥</text>
+            <text class="price-value">{{item.price}}</text>
+            <text class="price-unit">/{{item.unit}}</text>
+          </view>
+          <text class="price-original" wx:if="{{item.originalPrice}}">¥{{item.originalPrice}}</text>
+          <view class="quick-add" catchtap="openSpecModal" data-item="{{item}}">+</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:if="{{goodsList.length === 0 && !loading}}" class="empty-box">
+    <text class="empty-icon">🐷</text>
+    <text class="empty-text">这个分类空空如也～去挑点好肉吧</text>
+    <text class="empty-sub">掌柜正在补货，先去逛逛全部鲜肉</text>
+    <view class="empty-btn" bindtap="onSelectCategory" data-id="0">看看全部鲜肉</view>
+  </view>
+
+  <!-- 加载更多 / 触底追加 -->
+  <view class="load-more" wx:if="{{goodsList.length > 0}}" bindtap="onLoadMore">
+    <view class="loading-more" wx:if="{{loadingMore}}">
+      <text class="loading-meat-icon">🥩</text>
+      <text class="loading-more-text">正在切肉中...</text>
+    </view>
+    <text wx:elif="{{hasMore}}">下滑或点击加载更多鲜肉 ▼</text>
+    <text wx:else>已经到底啦～都是今日好肉</text>
+  </view>
+
+  <!-- ================= 规格与购买弹窗 (选完商品直接下单) ================= -->
+  <view class="modal-mask" wx:if="{{showSpecModal}}" bindtap="closeSpecModal">
+    <view class="modal-sheet spec-sheet" catchtap="preventBubble">
+      <view class="sheet-handle"></view>
+
+      <view class="spec-header">
+        <image class="spec-thumb" src="{{currentProduct.coverImage}}" mode="aspectFill"/>
+        <view class="spec-info">
+          <text class="spec-name ellipsis">{{currentProduct.name}}</text>
+          <view class="price-tag">
+            <text class="price-symbol">¥</text>
+            <text class="price-value">{{currentProduct.price}}</text>
+            <text class="price-unit">/{{currentProduct.unit}}</text>
+          </view>
+          <text class="spec-selected">已选: {{selectedSpecText || '默认规格'}} x {{buyQuantity}}</text>
+        </view>
+        <text class="close-x" bindtap="closeSpecModal">✕</text>
+      </view>
+
+      <!-- 规格选项 -->
+      <view class="spec-body" wx:if="{{specGroups.length > 0}}">
+        <view wx:for="{{specGroups}}" wx:key="name" wx:for-index="groupIndex" class="spec-group">
+          <text class="spec-group-title">🔪 {{item.name}}</text>
+          <view class="spec-options">
+            <view wx:for="{{item.options}}" wx:key="*this" wx:for-item="opt" class="opt-btn {{selectedSpecs[groupIndex] === opt ? 'opt-active' : ''}}" bindtap="onSelectOption" data-group-index="{{groupIndex}}" data-option="{{opt}}">
+              {{opt}}
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 购买数量 -->
+      <view class="quantity-row">
+        <text class="quantity-label">购买数量 ({{currentProduct.unit}})</text>
+        <view class="stepper">
+          <button class="step-btn" bindtap="onDecQuantity">-</button>
+          <text class="step-val">{{buyQuantity}}</text>
+          <button class="step-btn" bindtap="onIncQuantity">+</button>
+        </view>
+      </view>
+
+      <!-- 直接结算确认按钮 -->
+      <view class="spec-footer">
+        <button class="btn-primary confirm-buy-btn" bindtap="goToCheckout">
+          立即结算 (¥{{totalPrice}})
+        </button>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- ================= 切换分店弹窗（放在 page-shell 之外，层级高于底部自定义 tabBar） ================= -->
+<view class="modal-mask shop-modal-mask" wx:if="{{showShopModal}}" bindtap="closeShopModal" catchtouchmove="preventBubble">
+  <view class="modal-panel shop-modal-panel" catchtap="preventBubble">
+    <view class="shop-modal-header">
+      <text class="shop-modal-title">🏪 选择服务门店</text>
+      <text class="close-x" bindtap="closeShopModal">✕</text>
+    </view>
+
+    <!-- 门店名称搜索 -->
+    <view class="shop-search-box">
+      <text class="shop-search-icon">🔍</text>
+      <input
+        class="shop-search-input"
+        type="text"
+        placeholder="搜索门店名称"
+        placeholder-class="shop-search-placeholder"
+        value="{{shopKeyword}}"
+        confirm-type="search"
+        bindinput="onShopKeywordInput"
+        bindconfirm="onShopSearch"
+      />
+      <text class="shop-search-clear" wx:if="{{shopKeyword}}" bindtap="onShopClearKeyword">✕</text>
+    </view>
+
+    <view class="shop-modal-tips">共 {{shopTotal}} 家门店，选择离您最近的门店为您极速切配配送：</view>
+
+    <scroll-view class="shop-list-scroll" scroll-y lower-threshold="80" bindscrolltolower="onShopListLower">
+      <view 
+        wx:for="{{shopList}}" 
+        wx:key="id" 
+        class="shop-item-card {{currentShopId === item.id ? 'shop-item-selected' : ''}}"
+        bindtap="onSelectShop"
+        data-id="{{item.id}}"
+      >
+        <view class="shop-item-top">
+          <text class="shop-item-name">{{item.name}}</text>
+          <view class="shop-item-tags">
+            <text class="shop-tag-dist" wx:if="{{item.distance && item.distance < 9000}}">📍 约{{item.distance}}km</text>
+            <text class="shop-tag-status {{item.status === 1 ? 'tag-open' : 'tag-close'}}">{{item.status === 1 ? '营业中' : '休息中'}}</text>
+          </view>
+        </view>
+        <view class="shop-item-addr">📍 {{item.address}}</view>
+        <view class="shop-item-meta">
+          <text class="shop-meta-tag">起送 ¥{{item.minOrderAmount || 0}}</text>
+          <text class="shop-meta-tag">配送费 ¥{{item.deliveryFee || 0}}</text>
+          <text class="shop-meta-tag">配送范围 {{item.maxDeliveryDistance || 5}}km</text>
+        </view>
+        <view class="shop-item-check" wx:if="{{currentShopId === item.id}}">✓ 当前选定门店</view>
+      </view>
+
+      <!-- 分页加载状态 / 空态 -->
+      <view class="shop-list-footer">
+        <text wx:if="{{shopLoading}}">正在加载门店…</text>
+        <text wx:elif="{{!shopList.length}}">没有找到匹配的门店</text>
+        <text wx:elif="{{shopLoadingMore}}">正在加载更多…</text>
+        <text wx:elif="{{!shopHasMore}}">— 已展示全部门店 —</text>
+        <text wx:else>上滑加载更多门店</text>
+      </view>
+    </scroll-view>
+  </view>
+</view>

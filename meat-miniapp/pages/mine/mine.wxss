@@ -1,0 +1,441 @@
+/* pages/mine/mine.wxss - 个人中心 */
+
+.page-shell {
+  min-height: 100vh;
+  background-color: var(--bg-cream);
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+}
+
+/* ================= 1. 顶部卡通头像 + 昵称渐变卡片 ================= */
+.user-header {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 48rpx 32rpx 72rpx;
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 55%, #FFA98F 100%);
+  border-radius: 0 0 40rpx 40rpx;
+  box-shadow: 0 10rpx 28rpx rgba(255, 107, 107, 0.22);
+  color: #FFFFFF;
+}
+
+.header-deco {
+  position: absolute;
+  right: 16rpx;
+  bottom: -18rpx;
+  font-size: 140rpx;
+  opacity: 0.16;
+  transform: rotate(-12deg);
+  pointer-events: none;
+}
+
+.header-deco-2 {
+  position: absolute;
+  left: 210rpx;
+  top: 18rpx;
+  font-size: 70rpx;
+  opacity: 0.12;
+  transform: rotate(16deg);
+  pointer-events: none;
+}
+
+.avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+.avatar {
+  display: block;
+  width: 152rpx;
+  height: 152rpx;
+  border-radius: 50%;
+  border: 6rpx solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8rpx 20rpx rgba(150, 40, 40, 0.22);
+  background-color: #FFFFFF;
+}
+
+/* 未授权头像占位：与微信授权登录页保持一致（浅粉底 + 粉色描边 + 👤 + 提示文案） */
+.avatar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-pink);
+  border: 4rpx solid #FFDCDC;
+  box-shadow: none;
+}
+
+.avatar-empty-icon {
+  font-size: 50rpx;
+  line-height: 1;
+}
+
+.avatar-empty-tip {
+  margin-top: 6rpx;
+  font-size: 16rpx;
+  line-height: 1.2;
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+
+.avatar-camera {
+  position: absolute;
+  right: -2rpx;
+  bottom: -2rpx;
+  width: 46rpx;
+  height: 46rpx;
+  line-height: 42rpx;
+  text-align: center;
+  font-size: 20rpx;
+  background-color: #FFFFFF;
+  border-radius: 50%;
+  box-shadow: 0 4rpx 10rpx rgba(150, 40, 40, 0.22);
+}
+
+/* 透明头像授权按钮：铺满头像区域，点击直接唤起微信头像选择器 */
+.avatar-hit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background-color: transparent;
+  opacity: 0;
+}
+
+.avatar-hit::after {
+  border: none;
+}
+
+.user-info {
+  flex: 1;
+  min-width: 0;
+  margin-left: 24rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.name-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.user-name {
+  max-width: 300rpx;
+  font-size: 38rpx;
+  font-weight: 800;
+  letter-spacing: 0.5rpx;
+  text-shadow: 0 2rpx 6rpx rgba(150, 40, 40, 0.18);
+}
+
+.role-badge {
+  font-size: 20rpx;
+  padding: 4rpx 16rpx;
+  border-radius: var(--radius-round);
+  background-color: var(--cream-yellow);
+  color: #874D00;
+  font-weight: 800;
+}
+
+/* 昵称后的营业状态标签（营业中 / 休息中） */
+.biz-tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36rpx;
+  padding: 0 14rpx;
+  box-sizing: border-box;
+  font-size: 19rpx;
+  line-height: 1;
+  font-weight: 700;
+  white-space: nowrap;
+  border-radius: var(--radius-round);
+}
+
+.biz-open {
+  color: #389E0D;
+  background-color: #FFFFFF;
+  box-shadow: 0 2rpx 8rpx rgba(150, 40, 40, 0.16);
+}
+
+.biz-close {
+  color: #8C8C8C;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2rpx 8rpx rgba(150, 40, 40, 0.12);
+}
+
+.user-sub {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  color: #FFF3F0;
+}
+
+/* 用户名后的退出按钮 */
+.logout-chip {
+  flex-shrink: 0;
+  padding: 2rpx 16rpx;
+  font-size: 20rpx;
+  font-weight: 700;
+  line-height: 1.7;
+  color: #FFF0ED;
+  background-color: rgba(255, 255, 255, 0.22);
+  border: 1rpx solid rgba(255, 255, 255, 0.45);
+  border-radius: var(--radius-round);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.logout-chip:active {
+  transform: scale(0.92);
+  background-color: rgba(255, 255, 255, 0.32);
+}
+
+/* ================= 2. 掌柜管理端专属入口卡片 ================= */
+.admin-portal-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -32rpx 24rpx 24rpx;
+  padding: 24rpx 26rpx;
+  border-radius: var(--radius-card);
+  background: linear-gradient(135deg, #3A2F2F 0%, #251D1D 100%);
+  border: 3rpx solid #FFD93D;
+  box-shadow: 0 10rpx 26rpx rgba(58, 47, 47, 0.35);
+  position: relative;
+  z-index: 10;
+}
+
+.admin-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-icon {
+  font-size: 52rpx;
+  margin-right: 18rpx;
+  animation: floatPiggy 3s ease-in-out infinite;
+}
+
+.admin-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-status-badge {
+  display: inline-block;
+  padding: 2rpx 12rpx;
+  font-size: 19rpx;
+  font-weight: 700;
+  color: #52C41A;
+  background-color: rgba(82, 196, 26, 0.15);
+  border: 1rpx solid rgba(82, 196, 26, 0.3);
+  border-radius: var(--radius-round);
+  margin-bottom: 6rpx;
+}
+
+.admin-title {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 800;
+  color: #FFE58F;
+}
+
+.admin-desc {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 21rpx;
+  color: #D3C5C5;
+}
+
+.admin-action-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-left: 16rpx;
+  flex-shrink: 0;
+}
+
+.admin-enter-btn {
+  margin: 0;
+  height: 54rpx;
+  line-height: 54rpx;
+  padding: 0 24rpx;
+  font-size: 23rpx;
+  font-weight: 800;
+  color: #3B2600;
+  background: linear-gradient(135deg, #FFE58F 0%, #FFD666 100%);
+  border-radius: var(--radius-round);
+}
+
+.admin-switch-btn {
+  margin: 0;
+  height: 46rpx;
+  line-height: 44rpx;
+  padding: 0 20rpx;
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #E8D3D3;
+  background-color: transparent;
+  border: 1rpx solid rgba(255, 255, 255, 0.28);
+  border-radius: var(--radius-round);
+}
+
+/* ================= 3. 我的订单快捷入口 ================= */
+.order-entry-card {
+  padding: 26rpx 24rpx;
+  margin: 24rpx;
+}
+
+.entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 20rpx;
+  border-bottom: 2rpx dashed #FFE4DC;
+}
+
+.entry-title {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.entry-all {
+  font-size: 23rpx;
+  color: var(--text-sub);
+}
+
+.order-nav-grid {
+  display: flex;
+  margin-top: 26rpx;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-item:active {
+  transform: scale(0.9);
+}
+
+.nav-icon {
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42rpx;
+  margin-bottom: 10rpx;
+  border: 2rpx solid transparent;
+}
+
+.nav-label {
+  font-size: 23rpx;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+/* 柔和彩色底（九宫格 / 订单入口通用） */
+.icon-pink {
+  background-color: #FFF0F0;
+  border-color: #FFD9D9;
+}
+
+.icon-yellow {
+  background-color: #FFF9E6;
+  border-color: #FFEAA8;
+}
+
+.icon-blue {
+  background-color: #EBF4FF;
+  border-color: #CFE5FF;
+}
+
+.icon-green {
+  background-color: #EAF8EE;
+  border-color: #C6EBD0;
+}
+
+.icon-gray {
+  background-color: #F5F5F5;
+  border-color: #EAEAEA;
+}
+
+.icon-purple {
+  background-color: #F3EEFF;
+  border-color: #E0D5FF;
+}
+
+.icon-orange {
+  background-color: #FFF2E8;
+  border-color: #FFDFC7;
+}
+
+/* ================= 4. 常用功能九宫格 ================= */
+.tool-card {
+  padding: 26rpx 20rpx 30rpx;
+  margin: 24rpx;
+}
+
+.tool-title {
+  display: block;
+  padding: 0 8rpx 18rpx;
+  font-size: 30rpx;
+  font-weight: 800;
+  color: var(--text-main);
+  border-bottom: 2rpx dashed #FFE4DC;
+}
+
+.tool-grid {
+  display: flex;
+  flex-wrap: wrap;
+  padding-top: 24rpx;
+}
+
+.tool-item {
+  width: 33.333%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14rpx 0;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tool-item:active {
+  transform: scale(0.9);
+}
+
+.tool-icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44rpx;
+  border: 2rpx solid transparent;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.06);
+}
+
+.tool-label {
+  margin-top: 12rpx;
+  font-size: 23rpx;
+  color: var(--text-main);
+  font-weight: 600;
+}

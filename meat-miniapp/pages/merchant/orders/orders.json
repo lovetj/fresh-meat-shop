@@ -1,0 +1,7 @@
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "掌柜订单处理",
+  "enablePullDownRefresh": true,
+  "navigationBarBackgroundColor": "#263238",
+  "navigationBarTextStyle": "white"
+}

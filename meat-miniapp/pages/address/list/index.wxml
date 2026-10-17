@@ -1,0 +1,35 @@
+<!-- pages/address/list/index.wxml -->
+<view class="container">
+  <view wx:if="{{addressList.length === 0 && !loading}}" class="empty-box">
+    <text class="empty-icon">📍</text>
+    <text class="empty-text">您还没有添加收货地址</text>
+  </view>
+
+  <view class="address-list">
+    <view wx:for="{{addressList}}" wx:key="id" class="card addr-card" bindtap="onSelectAddress" data-item="{{item}}">
+      <view class="addr-top">
+        <text class="name">{{item.contactName}}</text>
+        <text class="phone">{{item.contactPhone}}</text>
+        <text class="default-badge" wx:if="{{item.isDefault === 1}}">默认</text>
+      </view>
+      <text class="full-addr">{{item.fullAddress}}</text>
+
+      <view class="addr-bottom" catchtap="preventBubble">
+        <label class="default-radio" catchtap="onSetDefault" data-id="{{item.id}}">
+          <radio checked="{{item.isDefault === 1}}" color="#FF6B6B"/>
+          <text class="radio-text">设为默认地址</text>
+        </label>
+        <view class="op-btns">
+          <text class="op-btn" catchtap="onEditAddress" data-item="{{item}}">编辑</text>
+          <text class="op-btn op-del" catchtap="onDeleteAddress" data-id="{{item.id}}">删除</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-bar">
+    <button class="btn-primary add-btn" bindtap="onAddAddress">
+      + 添加新收货地址
+    </button>
+  </view>
+</view>

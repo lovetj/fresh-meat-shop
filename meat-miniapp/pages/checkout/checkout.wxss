@@ -1,0 +1,575 @@
+/* pages/checkout/checkout.wxss - 下单结算页 */
+
+.container {
+  padding-bottom: calc(200rpx + env(safe-area-inset-bottom));
+  background-color: var(--bg-cream);
+  min-height: 100vh;
+}
+
+/* ================= 1. 配送方式三选一可爱大图标卡片 ================= */
+.delivery-tabs-card {
+  display: flex;
+  gap: 16rpx;
+  margin: 24rpx;
+  padding: 16rpx;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-warm);
+  border: 2rpx solid #FFF2EF;
+}
+
+.tab-item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 8rpx 20rpx;
+  border-radius: 20rpx;
+  background-color: var(--bg-pink);
+  border: 3rpx solid transparent;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tab-item:active {
+  transform: scale(0.96);
+}
+
+.tab-active {
+  background-color: #FFF4F4;
+  border-color: var(--primary);
+  box-shadow: 0 6rpx 18rpx rgba(255, 107, 107, 0.18);
+  transform: translateY(-4rpx);
+}
+
+/* 选中对勾角标 */
+.tab-check {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  width: 32rpx;
+  height: 32rpx;
+  line-height: 30rpx;
+  text-align: center;
+  font-size: 20rpx;
+  font-weight: 800;
+  color: #FFFFFF;
+  background: var(--primary-gradient);
+  border-radius: 50%;
+  animation: checkPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.tab-icon {
+  font-size: 50rpx;
+  line-height: 1.1;
+}
+
+.tab-name {
+  margin-top: 8rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.tab-active .tab-name {
+  color: var(--primary);
+}
+
+.tab-tip {
+  margin-top: 6rpx;
+  font-size: 19rpx;
+  color: var(--text-sub);
+}
+
+.tab-active .tab-tip {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.tab-disabled {
+  opacity: 0.55;
+  background-color: #F5F5F5;
+  border-color: #EEEEEE;
+}
+
+.tab-disabled .tab-name,
+.tab-disabled .tab-tip {
+  color: #999999;
+}
+
+/* ================= 2. 自取门店卡片 ================= */
+.pickup-box {
+  border-top: 6rpx solid var(--cream-yellow);
+}
+
+.pickup-shop-info {
+  padding: 20rpx;
+  border-radius: 20rpx;
+  background-color: #FFFBF0;
+  border: 2rpx dashed #FFE58F;
+  margin-bottom: 8rpx;
+}
+
+.pickup-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.pickup-shop-name {
+  font-size: 29rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.pickup-tag {
+  flex-shrink: 0;
+  padding: 2rpx 14rpx;
+  border-radius: var(--radius-round);
+  background-color: rgba(255, 217, 61, 0.3);
+  color: #874D00;
+  font-size: 19rpx;
+  font-weight: 700;
+}
+
+.pickup-address {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: var(--text-sub);
+  line-height: 1.4;
+}
+
+.pickup-hours {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #D48806;
+  font-weight: 600;
+}
+
+.form-row {
+  display: flex;
+  align-items: center;
+  padding: 22rpx 0;
+  border-bottom: 2rpx solid #FFF5F2;
+}
+
+.form-row:last-child {
+  border-bottom: none;
+}
+
+.form-label {
+  width: 160rpx;
+  flex-shrink: 0;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.form-input {
+  flex: 1;
+  font-size: 26rpx;
+  color: var(--text-main);
+}
+
+/* ================= 3. 收货地址与测距 ================= */
+.address-box {
+  border-top: 6rpx solid var(--sky-blue);
+}
+
+.address-header {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx;
+  border-radius: 20rpx;
+  background-color: #F7FAFF;
+  border: 2rpx dashed #CFE5FF;
+}
+
+.addr-icon {
+  width: 76rpx;
+  height: 76rpx;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background-color: #FFFFFF;
+  border: 2rpx solid #E3EFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  animation: floatPiggy 3.2s ease-in-out infinite;
+}
+
+.addr-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.user-name {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.user-phone {
+  font-size: 25rpx;
+  color: var(--text-sub);
+}
+
+.user-full-addr {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 25rpx;
+  color: var(--text-main);
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.addr-empty {
+  flex: 1;
+}
+
+.addr-empty-text {
+  display: block;
+  font-size: 29rpx;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.addr-empty-sub {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 21rpx;
+  color: var(--text-light);
+}
+
+.arrow {
+  font-size: 28rpx;
+  color: #B4B4B4;
+  flex-shrink: 0;
+}
+
+/* 测距警示条 */
+.distance-alert {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 20rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 18rpx;
+}
+
+.alert-success {
+  background-color: #EAF8EE;
+  border: 2rpx solid #C6EBD0;
+}
+
+.alert-error {
+  background-color: #FFF1F0;
+  border: 2rpx solid #FFC9C4;
+}
+
+.alert-icon {
+  font-size: 30rpx;
+  margin-right: 12rpx;
+  line-height: 1.2;
+}
+
+.alert-msg {
+  flex: 1;
+}
+
+.alert-text {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.alert-sub {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 21rpx;
+  color: #E03131;
+  line-height: 1.4;
+}
+
+/* ================= 4. 商品明细卡片 ================= */
+.goods-card {
+  padding: 24rpx;
+}
+
+.goods-row {
+  display: flex;
+}
+
+.goods-thumb {
+  width: 144rpx;
+  height: 144rpx;
+  flex-shrink: 0;
+  border-radius: var(--radius-img);
+  background-color: #FFF5F2;
+  border: 2rpx solid #FFEDE7;
+}
+
+.goods-meta {
+  flex: 1;
+  min-width: 0;
+  margin-left: 20rpx;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.goods-name {
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.goods-spec {
+  align-self: flex-start;
+  margin: 8rpx 0;
+  padding: 4rpx 14rpx;
+  font-size: 21rpx;
+  color: var(--text-sub);
+  background-color: #FFF9F0;
+  border-radius: 10rpx;
+}
+
+.goods-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.goods-qty {
+  font-size: 25rpx;
+  color: var(--text-sub);
+  font-weight: 700;
+}
+
+/* ================= 5. 支付方式单选卡片 ================= */
+.pay-type-card,
+.remark-card,
+.fee-card {
+  padding: 24rpx;
+}
+
+.pay-group {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.pay-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 22rpx 20rpx;
+  border-radius: 20rpx;
+  background-color: #FFFCFA;
+  border: 2rpx solid #FFEAE3;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pay-option:active {
+  transform: scale(0.985);
+}
+
+.pay-active {
+  background-color: #FFF5F5;
+  border-color: var(--primary);
+  box-shadow: 0 6rpx 16rpx rgba(255, 107, 107, 0.14);
+}
+
+.pay-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.pay-icon {
+  width: 64rpx;
+  height: 64rpx;
+  flex-shrink: 0;
+  margin-right: 16rpx;
+  border-radius: 50%;
+  background-color: var(--bg-pink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+}
+
+.pay-text-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.pay-name {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.pay-desc {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 21rpx;
+  color: var(--text-sub);
+}
+
+/* 备注框 */
+.remark-input {
+  width: 100%;
+  padding: 20rpx;
+  font-size: 26rpx;
+  color: var(--text-main);
+  background-color: #FFF9F5;
+  border: 2rpx solid #FFEAE0;
+  border-radius: 18rpx;
+}
+
+/* ================= 6. 费用明细清单 ================= */
+.fee-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 0;
+  font-size: 26rpx;
+  color: var(--text-sub);
+}
+
+.fee-val {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.fee-free {
+  color: var(--mint-green);
+}
+
+.fee-total {
+  margin-top: 14rpx;
+  padding-top: 18rpx;
+  border-top: 2rpx dashed #FFE0D6;
+}
+
+.fee-total .fee-label {
+  font-size: 27rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* ================= 7. 底部悬浮大胶囊结算栏 ================= */
+.submit-bar {
+  position: fixed;
+  left: 20rpx;
+  right: 20rpx;
+  bottom: calc(20rpx + env(safe-area-inset-bottom));
+  height: 112rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16rpx 0 34rpx;
+  background-color: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  border: 2rpx solid #FFEAEA;
+  border-radius: var(--radius-round);
+  box-shadow: 0 12rpx 36rpx rgba(255, 107, 107, 0.22);
+  z-index: 100;
+  animation: slideUp 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.submit-left {
+  display: flex;
+  align-items: baseline;
+}
+
+.submit-label {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  font-weight: 600;
+  margin-right: 8rpx;
+}
+
+.submit-price {
+  font-size: 42rpx;
+  font-weight: 800;
+  color: var(--price-color);
+}
+
+.submit-btn {
+  height: 84rpx;
+  padding: 0 44rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+  border-radius: var(--radius-round);
+}
+
+/* ================= 8. 下单成功弹跳动效 ================= */
+.success-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(61, 61, 61, 0.4);
+  backdrop-filter: blur(3px);
+}
+
+.success-card {
+  width: 380rpx;
+  padding: 40rpx 30rpx 36rpx;
+  background-color: #FFFFFF;
+  border-radius: 36rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 16rpx 48rpx rgba(255, 107, 107, 0.24);
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.success-check {
+  width: 120rpx;
+  height: 120rpx;
+  line-height: 116rpx;
+  text-align: center;
+  font-size: 64rpx;
+  font-weight: 800;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #6BCB77 0%, #8FDD9A 100%);
+  border-radius: 50%;
+  box-shadow: 0 10rpx 24rpx rgba(107, 203, 119, 0.35);
+  animation: checkPop 0.5s 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.success-title {
+  margin-top: 22rpx;
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.success-sub {
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: var(--text-sub);
+}

@@ -1,0 +1,230 @@
+/* pages/orders/orders.wxss - 订单列表页 */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--bg-cream);
+}
+
+/* ================= 1. 顶部吸顶状态筛选胶囊 ================= */
+.status-tabs {
+  display: flex;
+  gap: 12rpx;
+  padding: 16rpx 20rpx;
+  background-color: #FFFFFF;
+  box-shadow: 0 4rpx 16rpx rgba(255, 107, 107, 0.08);
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.tab-item {
+  flex: 1;
+  text-align: center;
+  padding: 14rpx 0;
+  font-size: 25rpx;
+  color: var(--text-sub);
+  background-color: var(--bg-pink);
+  border-radius: var(--radius-round);
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tab-item.tab-active {
+  background: var(--primary-gradient);
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 4rpx 14rpx rgba(255, 107, 107, 0.3);
+  transform: translateY(-2rpx);
+}
+
+/* ================= 2. 订单列表 ================= */
+.order-list {
+  flex: 1;
+  height: 100%;
+  padding: 8rpx 0 calc(160rpx + env(safe-area-inset-bottom));
+}
+
+.order-card {
+  margin: 20rpx 24rpx;
+  padding: 24rpx;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-warm);
+  border: 2rpx solid #FFF2EF;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.order-card:active {
+  transform: scale(0.985);
+}
+
+/* 头部：配送标签 + 单号 + 状态软色标签 */
+.order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  padding-bottom: 18rpx;
+  border-bottom: 2rpx dashed #FFE4DC;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+  min-width: 0;
+}
+
+.delivery-badge {
+  flex-shrink: 0;
+  font-size: 19rpx;
+  padding: 4rpx 14rpx;
+  border-radius: var(--radius-round);
+  font-weight: 700;
+}
+
+.order-no {
+  font-size: 22rpx;
+  color: var(--text-light);
+  max-width: 300rpx;
+}
+
+/* ================= 3. 商品缩略图横排 ================= */
+.thumb-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 20rpx 0;
+}
+
+.thumb {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: var(--radius-img);
+  background-color: #FFF5F2;
+  border: 2rpx solid #FFEDE7;
+  flex-shrink: 0;
+}
+
+.thumb-more {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: var(--radius-img);
+  background-color: var(--bg-pink);
+  color: var(--primary);
+  font-size: 24rpx;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2rpx dashed #FFD0D0;
+}
+
+.thumb-summary {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
+}
+
+.summary-name {
+  max-width: 100%;
+  font-size: 24rpx;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.summary-count {
+  font-size: 22rpx;
+  color: var(--text-sub);
+  background-color: #FFF7F3;
+  padding: 4rpx 14rpx;
+  border-radius: 10rpx;
+}
+
+/* ================= 4. 底部金额与胶囊操作按钮 ================= */
+.order-footer {
+  padding-top: 18rpx;
+  border-top: 2rpx dashed #FFE4DC;
+}
+
+.total-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10rpx;
+}
+
+.pay-method {
+  font-size: 21rpx;
+  color: var(--text-light);
+  margin-right: auto;
+}
+
+.total-amount-label {
+  font-size: 23rpx;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.total-amount {
+  font-size: 36rpx;
+  font-weight: 800;
+  color: var(--price-color);
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.action-buttons button {
+  margin: 0;
+  padding: 0 30rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  font-size: 24rpx;
+  font-weight: 700;
+  border-radius: var(--radius-round);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.action-buttons button:active {
+  transform: scale(0.94);
+}
+
+.btn-cancel {
+  background-color: #FFFFFF;
+  color: var(--text-sub);
+  border: 2rpx solid #EAEAEA;
+}
+
+.btn-pay {
+  background: var(--primary-gradient);
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 4rpx 14rpx rgba(255, 107, 107, 0.3);
+}
+
+.btn-confirm {
+  background: linear-gradient(135deg, #6BCB77 0%, #8FDD9A 100%);
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 4rpx 14rpx rgba(107, 203, 119, 0.3);
+}
+
+.load-more {
+  text-align: center;
+  padding: 30rpx 0;
+  font-size: 24rpx;
+  color: var(--text-light);
+}

@@ -1,0 +1,6 @@
+{
+  "usingComponents": {},
+  "navigationBarTitleText": "维琼鲜肉铺",
+  "enablePullDownRefresh": true,
+  "onReachBottomDistance": 100
+}

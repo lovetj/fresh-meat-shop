@@ -1,0 +1,94 @@
+server:
+  port: 8083
+  servlet:
+    context-path: /meat
+
+spring:
+  application:
+    name: meat-backend
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.0.114:5455/fresh_meat_shop?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: Silu.com
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      auto-commit: true
+      idle-timeout: 30000
+      pool-name: MeatHikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+# JWT Token 鉴权与登录态时长配置
+jwt:
+  # 签名密钥 (生产环境建议替换为强随机字符串)
+  secret: V2lRaW9uZ0ZyZXNoTWVhdFNob3BTZWNyZXRLZXkyMDI2MTAxN1NwcmluZ0Jvb3Q=
+  # 基础通用过期时间 (毫秒)，默认7天
+  expiration: 604800000
+  # 普通顾客微信登录态有效时长：30天 (30 * 24 * 3600 * 1000 = 2592000000)
+  customer-expiration: 2592000000
+  # 超级管理员登录态有效时长：7天 (7 * 24 * 3600 * 1000 = 604800000)
+  admin-expiration: 604800000
+  header: Authorization
+  prefix: "Bearer "
+
+# 微信相关配置
+wechat:
+  miniapp:
+    # 微信小程序 AppID 与 AppSecret
+    appid: wx9d59f08ad0da2b25
+    secret: 12b7f59a44b0922d3a4efe6a96192968
+    # 开启本地开发 mock 模式：若为 true 且无法调通微信服务器时，可支持快速体验登录
+    mock: false
+  pay:
+    # 微信商户号
+    mchid: "1680000000"
+    # 商户 API v3 密钥 (32位字符串)
+    api-v3-key: "YourWechatPayApiV3Key32CharsLong!"
+    # 商户证书序列号
+    cert-serial-no: "7D50A89C1F820E9B4E0111111111111111111111"
+    # 商户 API 私钥文件存放路径 (支持 classpath:cert/apiclient_key.pem 或绝对路径)
+    private-key-path: "classpath:cert/apiclient_key.pem"
+    # 微信支付结果异步回调通知 URL
+    notify-url: "https://yourdomain.com/api/payment/wx/notify"
+    # mock模式：true-生成模拟支付成功凭证，前端可直接点击模拟支付完成闭环
+    mock: true
+
+file:
+  # 文件外部访问域名已完全解耦，由小程序前端 config.js (fileBaseServer) 统一动态拼接
+  # 后端只保留本地/服务器文件物理存储磁盘目录
+  base-path: D:\\soft\\apache-tomcat-8.5.63\\webapps\\meat_file
+
+logging:
+  charset:
+    console: UTF-8
+    file: UTF-8
+  level:
+    com.freshmeat: debug
+    com.freshmeat.mapper: debug
+    org.springframework.web: info
+
+# Knife4j / Swagger 增强配置
+knife4j:
+  enable: true
+  setting:
+    language: zh-CN

@@ -1,0 +1,72 @@
+<!-- pages/product-detail/product-detail.wxml -->
+<view class="container">
+  <view class="banner-wrap">
+    <image class="banner-img" src="{{product.coverImage}}" mode="aspectFill"/>
+    <view class="banner-badge">🟢 今日现宰 · 冷鲜直达</view>
+  </view>
+
+  <view class="detail-card">
+    <view class="price-row">
+      <view class="price-tag">
+        <text class="price-symbol">¥</text>
+        <text class="price-value big">{{product.price}}</text>
+        <text class="price-unit">/{{product.unit}}</text>
+      </view>
+      <text class="sales-text">已售 {{product.sales || 0}} {{product.unit}}</text>
+    </view>
+    <view class="title-row">
+      <text class="title">{{product.name}}</text>
+      <text class="stock-chip">库存 {{product.stock}}</text>
+    </view>
+    <text class="summary" wx:if="{{product.summary}}">{{product.summary}}</text>
+    <text class="price-original" wx:if="{{product.originalPrice}}">原价 ¥{{product.originalPrice}}</text>
+  </view>
+
+  <!-- 规格与加工服务 -->
+  <view class="card spec-section" wx:if="{{specGroups.length > 0}}">
+    <text class="section-title">🔪 选购规格与加工定制</text>
+    <view wx:for="{{specGroups}}" wx:key="name" wx:for-index="gIndex" class="group-block">
+      <text class="group-name">{{item.name}}：</text>
+      <view class="tags-wrap">
+        <view wx:for="{{item.options}}" wx:key="*this" wx:for-item="opt" class="spec-tag {{selectedSpecs[gIndex] === opt ? 'tag-active' : ''}}" bindtap="onSelectOption" data-g-index="{{gIndex}}" data-opt="{{opt}}">
+          {{opt}}
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 购买数量 -->
+  <view class="card qty-section">
+    <text class="section-title">⚖️ 购买数量 ({{product.unit}})</text>
+    <view class="stepper">
+      <button class="step-btn" bindtap="onDecQuantity">-</button>
+      <text class="step-val">{{buyQuantity}}</text>
+      <button class="step-btn" bindtap="onIncQuantity">+</button>
+    </view>
+  </view>
+
+  <!-- 图文介绍 -->
+  <view class="card desc-section">
+    <text class="section-title">📖 鲜肉品质与加工说明</text>
+    <view class="desc-content">
+      <text>{{product.description || '每日清晨现宰进店，排酸冷鲜处理，支持现场切丁、切片、剁肉泥等精细化加工定制。'}}</text>
+    </view>
+    <view class="shop-promise">
+      <view class="promise-item">✅ 检验检疫合格</view>
+      <view class="promise-item">✅ 每日新鲜现宰</view>
+      <view class="promise-item">✅ 足斤足两保障</view>
+      <view class="promise-item">✅ 同城专人送达</view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar">
+    <button class="action-btn" bindtap="callShop">
+      <text class="action-icon">📞</text>
+      <text class="action-text">联系肉铺</text>
+    </button>
+    <button class="btn-primary buy-now-btn" bindtap="goToCheckout">
+      立即下单 (¥{{totalPrice}})
+    </button>
+  </view>
+</view>

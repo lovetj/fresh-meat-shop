@@ -1,0 +1,120 @@
+/* pages/address/list/index.wxss - 地址管理 */
+
+.container {
+  padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+  background-color: var(--bg-cream);
+  min-height: 100vh;
+}
+
+.address-list {
+  padding-top: 16rpx;
+}
+
+.addr-card {
+  padding: 26rpx 24rpx;
+  margin: 20rpx 24rpx;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-warm);
+  border: 2rpx solid #FFF0ED;
+}
+
+.addr-top {
+  display: flex;
+  align-items: center;
+}
+
+.name {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.phone {
+  font-size: 26rpx;
+  color: var(--text-sub);
+  margin-left: 20rpx;
+}
+
+.default-badge {
+  font-size: 20rpx;
+  background-color: #FFF0F0;
+  color: var(--primary);
+  padding: 4rpx 14rpx;
+  border-radius: var(--radius-round);
+  margin-left: 16rpx;
+  font-weight: 800;
+  border: 1rpx solid #FFD0D0;
+}
+
+.full-addr {
+  font-size: 26rpx;
+  color: var(--text-main);
+  margin-top: 14rpx;
+  display: block;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+.addr-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 2rpx dashed #FFF0ED;
+  margin-top: 20rpx;
+  padding-top: 18rpx;
+}
+
+.default-radio {
+  display: flex;
+  align-items: center;
+  font-size: 24rpx;
+  color: var(--text-sub);
+}
+
+.radio-text {
+  margin-left: 8rpx;
+}
+
+.op-btns {
+  display: flex;
+  gap: 30rpx;
+}
+
+.op-btn {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  font-weight: 600;
+}
+
+.op-del {
+  color: var(--price-color);
+}
+
+/* 底部悬浮胶囊按钮 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(120rpx + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 28rpx;
+  padding-right: 28rpx;
+  box-shadow: 0 -8rpx 24rpx rgba(255, 107, 107, 0.12);
+  z-index: 100;
+}
+
+.add-btn {
+  width: 100%;
+  height: 84rpx;
+  line-height: 84rpx;
+  font-size: 30rpx;
+  font-weight: 800;
+  border-radius: var(--radius-round);
+}

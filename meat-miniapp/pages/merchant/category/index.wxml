@@ -1,0 +1,313 @@
+<!-- pages/merchant/category/index.wxml - 维琼鲜肉铺 鲜肉分类管理 -->
+<view class="container">
+  <!-- 0. 门店切换栏 (分店独立分类管理) -->
+  <view class="shop-switch-bar" wx:if="{{shopList.length > 0}}">
+    <view class="shop-switch-left">
+      <text class="shop-tag">当前门店</text>
+      <picker range="{{shopList}}" range-key="name" value="{{shopIndex}}" bindchange="onShopChange">
+        <view class="shop-picker-val">
+          <text class="shop-name-highlight">{{shopList[shopIndex].name || '请选择店铺'}}</text>
+          <text class="shop-arrow" wx:if="{{shopList.length > 1}}">▼ 切换</text>
+        </view>
+      </picker>
+    </view>
+    <view class="shop-badge-info">门店专属类目</view>
+  </view>
+
+  <!-- 1. 顶部统计概览卡片 -->
+  <view class="overview-card">
+    <view class="overview-left">
+      <text class="overview-sub">维护当前门店选购分类、排序及商品归属</text>
+      <view class="overview-stats">
+        <view class="stat-pill">
+          <text class="stat-num">{{categoryList.length}}</text>
+          <text class="stat-label">本店分类</text>
+        </view>
+        <view class="stat-pill pill-active">
+          <text class="stat-num text-success">{{activeCount}}</text>
+          <text class="stat-label">启用中</text>
+        </view>
+        <view class="stat-pill pill-disabled">
+          <text class="stat-num text-muted">{{disabledCount}}</text>
+          <text class="stat-label">已停用</text>
+        </view>
+      </view>
+    </view>
+    <button class="add-main-btn" bindtap="openAddModal">
+      <text class="add-plus">+</text>
+      <text>新增分类</text>
+    </button>
+  </view>
+
+  <!-- 2. 搜索与状态筛选栏 -->
+  <view class="search-filter-bar">
+    <view class="search-input-box">
+      <icon type="search" size="14" color="#FF8E8E"/>
+      <input 
+        class="search-input" 
+        placeholder="搜索当前门店分类名称..." 
+        value="{{searchKeyword}}" 
+        bindinput="onSearchInput" 
+        confirm-type="search"
+        cursor-spacing="30"
+      />
+      <view class="clear-search-btn" wx:if="{{searchKeyword}}" bindtap="onClearSearch">✕</view>
+    </view>
+    
+    <view class="filter-capsules">
+      <view 
+        class="filter-chip {{statusFilter === 'all' ? 'chip-active' : ''}}" 
+        bindtap="onSwitchFilter" 
+        data-filter="all"
+      >
+        全部 ({{categoryList.length}})
+      </view>
+      <view 
+        class="filter-chip {{statusFilter === 'active' ? 'chip-active' : ''}}" 
+        bindtap="onSwitchFilter" 
+        data-filter="active"
+      >
+        启用 ({{activeCount}})
+      </view>
+      <view 
+        class="filter-chip {{statusFilter === 'disabled' ? 'chip-active' : ''}}" 
+        bindtap="onSwitchFilter" 
+        data-filter="disabled"
+      >
+        停用 ({{disabledCount}})
+      </view>
+    </view>
+  </view>
+
+  <!-- 3. 排序规则提示条 -->
+  <view class="sort-tip-bar">
+    <text class="tip-icon">💡</text>
+    <text class="tip-text">门店前台按【排序权重从大到小】展示，权重越大越靠前</text>
+  </view>
+
+  <!-- 4. 加载中骨架态 -->
+  <view class="loading-wrap" wx:if="{{loading && categoryList.length === 0}}">
+    <view class="skeleton-card" wx:for="{{[1, 2, 3]}}" wx:key="*this">
+      <view class="skeleton-line full"></view>
+      <view class="skeleton-line half"></view>
+    </view>
+  </view>
+
+  <!-- 5. 空状态展示 -->
+  <view class="empty-box" wx:elif="{{filteredList.length === 0}}">
+    <text class="empty-icon">📑</text>
+    <text class="empty-text">{{searchKeyword ? '未搜索到匹配分类' : '当前门店暂无分类数据'}}</text>
+    <text class="empty-sub">{{searchKeyword ? '换个关键词试试吧' : '立即为本店创建分类，方便顾客挑选新鲜肉品'}}</text>
+    <button class="empty-btn" bindtap="openAddModal" wx:if="{{!searchKeyword}}">+ 新增分类</button>
+  </view>
+
+  <!-- 6. 分类列表卡片 -->
+  <view class="cat-list" wx:else>
+    <view 
+      wx:for="{{filteredList}}" 
+      wx:key="id" 
+      class="cat-item-card {{item.status === 1 ? 'card-enabled' : 'card-disabled'}}"
+    >
+      <!-- 卡片头部：位次、图标、名称、商品数、状态开关 -->
+      <view class="item-head">
+        <view class="head-left">
+          <view class="order-rank-badge">{{index + 1}}</view>
+          <view class="cat-avatar {{!item.icon ? 'cat-avatar-text' : ''}}">
+            <text wx:if="{{item.icon}}">{{item.icon}}</text>
+            <text wx:else class="cat-avatar-char">{{item.name ? item.name[0] : '肉'}}</text>
+          </view>
+          <view class="name-meta">
+            <view class="title-row">
+              <text class="cat-name-text">{{item.name}}</text>
+              <view class="status-badge {{item.status === 1 ? 'badge-green' : 'badge-gray'}}">
+                {{item.status === 1 ? '启用中' : '已停用'}}
+              </view>
+            </view>
+            <view class="goods-count-row">
+              <view class="count-tag {{item.productCount > 0 ? 'has-goods' : 'no-goods'}}">
+                📦 {{item.productCount || 0}} 件商品
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 快捷状态开关 -->
+        <view class="head-right" catchtap="stopBubble">
+          <switch 
+            checked="{{item.status === 1}}" 
+            color="#FF6B6B" 
+            bindchange="onQuickToggleStatus" 
+            data-id="{{item.id}}" 
+            data-item="{{item}}"
+          />
+        </view>
+      </view>
+
+      <!-- 卡片中段：排序权重与排序说明 -->
+      <view class="item-meta-bar">
+        <view class="weight-info">
+          <text class="weight-label">排序权重</text>
+          <text class="weight-val">{{item.sortOrder || 0}}</text>
+        </view>
+        <view class="rank-hint">
+          <text wx:if="{{index === 0 && item.status === 1}}" class="rank-top-badge">👑 当前前台第 1 位</text>
+          <text wx:else class="rank-normal-hint">前台顺序：第 {{index + 1}} 位</text>
+        </view>
+      </view>
+
+      <!-- 卡片底部：操作按钮组 -->
+      <view class="item-actions">
+        <button 
+          class="action-btn btn-top" 
+          bindtap="onQuickTopCategory" 
+          data-id="{{item.id}}" 
+          data-item="{{item}}"
+          wx:if="{{index > 0}}"
+        >
+          <text class="action-icon">⬆</text>
+          <text>置顶</text>
+        </button>
+
+        <button 
+          class="action-btn btn-edit" 
+          bindtap="openEditModal" 
+          data-item="{{item}}"
+        >
+          <text class="action-icon">✏️</text>
+          <text>编辑</text>
+        </button>
+
+        <button 
+          class="action-btn btn-delete {{item.productCount > 0 ? 'btn-delete-disabled' : ''}}" 
+          bindtap="onDeleteCategory" 
+          data-id="{{item.id}}" 
+          data-name="{{item.name}}"
+          data-count="{{item.productCount || 0}}"
+        >
+          <text class="action-icon">🗑️</text>
+          <text>删除</text>
+        </button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 7. 编辑 / 新增分类弹窗 -->
+  <view class="modal-mask" wx:if="{{showModal}}" bindtap="closeModal">
+    <view class="modal-sheet" catchtap="stopBubble">
+      <view class="sheet-drag-bar"></view>
+      <view class="sheet-header">
+        <view class="sheet-title-box">
+          <text class="sheet-title">{{isEdit ? '编辑鲜肉分类' : '新增鲜肉分类'}}</text>
+          <text class="sheet-sub">设置当前门店选购分类名称与展示排序</text>
+        </view>
+        <view class="sheet-close" bindtap="closeModal">✕</view>
+      </view>
+
+      <!-- 不开启 enhanced：原生滚动视图在弹性布局中不按 flex 收缩，会把底部按钮栏顶出/压住内容 -->
+      <scroll-view class="sheet-body" scroll-y show-scrollbar="{{false}}">
+
+        <!-- 分类名称 -->
+        <view class="form-block">
+          <view class="label-row">
+            <text class="form-label">分类名称 <text class="required-star">*</text></text>
+            <text class="char-count">{{formData.name.length || 0}}/12</text>
+          </view>
+          <input 
+            class="cute-input" 
+            placeholder="如：精选排骨类、鲜切牛肉类" 
+            maxlength="12"
+            value="{{formData.name}}" 
+            bindinput="onInputName"
+            cursor-spacing="60"
+            adjust-position="{{true}}"
+          />
+        </view>
+
+        <!-- 分类图标 Emoji 快捷选择 (允许为空) -->
+        <view class="form-block">
+          <view class="label-row">
+            <view class="label-left-box">
+              <text class="form-label">分类标识图标</text>
+              <text class="label-optional-hint">(选填，可为空)</text>
+            </view>
+            <view class="icon-curr-preview" wx:if="{{formData.icon}}" bindtap="onClearIcon">
+              <text class="preview-emoji">{{formData.icon}}</text>
+              <text class="clear-icon-text">点击清空</text>
+            </view>
+            <text class="no-icon-tip" wx:else>当前未设置图标</text>
+          </view>
+
+          <!-- 预设 Emoji 备选网格 (包含无图标快捷项) -->
+          <view class="icon-selector-grid">
+            <view 
+              class="icon-grid-item icon-grid-none {{!formData.icon ? 'icon-selected' : ''}}"
+              bindtap="onClearIcon"
+            >
+              <text class="grid-none-title">无</text>
+            </view>
+            <view 
+              wx:for="{{presetIcons}}" 
+              wx:key="*this" 
+              class="icon-grid-item {{formData.icon === item ? 'icon-selected' : ''}}"
+              bindtap="onSelectPresetIcon"
+              data-icon="{{item}}"
+            >
+              <text class="grid-emoji">{{item}}</text>
+            </view>
+          </view>
+
+          <!-- 自定义输入框 (带右侧清除小按钮) -->
+          <view class="custom-icon-row">
+            <input 
+              class="cute-input icon-custom-input" 
+              placeholder="或输入自定义 Emoji，留空则不显示图标" 
+              value="{{formData.icon}}" 
+              bindinput="onInputIcon"
+              cursor-spacing="60"
+              adjust-position="{{true}}"
+            />
+            <view class="input-clear-btn" wx:if="{{formData.icon}}" bindtap="onClearIcon">✕</view>
+          </view>
+        </view>
+
+        <!-- 排序权重 -->
+        <view class="form-block">
+          <view class="label-row">
+            <text class="form-label">展示排序权重</text>
+            <text class="label-hint">越大越靠前</text>
+          </view>
+          <input 
+            class="cute-input" 
+            type="number" 
+            placeholder="请输入数字，如 10、50、100" 
+            value="{{formData.sortOrder}}" 
+            bindinput="onInputSort"
+            cursor-spacing="60"
+            adjust-position="{{true}}"
+          />
+          <text class="field-desc">顾客在首页选购时，权重值较大的分类排列在最前</text>
+        </view>
+
+        <!-- 启用状态 -->
+        <view class="form-switch-row">
+          <view class="switch-meta">
+            <text class="switch-title">启用状态</text>
+            <text class="switch-sub">停用后，当前门店前台分类栏将不再展示该分类</text>
+          </view>
+          <switch checked="{{formData.status === 1}}" color="#FF6B6B" bindchange="onStatusChange"/>
+        </view>
+
+        <!-- 底部垫高，确保内容滚动到最底时不被按钮遮盖 -->
+        <view class="sheet-bottom-spacer"></view>
+      </scroll-view>
+
+      <!-- 底部保存/取消操作 -->
+      <view class="sheet-footer">
+        <button class="footer-btn btn-cancel" bindtap="closeModal">取消</button>
+        <button class="footer-btn btn-submit" bindtap="onSubmitCategory" loading="{{submitting}}">
+          {{submitting ? '保存中...' : '确认保存'}}
+        </button>
+      </view>
+    </view>
+  </view>
+</view>
