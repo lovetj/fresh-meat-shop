@@ -3,10 +3,13 @@
   <!-- 顶部状态横幅 -->
   <view class="status-banner theme-bg">
     <view class="status-left">
-      <text class="banner-title">{{order.statusDesc}}</text>
+      <view class="banner-title-row">
+        <text class="banner-title">{{order.statusDesc}}</text>
+        <text class="role-badge" wx:if="{{isAdmin}}">掌柜管理视图</text>
+      </view>
       <text class="banner-sub" wx:if="{{order.status === 0}}">请在尽快完成支付，肉铺将及时备肉</text>
       <text class="banner-sub" wx:elif="{{order.status === 1}}">肉铺已收到订单，掌柜即将接单切肉</text>
-      <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 1}}">鲜肉已备齐，请凭电话到店自提</text>
+      <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 1}}">鲜肉已备齐，请凭电话或提货码到店自提</text>
       <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 2}}">肉铺已接单，师傅正在排单切配</text>
       <text class="banner-sub" wx:elif="{{order.status === 3}}">骑手/掌柜专人配送中，请保持电话畅通</text>
       <text class="banner-sub" wx:elif="{{order.status === 4}}">鲜肉订单已完成，祝您用餐愉快！</text>
@@ -23,31 +26,80 @@
     </view>
   </view>
 
+  <!-- 自提提货码醒目展示卡片 (顾客凭码提货 / 掌柜凭码核销) -->
+  <view class="card pickup-banner-card" wx:if="{{order.deliveryType === 1 && order.pickupCode}}">
+    <view class="p-card-head">
+      <text class="p-card-status" wx:if="{{order.status === 4}}">✓ 已核销提货</text>
+      <text class="p-card-status status-wait" wx:elif="{{order.status === 2}}">待提货核销</text>
+    </view>
+    <view class="p-code-box">
+      <text class="p-code-label">提货核销凭据：</text>
+      <text class="p-code-val">{{order.pickupCode}}</text>
+    </view>
+    <text class="p-card-tip" wx:if="{{!isAdmin}}">到店后请向肉铺掌柜出示此 6 位提货码或手机号码提货</text>
+    <text class="p-card-tip" wx:else>顾客到店出示此提货码核销完成提货</text>
+  </view>
+
   <!-- 配送 / 自取信息卡片 -->
   <view class="card delivery-card">
-    <view class="delivery-type-tag {{order.deliveryType === 1 ? 'badge-orange' : 'badge-red'}}">
-      {{order.deliveryTypeDesc}}
+    <view class="delivery-head-row">
+      <view class="delivery-type-tag {{order.deliveryType === 1 ? 'badge-orange' : 'badge-red'}}">
+        {{order.deliveryTypeDesc}}
+      </view>
+      <text class="shop-bind-tag" wx:if="{{order.deliveryType !== 1 && order.shopName}}">🏪 {{order.shopName}}</text>
     </view>
-    <view class="user-info-row">
-      <text class="user-name">{{order.receiverName}}</text>
-      <text class="user-phone">{{order.receiverPhone}}</text>
-    </view>
-    <view class="address-row">
-      <text class="address-text">📍 {{order.receiverAddress}}</text>
-    </view>
-    <view class="dist-row" wx:if="{{order.deliveryType === 2 && order.deliveryDistance > 0}}">
-      <text class="dist-text">配送测算距离: 约 {{order.deliveryDistance}} km</text>
-    </view>
+
+    <!-- 到店自取 -->
+    <block wx:if="{{order.deliveryType === 1}}">
+      <!-- 掌柜端：展示顾客（提货人）联系信息，便于核销与联系 -->
+      <block wx:if="{{isAdmin}}">
+        <view class="contact-row">
+          <text class="contact-label">提货人姓名</text>
+          <text class="contact-name">{{order.receiverName || '未填写'}}</text>
+        </view>
+        <view class="contact-row">
+          <text class="contact-label">提货人电话</text>
+          <text class="contact-phone">{{order.receiverPhone || '未填写'}}</text>
+          <text class="call-btn-mini" wx:if="{{order.receiverPhone}}" data-phone="{{order.receiverPhone}}" bindtap="makePhoneCall">拨打</text>
+        </view>
+      </block>
+      <!-- 顾客端：只展示提货门店信息，不重复展示自己的提货人信息 -->
+      <block wx:else>
+        <view class="contact-row">
+          <text class="contact-label">提货门店</text>
+          <text class="contact-name">{{order.shopName || '未配置门店'}}</text>
+          <text class="nav-btn" bindtap="openShopLocation">导航</text>
+        </view>
+        <view class="address-row">
+          <text class="address-text">📍 {{order.shopAddress || order.receiverAddress}}</text>
+        </view>
+      </block>
+    </block>
+
+    <!-- 同城配送：展示收货人信息与收货地址 -->
+    <block wx:else>
+      <view class="user-info-row">
+        <text class="user-name">{{order.receiverName}}</text>
+        <text class="user-phone">{{order.receiverPhone}}</text>
+        <text class="call-btn-mini" wx:if="{{order.receiverPhone}}" data-phone="{{order.receiverPhone}}" bindtap="makePhoneCall">拨打</text>
+      </view>
+      <view class="address-row">
+        <text class="address-text">📍 {{order.receiverAddress}}</text>
+      </view>
+      <view class="dist-row" wx:if="{{order.deliveryDistance > 0}}">
+        <text class="dist-text">配送测算距离: 约 {{order.deliveryDistance}} km (同城配送费 ¥{{order.deliveryFee}})</text>
+      </view>
+    </block>
   </view>
 
   <!-- 商品明细 -->
   <view class="card items-card">
-    <text class="card-title">商品清单</text>
+    <text class="card-title">鲜肉清单明细</text>
     <view class="goods-item" wx:for="{{order.items}}" wx:key="id">
       <image class="goods-img" src="{{item.productImage}}" mode="aspectFill"/>
       <view class="goods-detail">
         <text class="goods-name">{{item.productName}}</text>
-        <text class="goods-spec">规格: {{item.specInfo}}</text>
+        <text class="goods-spec">所选规格: {{item.specInfo}}</text>
         <view class="goods-price-row">
           <text class="price-val">¥{{item.price}}</text>
           <text class="quantity-val">x {{item.quantity}}</text>
@@ -55,9 +107,9 @@
       </view>
     </view>
 
-    <!-- 备注信息 -->
+    <!-- 顾客切配备注 -->
     <view class="remark-row" wx:if="{{order.remark}}">
-      <text class="remark-label">顾客备注：</text>
+      <text class="remark-label">顾客加工要求：</text>
       <text class="remark-content">{{order.remark}}</text>
     </view>
   </view>
@@ -73,19 +125,23 @@
       <text class="fee-label">同城配送费</text>
       <text class="fee-val">¥{{order.deliveryFee}}</text>
     </view>
+    <view class="fee-item" wx:if="{{order.originalPayAmount && order.originalPayAmount != order.payAmount}}">
+      <text class="fee-label">改价前原价</text>
+      <text class="fee-val line-through">¥{{order.originalPayAmount}}</text>
+    </view>
     <view class="fee-item">
       <text class="fee-label">支付方式</text>
       <text class="fee-val">{{order.payTypeDesc}} ({{order.payStatusDesc}})</text>
     </view>
     <view class="fee-total-row">
-      <text class="total-label">实付款</text>
+      <text class="total-label">{{order.payStatus === 1 ? '实付款' : '应付款'}}</text>
       <text class="total-val">¥{{order.payAmount}}</text>
     </view>
   </view>
 
   <!-- 订单编号与时间流水 -->
   <view class="card info-card">
-    <text class="card-title">订单信息</text>
+    <text class="card-title">订单流转记录</text>
     <view class="info-item">
       <text class="info-label">订单编号：</text>
       <text class="info-val selectable">{{order.orderNo}}</text>
@@ -104,17 +160,57 @@
       <text class="info-val">{{order.acceptTime}}</text>
     </view>
     <view class="info-item" wx:if="{{order.deliverTime}}">
-      <text class="info-label">{{order.deliveryType === 1 ? '备好时间：' : '发货时间：'}}</text>
+      <text class="info-label">{{order.deliveryType === 1 ? '通知备齐时间：' : '发货配送时间：'}}</text>
       <text class="info-val">{{order.deliverTime}}</text>
     </view>
     <view class="info-item" wx:if="{{order.finishTime}}">
       <text class="info-label">完成时间：</text>
       <text class="info-val">{{order.finishTime}}</text>
     </view>
+    <view class="info-item" wx:if="{{order.cancelTime}}">
+      <text class="info-label">取消时间：</text>
+      <text class="info-val">{{order.cancelTime}}</text>
+    </view>
   </view>
 
-  <!-- 底部操作按钮 -->
-  <view class="bottom-actions" wx:if="{{order.canPay || order.canCancel || order.canConfirm}}">
+  <!-- ================= 底部操作按钮栏 ================= -->
+  <!-- 1. 掌柜端管理视角 -->
+  <view class="bottom-actions" wx:if="{{isAdmin}}">
+    <!-- 待支付(0) 时：掌柜改价 / 取消订单 -->
+    <button class="btn-secondary" wx:if="{{order.status === 0}}" bindtap="onAdminCancelOrder">
+      取消订单
+    </button>
+    <button class="btn-warn" wx:if="{{order.status === 0}}" bindtap="openPriceModal">
+      掌柜改价
+    </button>
+
+    <!-- 待接单(1) 时：拒单 / 立即接单 -->
+    <button class="btn-reject" wx:if="{{order.status === 1}}" bindtap="onRejectOrder">
+      拒单退款
+    </button>
+    <button class="btn-accept" wx:if="{{order.status === 1}}" bindtap="onAcceptOrder">
+      立即接单
+    </button>
+
+    <!-- 待配送/自提(2) 时：开始配送/通知备好 / 到店核销 / 取消退款 -->
+    <button class="btn-secondary" wx:if="{{order.status === 2}}" bindtap="onAdminCancelOrder">
+      协商退款
+    </button>
+    <button class="btn-primary" wx:if="{{order.status === 2 && order.deliveryType === 2}}" bindtap="onDeliverOrder">
+      开始同城配送
+    </button>
+    <button class="btn-primary" wx:if="{{order.status === 2 && order.deliveryType === 1}}" bindtap="onFinishOrder">
+      到店提货核销
+    </button>
+
+    <!-- 配送中(3) 时：确认送达完成 -->
+    <button class="btn-primary" wx:if="{{order.status === 3}}" bindtap="onFinishOrder">
+      确认送达完成
+    </button>
+  </view>
+
+  <!-- 2. 顾客普通视角 -->
+  <view class="bottom-actions" wx:elif="{{order.canPay || order.canCancel || order.canConfirm}}">
     <button class="btn-secondary" wx:if="{{order.canCancel}}" bindtap="onCancelOrder">
       取消订单
     </button>
@@ -124,5 +220,32 @@
     <button class="btn-primary" wx:if="{{order.canConfirm}}" bindtap="onConfirmOrder">
       确认收货
     </button>
+  </view>
+
+  <!-- 改价弹窗 -->
+  <view class="modal-mask" wx:if="{{showPriceModal}}" bindtap="closePriceModal">
+    <view class="modal-card" catchtap="preventBubble">
+      <view class="modal-title">💰 掌柜称重改价</view>
+      <view class="modal-desc">
+        调整实付金额，顾客刷新页面后将按新金额付款：
+      </view>
+      <input 
+        class="modal-input" 
+        type="digit" 
+        placeholder="请输入新实付金额" 
+        value="{{newPayAmount}}" 
+        bindinput="onPriceInput"
+      />
+      <input 
+        class="modal-input" 
+        placeholder="改价说明 (如称重1.8斤)" 
+        value="{{priceReason}}" 
+        bindinput="onPriceReasonInput"
+      />
+      <view class="modal-btn-row">
+        <button class="btn-secondary modal-btn" bindtap="closePriceModal">取消</button>
+        <button class="btn-primary modal-btn" bindtap="confirmChangePrice">确认改价</button>
+      </view>
+    </view>
   </view>
 </view>

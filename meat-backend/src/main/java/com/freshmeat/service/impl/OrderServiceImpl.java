@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.freshmeat.common.PageResult;
+import com.freshmeat.dto.DistanceCheckVO;
 import com.freshmeat.dto.OrderCreateDTO;
 import com.freshmeat.dto.OrderQueryDTO;
 import com.freshmeat.dto.OrderStatusUpdateDTO;
@@ -32,7 +33,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -46,6 +49,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
     private final UserMapper userMapper;
     private final ShopInfoService shopInfoService;
     private final PaymentService paymentService;
+    private final com.freshmeat.service.ShopDeliveryRuleService deliveryRuleService;
 
     private String generateOrderNo() {
         String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
@@ -70,25 +74,64 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
             throw new BusinessException("不支持的配送方式");
         }
 
-        // 2. 校验商品与库存
-        Product product = productMapper.selectById(dto.getProductId());
-        if (product == null) {
-            throw new BusinessException("商品不存在");
-        }
-        if (product.getIsOnSale() == null || product.getIsOnSale() != 1) {
-            throw new BusinessException("商品「" + product.getName() + "」已下架");
-        }
-        if (product.getStock() < dto.getQuantity()) {
-            throw new BusinessException("商品「" + product.getName() + "」库存不足，当前剩余: " + product.getStock());
-        }
-
-        // 确定下单目标商铺 (优先商品所绑定的店铺，亦兼容前端传参)
-        String targetShopId = StringUtils.hasText(dto.getShopId()) ? dto.getShopId() : product.getShopId();
-        if (StringUtils.hasText(dto.getShopId()) && StringUtils.hasText(product.getShopId()) && !dto.getShopId().equals(product.getShopId())) {
-            throw new BusinessException("所选商品不属于当前切换的店铺，请刷新页面重新选购");
+        // 2. 统一转换为订单项明细列表
+        List<OrderCreateDTO.OrderItemDTO> rawItems = dto.getItems();
+        if (rawItems == null || rawItems.isEmpty()) {
+            if (!StringUtils.hasText(dto.getProductId()) || dto.getQuantity() == null || dto.getQuantity() < 1) {
+                throw new BusinessException("请选择要购买的商品");
+            }
+            OrderCreateDTO.OrderItemDTO single = new OrderCreateDTO.OrderItemDTO();
+            single.setProductId(dto.getProductId());
+            single.setQuantity(dto.getQuantity());
+            single.setSpecInfo(dto.getSpecInfo());
+            rawItems = Collections.singletonList(single);
         }
 
-        ShopInfo shop = shopInfoService.getShopInfo(targetShopId);
+        // 校验购买项基本属性，并按 productId 累加总需求数量防止同一商品在不同规格下总库存超卖
+        Map<String, Integer> productTotalQuantityMap = new HashMap<>();
+        for (OrderCreateDTO.OrderItemDTO itemDto : rawItems) {
+            if (!StringUtils.hasText(itemDto.getProductId())) {
+                throw new BusinessException("购买商品ID不能为空");
+            }
+            if (itemDto.getQuantity() == null || itemDto.getQuantity() < 1) {
+                throw new BusinessException("商品购买数量至少为1");
+            }
+            productTotalQuantityMap.merge(itemDto.getProductId(), itemDto.getQuantity(), Integer::sum);
+        }
+
+        // 查询并校验所有商品，并确认店铺
+        Map<String, Product> productMap = new HashMap<>();
+        String determinedShopId = dto.getShopId();
+
+        for (Map.Entry<String, Integer> entry : productTotalQuantityMap.entrySet()) {
+            String pId = entry.getKey();
+            int requiredQty = entry.getValue();
+            Product product = productMapper.selectById(pId);
+            if (product == null) {
+                throw new BusinessException("商品不存在");
+            }
+            if (product.getIsOnSale() == null || product.getIsOnSale() != 1) {
+                throw new BusinessException("商品「" + product.getName() + "」已下架");
+            }
+            if (product.getStock() < requiredQty) {
+                throw new BusinessException("商品「" + product.getName() + "」库存不足，当前剩余: " + product.getStock());
+            }
+            // 校验店铺归属
+            if (StringUtils.hasText(product.getShopId())) {
+                if (!StringUtils.hasText(determinedShopId)) {
+                    determinedShopId = product.getShopId();
+                } else if (!determinedShopId.equals(product.getShopId())) {
+                    throw new BusinessException("所选商品属于不同门店，请分别下单");
+                }
+            }
+            productMap.put(pId, product);
+        }
+
+        if (!StringUtils.hasText(determinedShopId)) {
+            determinedShopId = "s_shop_000000000000000000000000001";
+        }
+
+        ShopInfo shop = shopInfoService.getShopInfo(determinedShopId);
         if (shop == null) {
             throw new BusinessException("下单店铺不存在");
         }
@@ -96,8 +139,28 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
             throw new BusinessException("「" + shop.getName() + "」当前正在休息中，暂不接单");
         }
 
-        // 3. 计算商品总额
-        BigDecimal goodsAmount = product.getPrice().multiply(new BigDecimal(dto.getQuantity()));
+        // 3. 计算商品总额与明细小计
+        BigDecimal goodsAmount = BigDecimal.ZERO;
+        List<OrderItem> orderItemsToSave = new ArrayList<>();
+
+        for (OrderCreateDTO.OrderItemDTO itemDto : rawItems) {
+            Product product = productMap.get(itemDto.getProductId());
+            BigDecimal itemSubtotal = product.getPrice().multiply(new BigDecimal(itemDto.getQuantity()));
+            goodsAmount = goodsAmount.add(itemSubtotal);
+
+            OrderItem item = OrderItem.builder()
+                    .productId(product.getId())
+                    .productName(product.getName())
+                    .productImage(com.freshmeat.util.FileUrlUtil.toRelative(product.getCoverImage()))
+                    .specInfo(StringUtils.hasText(itemDto.getSpecInfo()) ? itemDto.getSpecInfo() : product.getUnit())
+                    .price(product.getPrice())
+                    .quantity(itemDto.getQuantity())
+                    .subtotal(itemSubtotal)
+                    .createTime(LocalDateTime.now())
+                    .build();
+            orderItemsToSave.add(item);
+        }
+
         BigDecimal deliveryFee = BigDecimal.ZERO;
         BigDecimal deliveryDistance = BigDecimal.ZERO;
 
@@ -126,28 +189,28 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
                 throw new BusinessException("该地址缺少经纬度定位，请重新编辑完善");
             }
 
-            // 起送金额校验
-            if (shop.getMinOrderAmount() != null && goodsAmount.compareTo(shop.getMinOrderAmount()) < 0) {
-                throw new BusinessException(String.format("未达到起送金额(¥%.2f)，当前商品金额为¥%.2f",
-                        shop.getMinOrderAmount().doubleValue(), goodsAmount.doubleValue()));
-            }
-
-            // 核心业务校验：配送距离限制 (Haversine 算法)
+            // 核心业务校验：根据经纬度进行同城测距与多阶梯配送规则计算
             double actualDist = DistanceUtil.calculateDistance(
                     shop.getLongitude().doubleValue(), shop.getLatitude().doubleValue(),
                     address.getLongitude().doubleValue(), address.getLatitude().doubleValue()
             );
-            double maxDist = shop.getMaxDeliveryDistance() != null ? shop.getMaxDeliveryDistance().doubleValue() : 5.0;
 
-            if (actualDist > maxDist) {
-                throw new BusinessException(String.format(
-                        "超出配送范围！当前地址距店铺约 %.2f 公里，店铺最大配送距离为 %.1f 公里。建议选择「自取」或更换地址。",
-                        actualDist, maxDist
-                ));
+            DistanceCheckVO deliveryCheck = deliveryRuleService.calculateDelivery(shop, actualDist);
+            if (!Boolean.TRUE.equals(deliveryCheck.getCanDeliver())) {
+                throw new BusinessException(deliveryCheck.getMessage());
             }
 
-            deliveryDistance = BigDecimal.valueOf(actualDist);
-            deliveryFee = shop.getDeliveryFee() != null ? shop.getDeliveryFee() : BigDecimal.ZERO;
+            // 动态起送金额校验
+            BigDecimal requiredMinOrder = deliveryCheck.getMinOrderAmount() != null
+                    ? deliveryCheck.getMinOrderAmount() : BigDecimal.ZERO;
+            if (goodsAmount.compareTo(requiredMinOrder) < 0) {
+                BigDecimal diff = requiredMinOrder.subtract(goodsAmount);
+                throw new BusinessException(String.format("当前配送距离约 %.2f 公里，未达到该距离起送金额(¥%.2f)，当前商品金额为¥%.2f，还差¥%.2f 起送",
+                        actualDist, requiredMinOrder.doubleValue(), goodsAmount.doubleValue(), diff.doubleValue()));
+            }
+
+            deliveryDistance = BigDecimal.valueOf(deliveryCheck.getDistance());
+            deliveryFee = deliveryCheck.getDeliveryFee() != null ? deliveryCheck.getDeliveryFee() : BigDecimal.ZERO;
             receiverName = address.getContactName();
             receiverPhone = address.getContactPhone();
             receiverAddress = address.getFullAddress();
@@ -158,9 +221,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
         BigDecimal payAmount = goodsAmount.add(deliveryFee);
 
         // 5. 扣减商品库存，增加销量
-        product.setStock(product.getStock() - dto.getQuantity());
-        product.setSales(product.getSales() + dto.getQuantity());
-        productMapper.updateById(product);
+        for (Map.Entry<String, Integer> entry : productTotalQuantityMap.entrySet()) {
+            Product product = productMap.get(entry.getKey());
+            product.setStock(product.getStock() - entry.getValue());
+            product.setSales(product.getSales() + entry.getValue());
+            productMapper.updateById(product);
+        }
 
         // 6. 订单状态判定
         // 支付方式：1 微信支付(初始为0待支付)；2 货到付款(初始为1待接单)
@@ -172,11 +238,18 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
             initialStatus = OrderInfo.STATUS_PENDING_PAY;    // 微信支付待付款
         }
 
+        // 自取订单自动生成 6 位自提提货码
+        String pickupCode = null;
+        if (dto.getDeliveryType() == OrderInfo.DELIVERY_PICKUP) {
+            pickupCode = String.format("%06d", (int) ((Math.random() * 9 + 1) * 100000));
+        }
+
         OrderInfo order = OrderInfo.builder()
                 .orderNo(generateOrderNo())
                 .shopId(shop.getId())
                 .userId(userId)
                 .deliveryType(dto.getDeliveryType())
+                .pickupCode(pickupCode)
                 .status(initialStatus)
                 .payType(dto.getPayType())
                 .payStatus(payStatus)
@@ -189,27 +262,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
                 .deliveryFee(deliveryFee)
                 .goodsAmount(goodsAmount)
                 .payAmount(payAmount)
+                .originalPayAmount(payAmount)
                 .remark(StringUtils.hasText(dto.getRemark()) ? dto.getRemark() : "")
                 .createTime(LocalDateTime.now())
                 .build();
         this.save(order);
 
         // 7. 保存订单明细
-        OrderItem item = OrderItem.builder()
-                .orderId(order.getId())
-                .productId(product.getId())
-                .productName(product.getName())
-                .productImage(com.freshmeat.util.FileUrlUtil.toRelative(product.getCoverImage()))
-                .specInfo(StringUtils.hasText(dto.getSpecInfo()) ? dto.getSpecInfo() : (product.getUnit()))
-                .price(product.getPrice())
-                .quantity(dto.getQuantity())
-                .subtotal(goodsAmount)
-                .build();
-        orderItemMapper.insert(item);
+        for (OrderItem item : orderItemsToSave) {
+            item.setOrderId(order.getId());
+            orderItemMapper.insert(item);
+        }
 
-        List<OrderItem> items = new ArrayList<>();
-        items.add(item);
-        return convertToVO(order, items);
+        return convertToVO(order, orderItemsToSave);
     }
 
     @Override
@@ -228,6 +293,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
         }
         if (queryDTO.getDeliveryType() != null) {
             qw.eq(OrderInfo::getDeliveryType, queryDTO.getDeliveryType());
+        }
+        if (StringUtils.hasText(queryDTO.getKeyword())) {
+            String kw = queryDTO.getKeyword().trim();
+            qw.and(wrapper -> wrapper.like(OrderInfo::getOrderNo, kw)
+                    .or().like(OrderInfo::getReceiverName, kw)
+                    .or().like(OrderInfo::getReceiverPhone, kw)
+                    .or().like(OrderInfo::getPickupCode, kw));
         }
         qw.orderByDesc(OrderInfo::getCreateTime);
 
@@ -263,6 +335,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
         }
         if (queryDTO.getDeliveryType() != null) {
             qw.eq(OrderInfo::getDeliveryType, queryDTO.getDeliveryType());
+        }
+        if (StringUtils.hasText(queryDTO.getKeyword())) {
+            String kw = queryDTO.getKeyword().trim();
+            qw.and(wrapper -> wrapper.like(OrderInfo::getOrderNo, kw)
+                    .or().like(OrderInfo::getReceiverName, kw)
+                    .or().like(OrderInfo::getReceiverPhone, kw)
+                    .or().like(OrderInfo::getPickupCode, kw));
         }
         qw.orderByDesc(OrderInfo::getCreateTime);
 
@@ -463,6 +542,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
         if (StringUtils.hasText(order.getShopId())) {
             ShopInfo shop = shopInfoService.getById(order.getShopId());
             vo.setShopName(shop != null ? shop.getName() : "维琼鲜肉铺");
+            if (shop != null) {
+                vo.setShopAddress(shop.getAddress());
+                vo.setShopLng(shop.getLongitude());
+                vo.setShopLat(shop.getLatitude());
+            }
         } else {
             vo.setShopName("维琼鲜肉铺");
         }
@@ -475,6 +559,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
         } else {
             vo.setDeliveryTypeDesc("外卖");
         }
+
+        // 自提核销码与改价信息
+        vo.setPickupCode(order.getPickupCode());
+        vo.setOriginalPayAmount(order.getOriginalPayAmount());
 
         // 支付方式描述
         vo.setPayTypeDesc(order.getPayType() == OrderInfo.PAY_TYPE_WECHAT ? "微信支付" : "货到付款");
@@ -495,16 +583,20 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
                 vo.setStatusDesc("待支付");
                 vo.setCanPay(true);
                 vo.setCanCancel(true);
+                vo.setCanChangePrice(true);
+                vo.setCanAdminCancel(true);
                 break;
             case OrderInfo.STATUS_PENDING_ACCEPT:
                 vo.setStatusDesc("待接单");
                 vo.setCanCancel(true);
                 vo.setCanAccept(true);
                 vo.setCanReject(true);
+                vo.setCanAdminCancel(true);
                 break;
             case OrderInfo.STATUS_ACCEPTED:
                 vo.setStatusDesc(order.getDeliveryType() == OrderInfo.DELIVERY_PICKUP ? "待自提" : "待发货");
                 vo.setCanDeliver(true);
+                vo.setCanAdminCancel(true);
                 if (order.getDeliveryType() == OrderInfo.DELIVERY_PICKUP) {
                     vo.setCanFinish(true); // 自提可直接核销
                 }
@@ -528,5 +620,191 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
         }
 
         return vo;
+    }
+
+    @Override
+    public com.freshmeat.dto.OrderStatusCountVO getCustomerStatusCounts() {
+        String userId = SecurityContextUtil.getUserId();
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
+
+        long allCount = this.count(new LambdaQueryWrapper<OrderInfo>().eq(OrderInfo::getUserId, userId));
+        long pendingPayCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .eq(OrderInfo::getUserId, userId).eq(OrderInfo::getStatus, OrderInfo.STATUS_PENDING_PAY));
+        long pendingAcceptCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .eq(OrderInfo::getUserId, userId).eq(OrderInfo::getStatus, OrderInfo.STATUS_PENDING_ACCEPT));
+        long acceptedCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .eq(OrderInfo::getUserId, userId).eq(OrderInfo::getStatus, OrderInfo.STATUS_ACCEPTED));
+        long deliveringCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .eq(OrderInfo::getUserId, userId).eq(OrderInfo::getStatus, OrderInfo.STATUS_DELIVERING));
+        long completedCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .eq(OrderInfo::getUserId, userId).eq(OrderInfo::getStatus, OrderInfo.STATUS_COMPLETED));
+        long closedCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .eq(OrderInfo::getUserId, userId)
+                .in(OrderInfo::getStatus, OrderInfo.STATUS_CANCELLED, OrderInfo.STATUS_REJECTED));
+
+        return com.freshmeat.dto.OrderStatusCountVO.builder()
+                .allCount(allCount)
+                .pendingPayCount(pendingPayCount)
+                .pendingAcceptCount(pendingAcceptCount)
+                .acceptedCount(acceptedCount)
+                .deliveringCount(deliveringCount)
+                .completedCount(completedCount)
+                .closedCount(closedCount)
+                .build();
+    }
+
+    @Override
+    public com.freshmeat.dto.OrderStatusCountVO getAdminStatusCounts(String shopId) {
+        String currentUserId = SecurityContextUtil.getUserId();
+        List<String> shopIds;
+        if (StringUtils.hasText(shopId)) {
+            if (!shopInfoService.hasShopPermission(currentUserId, shopId)) {
+                throw new BusinessException(403, "无权查看该分店统计");
+            }
+            shopIds = Collections.singletonList(shopId);
+        } else {
+            shopIds = shopInfoService.getAdminShopIds(currentUserId);
+        }
+        if (org.springframework.util.CollectionUtils.isEmpty(shopIds)) {
+            return com.freshmeat.dto.OrderStatusCountVO.builder()
+                    .allCount(0L).pendingAcceptCount(0L).acceptedCount(0L)
+                    .deliveringCount(0L).pendingPayCount(0L).completedCount(0L).closedCount(0L)
+                    .build();
+        }
+
+        long allCount = this.count(new LambdaQueryWrapper<OrderInfo>().in(OrderInfo::getShopId, shopIds));
+
+        long pendingPayCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .in(OrderInfo::getShopId, shopIds).eq(OrderInfo::getStatus, OrderInfo.STATUS_PENDING_PAY));
+
+        long pendingAcceptCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .in(OrderInfo::getShopId, shopIds).eq(OrderInfo::getStatus, OrderInfo.STATUS_PENDING_ACCEPT));
+
+        long acceptedCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .in(OrderInfo::getShopId, shopIds).eq(OrderInfo::getStatus, OrderInfo.STATUS_ACCEPTED));
+
+        long deliveringCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .in(OrderInfo::getShopId, shopIds).eq(OrderInfo::getStatus, OrderInfo.STATUS_DELIVERING));
+
+        long completedCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .in(OrderInfo::getShopId, shopIds).eq(OrderInfo::getStatus, OrderInfo.STATUS_COMPLETED));
+
+        long closedCount = this.count(new LambdaQueryWrapper<OrderInfo>()
+                .in(OrderInfo::getShopId, shopIds)
+                .in(OrderInfo::getStatus, OrderInfo.STATUS_CANCELLED, OrderInfo.STATUS_REJECTED));
+
+        return com.freshmeat.dto.OrderStatusCountVO.builder()
+                .allCount(allCount)
+                .pendingPayCount(pendingPayCount)
+                .pendingAcceptCount(pendingAcceptCount)
+                .acceptedCount(acceptedCount)
+                .deliveringCount(deliveringCount)
+                .completedCount(completedCount)
+                .closedCount(closedCount)
+                .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderVO verifyPickupByCode(com.freshmeat.dto.OrderPickupVerifyDTO dto) {
+        if (!StringUtils.hasText(dto.getPickupCode())) {
+            throw new BusinessException("请输入核销提货码");
+        }
+        String currentUserId = SecurityContextUtil.getUserId();
+        LambdaQueryWrapper<OrderInfo> qw = new LambdaQueryWrapper<OrderInfo>()
+                .eq(OrderInfo::getPickupCode, dto.getPickupCode().trim());
+        if (StringUtils.hasText(dto.getShopId())) {
+            if (!shopInfoService.hasShopPermission(currentUserId, dto.getShopId())) {
+                throw new BusinessException(403, "无权处理该分店订单");
+            }
+            qw.eq(OrderInfo::getShopId, dto.getShopId());
+        } else {
+            List<String> adminShopIds = shopInfoService.getAdminShopIds(currentUserId);
+            if (!org.springframework.util.CollectionUtils.isEmpty(adminShopIds)) {
+                qw.in(OrderInfo::getShopId, adminShopIds);
+            }
+        }
+        OrderInfo order = this.getOne(qw, false);
+        if (order == null) {
+            throw new BusinessException("未找到匹配的自提订单或提货码不存在");
+        }
+        if (order.getStatus() == OrderInfo.STATUS_COMPLETED) {
+            throw new BusinessException("该提货码对应订单已完成核销，请勿重复核销");
+        }
+        if (order.getStatus() == OrderInfo.STATUS_CANCELLED || order.getStatus() == OrderInfo.STATUS_REJECTED) {
+            throw new BusinessException("该提货码对应订单已取消或拒单，无法提货");
+        }
+        if (order.getStatus() == OrderInfo.STATUS_PENDING_PAY) {
+            throw new BusinessException("该订单尚未支付，请先完成支付后再核销");
+        }
+
+        // 完成核销：流转到已完成(4)
+        order.setStatus(OrderInfo.STATUS_COMPLETED);
+        order.setFinishTime(LocalDateTime.now());
+        if (order.getPayType() == OrderInfo.PAY_TYPE_COD) {
+            order.setPayStatus(1);
+            order.setPayTime(LocalDateTime.now());
+        }
+        this.updateById(order);
+        return loadOrderVOWithItems(order);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean changeOrderPrice(String orderId, com.freshmeat.dto.OrderPriceChangeDTO dto) {
+        OrderInfo order = this.getById(orderId);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        String currentUserId = SecurityContextUtil.getUserId();
+        if (!shopInfoService.hasShopPermission(currentUserId, order.getShopId())) {
+            throw new BusinessException(403, "无权处理该分店订单");
+        }
+        if (order.getStatus() != OrderInfo.STATUS_PENDING_PAY || order.getPayStatus() != 0) {
+            throw new BusinessException("仅未支付订单允许掌柜改价");
+        }
+        if (dto.getNewPayAmount() == null || dto.getNewPayAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException("调整后的金额必须大于0");
+        }
+        if (order.getOriginalPayAmount() == null) {
+            order.setOriginalPayAmount(order.getPayAmount());
+        }
+        BigDecimal oldAmount = order.getPayAmount();
+        order.setPayAmount(dto.getNewPayAmount());
+        String reasonStr = StringUtils.hasText(dto.getReason()) ? "，原因: " + dto.getReason() : "";
+        log.info("[掌柜改价] 订单: {}，¥{} -> ¥{}{}", orderId, oldAmount, dto.getNewPayAmount(), reasonStr);
+        return this.updateById(order);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean adminCancelOrder(String orderId, OrderStatusUpdateDTO dto) {
+        OrderInfo order = this.getById(orderId);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        String currentUserId = SecurityContextUtil.getUserId();
+        if (!shopInfoService.hasShopPermission(currentUserId, order.getShopId())) {
+            throw new BusinessException(403, "无权处理该分店订单");
+        }
+        if (order.getStatus() == OrderInfo.STATUS_COMPLETED || order.getStatus() == OrderInfo.STATUS_CANCELLED || order.getStatus() == OrderInfo.STATUS_REJECTED) {
+            throw new BusinessException("当前订单已完结，无法取消");
+        }
+
+        // 回退商品库存
+        restoreOrderStock(order.getId());
+
+        // 如果已支付，执行退款
+        if (order.getPayStatus() == 1) {
+            paymentService.processRefund(order, "掌柜协商取消退款");
+        }
+
+        order.setStatus(OrderInfo.STATUS_CANCELLED);
+        String reason = (dto != null && StringUtils.hasText(dto.getReason())) ? dto.getReason() : "掌柜协商取消";
+        order.setCancelReason("[掌柜取消] " + reason);
+        order.setCancelTime(LocalDateTime.now());
+        return this.updateById(order);
     }
 }

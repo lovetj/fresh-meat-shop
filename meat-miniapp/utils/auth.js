@@ -189,6 +189,30 @@ const auth = {
   },
 
   /**
+   * 登录拦截：未登录时弹窗提示，确认后跳转登录页
+   * @param {Object} options 可选 { title, content }
+   * @returns {boolean} 已登录返回 true；未登录返回 false
+   */
+  requireLogin(options) {
+    if (this.isLoggedIn()) return true;
+
+    const opt = options || {};
+    wx.showModal({
+      title: opt.title || '请先登录',
+      content: opt.content || '登录后才能使用该功能',
+      confirmText: '去登录',
+      cancelText: '暂不登录',
+      confirmColor: '#FF6B6B',
+      success: (res) => {
+        if (res.confirm) {
+          wx.navigateTo({ url: '/pages/login/login' });
+        }
+      }
+    });
+    return false;
+  },
+
+  /**
    * 退出管理员模式（切回纯顾客态）
    */
   logoutAdmin() {
@@ -208,6 +232,9 @@ const auth = {
     wx.removeStorageSync(KEY_LEGACY_TOKEN);
     wx.removeStorageSync(KEY_LEGACY_USER);
 
+    // 同步清空所有前端购物车本地缓存
+    this.clearCartStorage();
+
     // 顾客退出后，若原本就是管理员身份则保持掌柜态，否则回到未登录
     this.setActiveRole(wasAdmin && this.getAdminToken() ? 'ADMIN' : '');
   },
@@ -222,7 +249,27 @@ const auth = {
     wx.removeStorageSync(KEY_LEGACY_USER);
     wx.removeStorageSync(KEY_ADMIN_TOKEN);
     wx.removeStorageSync(KEY_ADMIN_USER);
+
+    // 同步清空所有前端购物车本地缓存
+    this.clearCartStorage();
+
     this.setActiveRole('');
+  },
+
+  /**
+   * 清除购物车本地缓存
+   */
+  clearCartStorage() {
+    try {
+      const res = wx.getStorageInfoSync();
+      if (res && res.keys) {
+        res.keys.forEach(k => {
+          if (k.startsWith('MEAT_CART_')) {
+            wx.removeStorageSync(k);
+          }
+        });
+      }
+    } catch (e) {}
   },
 
   /**

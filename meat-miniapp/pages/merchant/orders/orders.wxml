@@ -1,46 +1,95 @@
 <!-- pages/merchant/orders/orders.wxml -->
 <view class="container">
-  <!-- 顶部状态切换标签 -->
-  <view class="status-tabs">
-    <view wx:for="{{tabs}}" wx:key="status" class="tab-item {{currentStatus === item.status ? 'tab-active' : ''}}" bindtap="onSwitchTab" data-status="{{item.status}}">
-      <text>{{item.label}}</text>
+  <!-- 1. 搜索框与一键提货码核销 -->
+  <view class="search-filter-box">
+    <view class="search-row">
+      <view class="search-input-wrap">
+        <text class="search-icon">🔍</text>
+        <input 
+          class="search-input" 
+          placeholder="搜索订单号 / 姓名 / 电话 / 提货码" 
+          value="{{keyword}}" 
+          bindinput="onKeywordInput"
+          bindconfirm="onSearchConfirm"
+          confirm-type="search"
+        />
+        <text class="clear-icon" wx:if="{{keyword}}" bindtap="onClearSearch">✕</text>
+      </view>
+      <view class="verify-action-btn" bindtap="openVerifyModal">
+        <text class="verify-btn-icon">⚡</text>
+        <text>提货码核销</text>
+      </view>
+    </view>
+
+    <!-- 配送方式过滤 -->
+    <view class="type-filter-row">
+      <view class="type-pill {{deliveryType === '' ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="">
+        全部配送
+      </view>
+      <view class="type-pill {{deliveryType === 1 ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="{{1}}">
+        仅到店自提
+      </view>
+      <view class="type-pill {{deliveryType === 2 ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="{{2}}">
+        仅同城配送
+      </view>
     </view>
   </view>
 
-  <!-- 订单列表 -->
+  <!-- 2. 顶部横向滚动状态标签 (带待办红点角标) -->
+  <scroll-view class="status-tabs-scroll" scroll-x enable-flex>
+    <view class="status-tabs">
+      <view 
+        wx:for="{{tabs}}" 
+        wx:key="status" 
+        class="tab-item {{currentStatus === item.status ? 'tab-active' : ''}}" 
+        bindtap="onSwitchTab" 
+        data-status="{{item.status}}"
+      >
+        <text>{{item.label}}</text>
+        <view class="badge" wx:if="{{statusCounts[item.countKey] > 0}}">{{statusCounts[item.countKey] > 99 ? '99+' : statusCounts[item.countKey]}}</view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 3. 订单列表 -->
   <scroll-view class="order-list" scroll-y bindscrolltolower="onLoadMore">
     <view wx:if="{{orderList.length === 0 && !loading}}" class="empty-box">
       <text class="empty-icon">📦</text>
-      <text class="empty-text">当前状态暂无订单</text>
+      <text class="empty-text">未找到符合条件的鲜肉订单</text>
+      <text class="empty-sub">切换状态或关键词试试看</text>
     </view>
 
     <view wx:for="{{orderList}}" wx:key="id" class="card order-card" bindtap="goToDetail" data-id="{{item.id}}">
+      <!-- 订单头部 -->
       <view class="order-header">
         <view class="header-left">
-          <text class="delivery-badge {{item.deliveryType === 1 ? 'badge-orange' : 'badge-red'}}">
-            {{item.deliveryTypeDesc}}
-          </text>
-          <text class="order-shop-badge" wx:if="{{item.shopName}}">🏪 {{item.shopName}}</text>
-          <text class="order-no">{{item.orderNo}}</text>
+          <text class="delivery-badge {{item.deliveryType === 1 ? 'badge-orange' : 'badge-blue'}}">{{item.deliveryTypeDesc}}</text>
+          <text class="order-no ellipsis">{{item.orderNo}}</text>
+          <text class="copy-tag" catchtap="copyOrderNo" data-no="{{item.orderNo}}">复制</text>
         </view>
         <text class="status-chip st-{{item.status}}">{{item.statusDesc}}</text>
       </view>
 
-      <!-- 顾客与配送收货信息 -->
-      <view class="receiver-box">
-        <view class="rec-name-row">
-          <text class="rec-name">👤 {{item.receiverName}}</text>
-          <text class="rec-phone">📞 {{item.receiverPhone}}</text>
-          <text class="call-btn" catchtap="makePhoneCall" data-phone="{{item.receiverPhone}}">拨打</text>
+      <!-- 下单时间 -->
+      <view class="order-time-row">
+        <text class="order-time">下单时间：{{item.createTime}}</text>
+      </view>
+
+      <!-- 自提提货码醒目展示 (自取订单核心) -->
+      <view class="pickup-code-banner" wx:if="{{item.deliveryType === 1 && item.pickupCode}}">
+        <view class="pickup-left">
+          <text class="pickup-label">自提核销提货码：</text>
+          <text class="pickup-val">{{item.pickupCode}}</text>
         </view>
-        <text class="rec-addr">📍 {{item.receiverAddress}}</text>
-        <text class="rec-dist" wx:if="{{item.deliveryType === 2 && item.deliveryDistance > 0}}">
-          测距: 约 {{item.deliveryDistance}} km (配送费 ¥{{item.deliveryFee}})
-        </text>
-        <view class="remark-box" wx:if="{{item.remark}}">
-          <text class="remark-tag">加工备注: </text>
-          <text class="remark-val">{{item.remark}}</text>
-        </view>
+        <button 
+          class="pickup-btn-mini" 
+          wx:if="{{item.status === 2}}" 
+          catchtap="onFinishOrder" 
+          data-id="{{item.id}}" 
+          data-type="{{item.deliveryType}}"
+        >
+          提货核销
+        </button>
       </view>
 
       <!-- 商品清单明细 -->
@@ -49,7 +98,7 @@
           <image class="goods-img" src="{{goods.productImage}}" mode="aspectFill"/>
           <view class="goods-info">
             <text class="goods-title">{{goods.productName}}</text>
-            <text class="goods-spec">所选规格: {{goods.specInfo}}</text>
+            <text class="goods-spec">规格: {{goods.specInfo}}</text>
             <view class="price-row">
               <text class="price">¥{{goods.price}}</text>
               <text class="qty">x {{goods.quantity}}</text>
@@ -61,37 +110,106 @@
       <!-- 底部汇总与商家操作按钮 -->
       <view class="order-footer">
         <view class="total-row">
-          <text class="pay-type">[{{item.payTypeDesc}} - {{item.payStatusDesc}}]</text>
-          <text class="total-label">实收合计：</text>
-          <text class="total-val">¥{{item.payAmount}}</text>
+          <text class="pay-type">[{{item.payTypeDesc}} · {{item.payStatusDesc}}]</text>
+          <view class="price-info-wrap">
+            <text class="original-price" wx:if="{{item.originalPayAmount && item.originalPayAmount != item.payAmount}}">
+              原价: ¥{{item.originalPayAmount}}
+            </text>
+            <text class="total-label">实付：</text>
+            <text class="total-val">¥{{item.payAmount}}</text>
+          </view>
         </view>
 
         <!-- 商家操作按钮组 -->
         <view class="actions-row" catchtap="preventBubble">
-          <!-- 待接单(1) 时：拒单 / 接单 -->
+          <!-- 待支付(0) 时：掌柜改价 / 取消订单 -->
+          <button class="btn-cancel" wx:if="{{item.status === 0}}" catchtap="onAdminCancelOrder" data-id="{{item.id}}">
+            取消订单
+          </button>
+          <button class="btn-price" wx:if="{{item.status === 0}}" catchtap="openPriceModal" data-item="{{item}}">
+            掌柜改价
+          </button>
+
+          <!-- 待接单(1) 时：拒单 / 立即接单 -->
           <button class="btn-reject" wx:if="{{item.status === 1}}" catchtap="onRejectOrder" data-id="{{item.id}}">
-            拒单
+            拒单退款
           </button>
           <button class="btn-accept" wx:if="{{item.status === 1}}" catchtap="onAcceptOrder" data-id="{{item.id}}">
             立即接单
           </button>
 
-          <!-- 已接单待发货/自提(2) 时：开始配送 / 通知备好 -->
-          <button class="btn-deliver" wx:if="{{item.status === 2}}" catchtap="onDeliverOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
-            {{item.deliveryType === 1 ? '通知备齐可自提' : '开始同城配送'}}
+          <!-- 待配送/自提(2) 时：开始配送/通知备好 / 到店核销 / 取消退款 -->
+          <button class="btn-cancel" wx:if="{{item.status === 2}}" catchtap="onAdminCancelOrder" data-id="{{item.id}}">
+            协商退款
+          </button>
+          <button class="btn-deliver" wx:if="{{item.status === 2 && item.deliveryType === 2}}" catchtap="onDeliverOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
+            开始同城配送
+          </button>
+          <button class="btn-finish" wx:if="{{item.status === 2 && item.deliveryType === 1}}" catchtap="onFinishOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
+            到店提货核销
           </button>
 
-          <!-- 配送中(3) 或 自提(2) 时：确认送达/核销完成 -->
-          <button class="btn-finish" wx:if="{{item.status === 3 || (item.status === 2 && item.deliveryType === 1)}}" catchtap="onFinishOrder" data-id="{{item.id}}">
-            {{item.deliveryType === 1 ? '到店提货核销' : '确认送达完成'}}
+          <!-- 配送中(3) 时：确认送达完成 -->
+          <button class="btn-finish" wx:if="{{item.status === 3}}" catchtap="onFinishOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
+            确认送达完成
           </button>
         </view>
       </view>
     </view>
 
     <view class="load-more" wx:if="{{orderList.length > 0}}">
-      <text wx:if="{{hasMore}}">上拉加载更多...</text>
-      <text wx:else>已加载全部管理订单</text>
+      <text wx:if="{{hasMore}}">上拉加载更多订单...</text>
+      <text wx:else>已加载全部订单</text>
     </view>
   </scroll-view>
+
+  <!-- ================= 弹窗 1: 提货码核销弹窗 ================= -->
+  <view class="modal-mask" wx:if="{{showVerifyModal}}" bindtap="closeVerifyModal">
+    <view class="modal-card" catchtap="preventBubble">
+      <view class="modal-title">⚡ 自提提货码核销</view>
+      <text class="modal-desc">请输入顾客出示的 6 位提货码完成核销：</text>
+      <input 
+        class="modal-input" 
+        placeholder="例如: 123456" 
+        maxlength="16"
+        value="{{inputPickupCode}}" 
+        bindinput="onPickupCodeInput" 
+        focus
+      />
+      <view class="modal-btn-row">
+        <button class="btn-secondary modal-btn" bindtap="closeVerifyModal">取消</button>
+        <button class="btn-primary modal-btn" bindtap="confirmVerifyPickup">确认核销</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- ================= 弹窗 2: 掌柜改价弹窗 ================= -->
+  <view class="modal-mask" wx:if="{{showPriceModal}}" bindtap="closePriceModal">
+    <view class="modal-card" catchtap="preventBubble">
+      <view class="modal-title">💰 掌柜称重改价</view>
+      <view class="price-origin-tip">
+        订单号: {{priceOrder.orderNo}}
+        <text class="po-amt">当前应付: ¥{{priceOrder.payAmount}}</text>
+      </view>
+      <view class="input-label">调整后实付金额 (元)：</view>
+      <input 
+        class="modal-input" 
+        type="digit" 
+        placeholder="请输入新实付金额" 
+        value="{{newPayAmount}}" 
+        bindinput="onPriceInput"
+      />
+      <view class="input-label">改价原因说明 (顾客可见)：</view>
+      <input 
+        class="modal-input" 
+        placeholder="例如: 排骨称重实际 1.8 斤补差价" 
+        value="{{priceReason}}" 
+        bindinput="onPriceReasonInput"
+      />
+      <view class="modal-btn-row">
+        <button class="btn-secondary modal-btn" bindtap="closePriceModal">取消</button>
+        <button class="btn-primary modal-btn" bindtap="confirmChangePrice">确认改价</button>
+      </view>
+    </view>
+  </view>
 </view>

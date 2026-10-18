@@ -308,6 +308,20 @@
   padding: 24rpx;
 }
 
+.cart-checkout-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.cart-checkout-item {
+  display: flex;
+  padding: 16rpx 0;
+}
+
+.cart-checkout-item.item-bordered {
+  border-top: 2rpx dashed #FFF0EB;
+}
+
 .goods-row {
   display: flex;
 }
@@ -393,6 +407,44 @@
   box-shadow: 0 6rpx 16rpx rgba(255, 107, 107, 0.14);
 }
 
+/* 未开通的支付方式：整体置灰且不可点击 */
+.pay-option-disabled {
+  background-color: #FAFAFA;
+  border-color: #EFEFEF;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.pay-option-disabled .pay-icon {
+  background-color: #F2F2F2;
+}
+
+/* 微信图标保持品牌绿（整体已通过 opacity 置灰） */
+.pay-option-disabled .pay-icon-wechat {
+  background-color: #07C160;
+}
+
+.pay-option-disabled .pay-name {
+  color: #8C8C8C;
+}
+
+.pay-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.pay-soon-tag {
+  flex-shrink: 0;
+  font-size: 18rpx;
+  font-weight: 700;
+  color: #9E9E9E;
+  background-color: #F0F0F0;
+  border-radius: var(--radius-round);
+  padding: 2rpx 12rpx;
+  line-height: 1.5;
+}
+
 .pay-left {
   display: flex;
   align-items: center;
@@ -411,6 +463,15 @@
   align-items: center;
   justify-content: center;
   font-size: 32rpx;
+}
+
+/* 微信官方风格图标：绿色底 + 白色双气泡（内联 SVG，免图片资源） */
+.pay-icon-wechat {
+  background-color: #07C160;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PGcgZmlsbD0iI0ZGRkZGRiI+PGVsbGlwc2UgY3g9IjI0IiBjeT0iMjUuNSIgcng9IjEyIiByeT0iMTAiLz48cGF0aCBkPSJNMTMgMzEuNWwtMiA2LjUgNy4yLTMuNHoiLz48L2c+PGcgZmlsbD0iI0ZGRkZGRiIgc3Ryb2tlPSIjMDdDMTYwIiBzdHJva2Utd2lkdGg9IjMiPjxlbGxpcHNlIGN4PSI0MSIgY3k9IjM4IiByeD0iMTAiIHJ5PSI4LjUiLz48cGF0aCBkPSJNNDkuNSA0Mi41bDIgNS41LTYuNC0yLjZ6Ii8+PC9nPjwvc3ZnPg==");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 62% 62%;
 }
 
 .pay-text-wrap {
@@ -432,15 +493,26 @@
   color: var(--text-sub);
 }
 
-/* 备注框 */
+/* 备注框（多行输入，留足高度便于填写切配要求） */
 .remark-input {
+  display: block;
   width: 100%;
-  padding: 20rpx;
+  height: 200rpx;
+  min-height: 200rpx;
+  padding: 18rpx 20rpx;
+  box-sizing: border-box;
   font-size: 26rpx;
+  line-height: 1.6;
   color: var(--text-main);
   background-color: #FFF9F5;
   border: 2rpx solid #FFEAE0;
   border-radius: 18rpx;
+}
+
+.remark-placeholder {
+  font-size: 26rpx;
+  color: #C4BDB7;
+  line-height: 1.6;
 }
 
 /* ================= 6. 费用明细清单 ================= */
@@ -572,4 +644,179 @@
   margin-top: 8rpx;
   font-size: 23rpx;
   color: var(--text-sub);
+}
+
+/* ================= 9. 阶梯配送与起送规则展示扩展 ================= */
+.alert-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.rules-link {
+  font-size: 22rpx;
+  color: #1890FF;
+  font-weight: 700;
+  text-decoration: underline;
+  flex-shrink: 0;
+}
+
+.matched-rule-tag {
+  display: inline-block;
+  margin-top: 10rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 12rpx;
+  background-color: #E6F7FF;
+  border: 1rpx solid #BAE7FF;
+  color: #0050B3;
+  font-size: 21rpx;
+  font-weight: 600;
+}
+
+.short-amount-alert {
+  margin-top: 10rpx;
+  padding: 10rpx 16rpx;
+  border-radius: 12rpx;
+  background-color: #FFFBE6;
+  border: 1rpx solid #FFE58F;
+  color: #D48806;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.fee-short {
+  color: #FA8C16;
+  font-weight: 800;
+}
+
+.short-notice-bar {
+  margin: 16rpx 24rpx;
+  padding: 14rpx 20rpx;
+  border-radius: 16rpx;
+  background-color: #FFF7E6;
+  border: 2rpx dashed #FFD591;
+  text-align: center;
+}
+
+.short-notice-text {
+  font-size: 22rpx;
+  color: #D46B08;
+  font-weight: 700;
+}
+
+/* 配送规则弹窗 */
+.rules-modal-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rules-modal-box {
+  width: 620rpx;
+  max-height: 80vh;
+  background-color: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 36rpx;
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.rules-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.rules-modal-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.rules-modal-close {
+  font-size: 36rpx;
+  color: #999999;
+  padding: 8rpx;
+  line-height: 1;
+}
+
+.rules-modal-content {
+  overflow-y: auto;
+  margin-bottom: 24rpx;
+}
+
+.rules-modal-desc {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  line-height: 1.5;
+  margin-bottom: 20rpx;
+}
+
+.rules-table {
+  border: 1rpx solid #E8E8E8;
+  border-radius: 16rpx;
+  overflow: hidden;
+}
+
+.rules-tr {
+  display: flex;
+  align-items: center;
+  padding: 18rpx 12rpx;
+  border-bottom: 1rpx solid #F0F0F0;
+}
+
+.rules-tr:last-child {
+  border-bottom: none;
+}
+
+.rules-th {
+  background-color: #FAFAFA;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.rules-td {
+  flex: 1;
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--text-main);
+}
+
+.rules-tr-active {
+  background-color: #E6F7FF;
+  font-weight: 700;
+}
+
+.rules-tr-active .rules-td {
+  color: #1890FF;
+}
+
+.rules-modal-tips {
+  margin-top: 18rpx;
+  font-size: 20rpx;
+  color: #8C8C8C;
+  line-height: 1.4;
+}
+
+.rules-modal-btn {
+  width: 100%;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: var(--radius-round);
+  background: var(--primary-gradient);
+  color: #FFFFFF;
+  font-size: 28rpx;
+  font-weight: 700;
+  text-align: center;
 }

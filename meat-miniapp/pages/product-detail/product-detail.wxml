@@ -22,22 +22,53 @@
     <text class="price-original" wx:if="{{product.originalPrice}}">原价 ¥{{product.originalPrice}}</text>
   </view>
 
-  <!-- 规格与加工服务 -->
-  <view class="card spec-section" wx:if="{{specGroups.length > 0}}">
-    <text class="section-title">🔪 选购规格与加工定制</text>
-    <view wx:for="{{specGroups}}" wx:key="name" wx:for-index="gIndex" class="group-block">
-      <text class="group-name">{{item.name}}：</text>
+  <!-- 规格与加工服务 (两级联动：先选加工方式，再选具体规格) -->
+  <view class="card spec-section" wx:if="{{specsList.length > 0}}">
+    <view class="spec-header-row">
+      <text class="section-title">🔪 选购加工与规格定制</text>
+    </view>
+
+    <!-- 步骤一：选择加工方式 -->
+    <view class="group-block">
+      <view class="step-label-row">
+        <text class="step-badge">1</text>
+        <text class="group-name">选择加工方式：</text>
+      </view>
       <view class="tags-wrap">
-        <view wx:for="{{item.options}}" wx:key="*this" wx:for-item="opt" class="spec-tag {{selectedSpecs[gIndex] === opt ? 'tag-active' : ''}}" bindtap="onSelectOption" data-g-index="{{gIndex}}" data-opt="{{opt}}">
-          {{opt}}
+        <view wx:for="{{specsList}}" wx:key="name" class="spec-tag {{selectedMethodIndex === index ? 'tag-active' : ''}}" bindtap="onSelectMethod" data-index="{{index}}">
+          {{item.name}}
         </view>
+      </view>
+    </view>
+
+    <!-- 步骤二：选择具体规格 (强依赖选中的加工方式) -->
+    <view class="group-block spec-step-two">
+      <view class="step-label-row">
+        <text class="step-badge">2</text>
+        <text class="group-name">选择具体规格：</text>
+        <text class="group-tip tip-warn" wx:if="{{selectedMethodIndex < 0}}">请先在上方选择加工方式</text>
+      </view>
+
+      <view class="tags-wrap" wx:if="{{selectedMethodIndex >= 0 && currentOptions.length > 0}}">
+        <view wx:for="{{currentOptions}}" wx:key="*this" class="spec-tag {{selectedOption === item ? 'tag-active' : ''}}" bindtap="onSelectOption" data-opt="{{item}}">
+          {{item}}
+        </view>
+      </view>
+      <view class="spec-empty-hint" wx:elif="{{selectedMethodIndex < 0}}">
+        👉 请先在上方选择加工方式
+      </view>
+      <view class="spec-empty-hint" wx:else>
+        当前加工方式暂无细分规格
       </view>
     </view>
   </view>
 
   <!-- 购买数量 -->
   <view class="card qty-section">
-    <text class="section-title">⚖️ 购买数量 ({{product.unit}})</text>
+    <view class="qty-info">
+      <text class="section-title">⚖️ 购买数量</text>
+      <text class="qty-unit">计价单位：{{product.unit}}</text>
+    </view>
     <view class="stepper">
       <button class="step-btn" bindtap="onDecQuantity">-</button>
       <text class="step-val">{{buyQuantity}}</text>
@@ -59,14 +90,80 @@
     </view>
   </view>
 
-  <!-- 底部操作栏 -->
+  <!-- 底部操作栏 (鲜肉详情中不下单，改为加入购物车) -->
   <view class="bottom-bar">
     <button class="action-btn" bindtap="callShop">
       <text class="action-icon">📞</text>
       <text class="action-text">联系肉铺</text>
     </button>
-    <button class="btn-primary buy-now-btn" bindtap="goToCheckout">
-      立即下单 (¥{{totalPrice}})
+    <button class="btn-primary buy-now-btn" bindtap="onAddToCart">
+      <text>加入购物车</text>
     </button>
+  </view>
+
+  <!-- ================= Q萌悬浮购物车球 (在悬浮球中下单) ================= -->
+  <view class="cart-float-ball" bindtap="openCartDrawer">
+    <text class="cart-ball-icon">🛒</text>
+    <text class="cart-ball-label">购物车</text>
+    <text class="cart-ball-badge" wx:if="{{cartCount > 0}}">{{cartCount > 99 ? '99+' : cartCount}}</text>
+  </view>
+
+  <!-- ================= 购物车展开抽屉 ================= -->
+  <view class="cart-drawer-mask" wx:if="{{showCartDrawer}}" bindtap="closeCartDrawer" catchtouchmove="preventBubble">
+    <view class="cart-drawer-panel" catchtap="preventBubble">
+      <view class="cart-drawer-handle"></view>
+
+      <view class="cart-drawer-header">
+        <view class="cart-drawer-title-box">
+          <text class="cart-drawer-title">🛒 购物车</text>
+          <text class="cart-drawer-count" wx:if="{{cartCount > 0}}">{{cartCount}}件好肉</text>
+        </view>
+        <view class="cart-drawer-actions">
+          <view class="cart-clear-btn" bindtap="onClearCart" wx:if="{{cartList.length > 0}}">
+            <text>🗑️</text>
+            <text>清空</text>
+          </view>
+          <text class="cart-close-btn" bindtap="closeCartDrawer">✕</text>
+        </view>
+      </view>
+
+      <scroll-view scroll-y class="cart-goods-list" wx:if="{{cartList.length > 0}}">
+        <view class="cart-goods-item" wx:for="{{cartList}}" wx:key="id">
+          <image class="cart-goods-thumb" src="{{item.coverImage}}" mode="aspectFill"/>
+          <view class="cart-goods-info">
+            <text class="cart-goods-name ellipsis">{{item.name}}</text>
+            <text class="cart-goods-spec ellipsis">{{item.specInfo}}</text>
+            <view class="cart-goods-bottom">
+              <view class="cart-goods-price">
+                <text>¥{{item.price}}</text>
+                <text class="cart-goods-unit">/{{item.unit}}</text>
+              </view>
+              <view class="cart-stepper">
+                <view class="cart-step-btn" catchtap="onCartDec" data-id="{{item.id}}">-</view>
+                <text class="cart-step-val">{{item.quantity}}</text>
+                <view class="cart-step-btn" catchtap="onCartInc" data-id="{{item.id}}">+</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+
+      <!-- 空状态 -->
+      <view class="cart-empty-panel" wx:else>
+        <text class="cart-empty-icon">🐷</text>
+        <text class="cart-empty-text">购物车还是空的呢～</text>
+      </view>
+
+      <!-- 抽屉底部结算栏 -->
+      <view class="cart-drawer-footer">
+        <view class="cart-footer-left">
+          <text class="cart-total-label">预估合计 (未含运费)</text>
+          <text class="cart-total-amount">¥{{cartTotalAmount}}</text>
+        </view>
+        <button class="cart-checkout-btn {{cartCount === 0 ? 'btn-disabled' : ''}}" bindtap="goToCartCheckout">
+          <text>立即下单 ({{cartCount}})</text>
+        </button>
+      </view>
+    </view>
   </view>
 </view>

@@ -107,6 +107,59 @@
   padding: 26rpx 24rpx;
 }
 
+.spec-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.spec-header-row .section-title {
+  margin-bottom: 0;
+}
+
+.step-label-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 14rpx;
+}
+
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: #FFFFFF;
+  font-size: 20rpx;
+  font-weight: 800;
+}
+
+.group-tip {
+  font-size: 22rpx;
+  color: var(--text-light);
+  margin-left: 4rpx;
+}
+
+.group-tip.tip-warn {
+  color: #FF6B6B;
+}
+
+.spec-step-two {
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx dashed #FFE0D6;
+}
+
+.spec-empty-hint {
+  font-size: 24rpx;
+  color: var(--text-light);
+  padding: 16rpx 0;
+}
+
 .section-title {
   font-size: 28rpx;
   font-weight: 800;
@@ -162,42 +215,73 @@
   justify-content: space-between;
 }
 
-.qty-section .section-title {
-  margin-bottom: 0;
+.qty-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.qty-info .section-title {
+  display: block;
+  margin-bottom: 6rpx;
+  font-size: 26rpx;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.qty-unit {
+  display: block;
+  font-size: 22rpx;
+  line-height: 1.35;
+  color: var(--text-light);
+  white-space: nowrap;
 }
 
 .stepper {
+  flex: 0 0 auto;
   display: flex;
+  flex-direction: row;
   align-items: center;
+  flex-wrap: nowrap;
   background-color: #FFF5F2;
   border-radius: var(--radius-round);
   padding: 4rpx;
 }
 
 .step-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 58rpx;
   height: 58rpx;
-  line-height: 54rpx;
+  min-width: 58rpx;
+  max-width: 58rpx;
   padding: 0;
-  font-size: 34rpx;
+  margin: 0;
+  line-height: 1;
+  font-size: 32rpx;
   background-color: #FFFFFF;
   color: var(--primary);
   font-weight: 800;
-  border-radius: var(--radius-round);
+  border-radius: 50%;
+  overflow: hidden;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+  transition: transform 0.15s ease;
 }
 
 .step-btn:active {
-  transform: scale(0.9);
+  transform: scale(0.88);
 }
 
 .step-val {
+  flex: 0 0 auto;
   min-width: 64rpx;
+  line-height: 1;
   text-align: center;
   font-size: 28rpx;
   font-weight: 800;
   color: var(--text-main);
-  margin: 0 10rpx;
+  margin: 0 6rpx;
 }
 
 /* ================= 3. 鲜肉品质说明与承诺 ================= */
@@ -269,4 +353,17 @@
   font-weight: 800;
   border-radius: var(--radius-round);
   margin-left: 20rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+}
+
+.btn-cart-icon {
+  font-size: 34rpx;
+}
+
+/* 详情页专属微调悬浮球位置：贴近底部操作栏上方 */
+.container .cart-float-ball {
+  bottom: calc(126rpx + env(safe-area-inset-bottom));
 }

@@ -90,6 +90,12 @@ public class OrderInfo implements Serializable {
     /** 实付金额 */
     private BigDecimal payAmount;
 
+    /** 改价前原始金额 */
+    private BigDecimal originalPayAmount;
+
+    /** 自提核销码(自取订单生成的提货凭证) */
+    private String pickupCode;
+
     /** 备注要求 */
     private String remark;
 

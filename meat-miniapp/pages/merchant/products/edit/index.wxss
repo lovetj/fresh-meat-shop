@@ -212,35 +212,117 @@
   color: var(--text-sub, #666666);
 }
 
-/* ================= 规格标签 ================= */
-.specs-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-  padding-top: 10rpx;
-}
-
-.spec-tag-item {
+/* ================= 加工方式与具体规格配置 ================= */
+.spec-action-btns {
   display: flex;
   align-items: center;
-  padding: 10rpx 20rpx;
-  font-size: 23rpx;
-  color: var(--primary, #FF6B6B);
-  background-color: var(--bg-pink, #FFF5F2);
-  border: 1rpx solid #FFD9D9;
+  gap: 14rpx;
+}
+
+.reset-spec-btn {
+  font-size: 22rpx;
+  color: var(--text-sub, #666666);
+  padding: 6rpx 14rpx;
+  background-color: #F5F5F5;
   border-radius: var(--radius-round, 999rpx);
 }
 
-.spec-del {
-  margin-left: 12rpx;
-  font-size: 20rpx;
-  color: #FF9A9A;
+.process-methods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding-top: 14rpx;
+}
+
+.process-method-card {
+  background-color: #FFF9F7;
+  border: 2rpx solid #FFE4DC;
+  border-radius: 18rpx;
+  padding: 18rpx 20rpx;
+}
+
+.method-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14rpx;
+  padding-bottom: 12rpx;
+  border-bottom: 1rpx dashed #FFD4C6;
+}
+
+.method-name-tag {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.method-icon {
+  font-size: 24rpx;
+}
+
+.method-title {
+  font-size: 27rpx;
+  font-weight: 800;
+  color: var(--text-main, #333333);
+}
+
+.method-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.add-option-btn {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--primary, #FF6B6B);
+  background-color: #FFFFFF;
+  border: 1rpx solid #FFC5B5;
+  padding: 4rpx 14rpx;
+  border-radius: var(--radius-round, 999rpx);
+}
+
+.del-method-btn {
+  font-size: 21rpx;
+  color: #999999;
+}
+
+.options-tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  align-items: center;
+}
+
+.option-tag-item {
+  display: flex;
+  align-items: center;
+  padding: 8rpx 18rpx;
+  font-size: 23rpx;
+  color: var(--text-main, #333333);
+  background-color: #FFFFFF;
+  border: 1rpx solid #FFE0D6;
+  border-radius: var(--radius-round, 999rpx);
+}
+
+.option-del {
+  margin-left: 10rpx;
+  font-size: 18rpx;
+  color: #FF7E7E;
+  font-weight: bold;
+}
+
+.option-empty-tip {
+  font-size: 22rpx;
+  color: var(--text-light, #999999);
+  padding: 4rpx 0;
 }
 
 .spec-empty {
   padding: 20rpx 0;
   font-size: 23rpx;
   color: var(--text-light, #999999);
+  text-align: center;
 }
 
 /* ================= 底部提交栏 ================= */

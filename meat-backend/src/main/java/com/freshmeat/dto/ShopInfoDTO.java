@@ -31,13 +31,8 @@ public class ShopInfoDTO {
     @NotNull(message = "店铺纬度不能为空")
     private BigDecimal latitude;
 
-    @NotNull(message = "最大配送距离不能为空")
-    @DecimalMin(value = "0.1", message = "配送距离必须大于0")
-    private BigDecimal maxDeliveryDistance;
-
-    private BigDecimal minOrderAmount;
-
-    private BigDecimal deliveryFee;
+    /** 多阶梯同城配送规则列表 */
+    private java.util.List<com.freshmeat.entity.ShopDeliveryRule> deliveryRules;
 
     private Integer status;
 

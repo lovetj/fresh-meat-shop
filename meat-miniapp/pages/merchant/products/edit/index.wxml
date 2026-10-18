@@ -87,20 +87,44 @@
       </view>
     </view>
 
-    <!-- 肉铺特色：加工切法与规格选项 -->
+    <!-- 肉铺特色：加工方式与具体规格选项 -->
     <view class="card form-card">
       <view class="section-header-row">
-        <view class="section-title">🔪 鲜肉切法与加工规格</view>
-        <text class="add-spec-btn" bindtap="onAddSpec">+ 添加规格</text>
-      </view>
-      <text class="section-desc">顾客下单时可选的规格及切工要求（例如：整块/切片/绞肉/煲汤块）</text>
-
-      <view class="specs-list">
-        <view wx:for="{{specsList}}" wx:key="name" class="spec-tag-item">
-          <text class="spec-text">{{item.name}}</text>
-          <text class="spec-del" catchtap="onRemoveSpec" data-index="{{index}}">✕</text>
+        <view class="section-title">🔪 加工方式与具体规格</view>
+        <view class="spec-action-btns">
+          <text class="reset-spec-btn" bindtap="onResetDefaultSpecs">恢复推荐</text>
+          <text class="add-spec-btn" bindtap="onAddProcessMethod">+ 加工方式</text>
         </view>
-        <view wx:if="{{specsList.length === 0}}" class="spec-empty">暂无规格，建议添加常用切法</view>
+      </view>
+      <text class="section-desc">顾客选肉流程：先选加工方式（如切片/切块/绞肉），再选择该方式下的具体规格要求</text>
+
+      <view class="process-methods-list">
+        <view wx:for="{{specsList}}" wx:key="name" wx:for-index="methodIndex" class="process-method-card">
+          <view class="method-card-header">
+            <view class="method-name-tag">
+              <text class="method-title">{{item.name}}</text>
+            </view>
+            <view class="method-card-actions">
+              <text class="add-option-btn" bindtap="onAddOption" data-index="{{methodIndex}}">+ 规格</text>
+              <text class="del-method-btn" bindtap="onRemoveProcessMethod" data-index="{{methodIndex}}">删除方式</text>
+            </view>
+          </view>
+
+          <!-- 该加工方式下的具体规格选项标签 -->
+          <view class="options-tags-wrap">
+            <view wx:for="{{item.options}}" wx:for-item="opt" wx:for-index="optIndex" wx:key="*this" class="option-tag-item">
+              <text class="option-text">{{opt}}</text>
+              <text class="option-del" catchtap="onRemoveOption" data-method-index="{{methodIndex}}" data-option-index="{{optIndex}}">✕</text>
+            </view>
+            <view wx:if="{{!item.options || item.options.length === 0}}" class="option-empty-tip">
+              暂未添加规格，请点击右上角「+ 规格」
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{specsList.length === 0}}" class="spec-empty">
+          暂无加工方式配置，点击上方「+ 加工方式」或「恢复推荐」
+        </view>
       </view>
     </view>
 

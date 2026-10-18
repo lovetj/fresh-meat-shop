@@ -12,7 +12,7 @@
       <text class="tab-check" wx:if="{{deliveryType === 2}}">✓</text>
       <text class="tab-icon">🛵</text>
       <text class="tab-name">商家配送</text>
-      <text class="tab-tip">{{shopInfo.maxDeliveryDistance ? '限 ' + shopInfo.maxDeliveryDistance + 'km' : '同城直达'}}</text>
+      <text class="tab-tip">{{shopInfo.deliveryRangeText || '阶梯计费'}}</text>
     </view>
     <view class="tab-item tab-disabled" bindtap="onSelectTakeout">
       <text class="tab-icon">🥡</text>
@@ -33,11 +33,11 @@
       <text class="pickup-hours">⏰ 营业提货时间：{{shopInfo.businessHours || '06:30 - 20:00'}}</text>
     </view>
     <view class="form-row">
-      <text class="form-label">提货姓名</text>
+      <text class="form-label">提货人姓名</text>
       <input class="form-input" placeholder="请输入提货人姓名" value="{{pickupName}}" bindinput="onInputPickupName"/>
     </view>
     <view class="form-row">
-      <text class="form-label">联系电话</text>
+      <text class="form-label">提货人电话</text>
       <input class="form-input" type="number" placeholder="请输入提货联系电话" value="{{pickupPhone}}" bindinput="onInputPickupPhone"/>
     </view>
   </view>
@@ -65,47 +65,85 @@
     <view class="distance-alert {{distanceCheckResult.canDeliver ? 'alert-success' : 'alert-error'}}" wx:if="{{selectedAddress && distanceCheckResult}}">
       <view class="alert-icon">{{distanceCheckResult.canDeliver ? '✅' : '⚠️'}}</view>
       <view class="alert-msg">
-        <text class="alert-text">{{distanceCheckResult.message}}</text>
-        <text class="alert-sub" wx:if="{{!distanceCheckResult.canDeliver}}">
+        <view class="alert-top-row">
+          <text class="alert-text">{{distanceCheckResult.message}}</text>
+          <text class="rules-link" bindtap="openRulesModal" wx:if="{{distanceCheckResult.deliveryRules && distanceCheckResult.deliveryRules.length > 0}}">规则明细 📋</text>
+        </view>
+        <view class="matched-rule-tag" wx:if="{{distanceCheckResult.canDeliver && distanceCheckResult.matchedRule}}">
+          当前距离 {{distanceCheckResult.distance}}km · 起送价 ¥{{distanceCheckResult.minOrderAmount}} · 配送费 ¥{{distanceCheckResult.deliveryFee}} {{distanceCheckResult.isUnlimitedDistance ? '(不限距离)' : ''}}
+        </view>
+        <view class="short-amount-alert" wx:if="{{distanceCheckResult.canDeliver && shortAmount > 0}}">
+          ⚠️ 商品金额未满起送价，还差 ¥{{shortAmount}} 即可送达
+        </view>
+        <view class="alert-sub" wx:if="{{!distanceCheckResult.canDeliver}}">
           当前收货地址已超出店铺最大服务范围，请切换为「到店自取」或更换地址下单。
-        </text>
+        </view>
       </view>
     </view>
   </view>
 
   <!-- 商品明细卡片 -->
   <view class="card goods-card">
-    <view class="section-title">🥩 商品明细</view>
-    <view class="goods-row">
-      <image class="goods-thumb" src="{{product.coverImage}}" mode="aspectFill"/>
-      <view class="goods-meta">
-        <text class="goods-name ellipsis">{{product.name}}</text>
-        <text class="goods-spec">规格：{{specInfo}}</text>
-        <view class="goods-bottom">
-          <view class="price-tag">
-            <text class="price-symbol">¥</text>
-            <text class="price-value">{{product.price}}</text>
-            <text class="price-unit">/{{product.unit}}</text>
+    <view class="section-title">🥩 商品明细 {{isCartCheckout ? '（共 ' + cartItems.length + ' 件）' : ''}}</view>
+
+    <!-- 购物车多商品明细展示 -->
+    <block wx:if="{{isCartCheckout}}">
+      <view class="cart-checkout-list">
+        <view class="cart-checkout-item {{index > 0 ? 'item-bordered' : ''}}" wx:for="{{cartItems}}" wx:key="productId">
+          <image class="goods-thumb" src="{{item.coverImage || 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=fresh%20pork%20meat%20cuts%20clean%20white%20plate&image_size=square'}}" mode="aspectFill"/>
+          <view class="goods-meta">
+            <text class="goods-name ellipsis">{{item.name}}</text>
+            <text class="goods-spec" wx:if="{{item.specInfo}}">规格：{{item.specInfo}}</text>
+            <view class="goods-bottom">
+              <view class="price-tag">
+                <text class="price-symbol">¥</text>
+                <text class="price-value">{{item.price}}</text>
+                <text class="price-unit">/{{item.unit || '斤'}}</text>
+              </view>
+              <text class="goods-qty">x {{item.quantity}}</text>
+            </view>
           </view>
-          <text class="goods-qty">x {{quantity}}</text>
         </view>
       </view>
-    </view>
+    </block>
+
+    <!-- 单一商品明细展示 -->
+    <block wx:else>
+      <view class="goods-row">
+        <image class="goods-thumb" src="{{product.coverImage}}" mode="aspectFill"/>
+        <view class="goods-meta">
+          <text class="goods-name ellipsis">{{product.name}}</text>
+          <text class="goods-spec">规格：{{specInfo}}</text>
+          <view class="goods-bottom">
+            <view class="price-tag">
+              <text class="price-symbol">¥</text>
+              <text class="price-value">{{product.price}}</text>
+              <text class="price-unit">/{{product.unit}}</text>
+            </view>
+            <text class="goods-qty">x {{quantity}}</text>
+          </view>
+        </view>
+      </view>
+    </block>
   </view>
 
   <!-- 支付方式选择：单选卡片 -->
   <view class="card pay-type-card">
     <text class="section-title">💳 支付方式</text>
     <radio-group class="pay-group" bindchange="onPayTypeChange">
-      <label class="pay-option {{payType === 1 ? 'pay-active' : ''}}">
+      <!-- 微信线上支付：功能未上线，先置灰不可选 -->
+      <label class="pay-option pay-option-disabled">
         <view class="pay-left">
-          <text class="pay-icon">💚</text>
+          <view class="pay-icon pay-icon-wechat"></view>
           <view class="pay-text-wrap">
-            <text class="pay-name">微信线上支付</text>
-            <text class="pay-desc">支持微信支付 / 模拟安全便捷支付</text>
+            <view class="pay-name-row">
+              <text class="pay-name">微信线上支付</text>
+              <text class="pay-soon-tag">暂未开通</text>
+            </view>
+            <text class="pay-desc">功能开发中，敬请期待</text>
           </view>
         </view>
-        <radio value="1" checked="{{payType === 1}}" color="#FF6B6B"/>
+        <radio value="1" disabled="{{true}}" color="#FF6B6B"/>
       </label>
 
       <label class="pay-option {{payType === 2 ? 'pay-active' : ''}}">
@@ -124,7 +162,16 @@
   <!-- 下单备注 -->
   <view class="card remark-card">
     <text class="section-title">📝 顾客备注</text>
-    <input class="remark-input" placeholder="如：切薄片、排骨剁小块、瘦肉多一点等" value="{{remark}}" bindinput="onInputRemark"/>
+    <textarea
+      class="remark-input"
+      placeholder="如：切薄片、排骨剁小块、瘦肉多一点等"
+      placeholder-class="remark-placeholder"
+      maxlength="100"
+      auto-height="{{false}}"
+      show-confirm-bar="{{false}}"
+      cursor-spacing="24"
+      bindinput="onInputRemark"
+    ></textarea>
   </view>
 
   <!-- 费用明细 -->
@@ -134,10 +181,16 @@
       <text class="fee-label">鲜肉商品金额</text>
       <text class="fee-val">¥{{goodsAmount}}</text>
     </view>
+    <view class="fee-row" wx:if="{{deliveryType === 2 && currentMinOrderAmount > 0}}">
+      <text class="fee-label">起送门槛标准</text>
+      <text class="fee-val {{shortAmount > 0 ? 'fee-short' : ''}}">
+        满¥{{currentMinOrderAmount}}起送 {{shortAmount > 0 ? '(差¥' + shortAmount + ')' : '(已达标)'}}
+      </text>
+    </view>
     <view class="fee-row">
       <text class="fee-label">同城配送费</text>
       <text class="fee-val {{deliveryType === 1 ? 'fee-free' : ''}}">
-        {{deliveryType === 1 ? '¥0.00 (自取免配送费)' : ('¥' + deliveryFee)}}
+        {{deliveryType === 1 ? '¥0.00 (自取免配送费)' : ('¥' + deliveryFee + (distanceCheckResult.distance ? ' (' + distanceCheckResult.distance + 'km)' : ''))}}
       </text>
     </view>
     <view class="fee-row fee-total">
@@ -149,6 +202,11 @@
     </view>
   </view>
 
+  <!-- 底部差额温馨提示条 -->
+  <view class="short-notice-bar" wx:if="{{deliveryType === 2 && shortAmount > 0}}">
+    <text class="short-notice-text">⚠️ 距离本店当前起送额尚差 ¥{{shortAmount}}，建议增加商品数量或凑单</text>
+  </view>
+
   <!-- 底部悬浮结算条 -->
   <view class="submit-bar">
     <view class="submit-left">
@@ -156,8 +214,39 @@
       <text class="submit-price">¥{{payAmount}}</text>
     </view>
     <button class="btn-primary submit-btn {{isSubmitDisabled ? 'btn-disabled' : ''}}" bindtap="onSubmitOrder" disabled="{{submitting || isSubmitDisabled}}">
-      {{submitting ? '提交中...' : (isSubmitDisabled ? '超出配送范围' : (payType === 1 ? '微信支付下单' : '提交订单'))}}
+      {{submitting ? '提交中...' : submitButtonText}}
     </button>
+  </view>
+
+  <!-- 配送规则明细弹窗 -->
+  <view class="rules-modal-mask" wx:if="{{showRulesModal}}" bindtap="closeRulesModal">
+    <view class="rules-modal-box" catchtap="true">
+      <view class="rules-modal-header">
+        <text class="rules-modal-title">🛵 同城配送阶梯规则</text>
+        <text class="rules-modal-close" bindtap="closeRulesModal">✕</text>
+      </view>
+      <view class="rules-modal-content">
+        <view class="rules-modal-desc">
+          店铺根据收货地址的实际测算距离，匹配对应起送金额与配送费：
+        </view>
+        <view class="rules-table">
+          <view class="rules-tr rules-th">
+            <text class="rules-td">距离范围</text>
+            <text class="rules-td">起送金额</text>
+            <text class="rules-td">配送运费</text>
+          </view>
+          <view class="rules-tr {{distanceCheckResult.matchedRule.id === item.id ? 'rules-tr-active' : ''}}" wx:for="{{distanceCheckResult.deliveryRules || shopInfo.deliveryRules}}" wx:key="id">
+            <text class="rules-td">{{(item.maxDistance && item.maxDistance > 0) ? (item.minDistance + 'km - ' + item.maxDistance + 'km') : (item.minDistance + 'km 以上 (不限距离)')}}</text>
+            <text class="rules-td">¥{{item.minOrderAmount}}</text>
+            <text class="rules-td">¥{{item.deliveryFee}}</text>
+          </view>
+        </view>
+        <view class="rules-modal-tips">
+          * 提示：高亮行为当前地址匹配阶梯。若本店设有「不限距离」规则，超出基础范围依然支持送达。
+        </view>
+      </view>
+      <button class="rules-modal-btn" bindtap="closeRulesModal">我知道了</button>
+    </view>
   </view>
 
   <!-- 下单成功：轻量弹跳 + 对勾动画 -->
@@ -165,7 +254,6 @@
     <view class="success-card">
       <view class="success-check">✓</view>
       <text class="success-title">下单成功</text>
-      <text class="success-sub">掌柜马上开始切肉啦 🥩</text>
     </view>
   </view>
 </view>

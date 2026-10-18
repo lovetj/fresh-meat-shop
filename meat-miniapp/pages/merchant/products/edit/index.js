@@ -1,7 +1,7 @@
 // pages/merchant/products/edit/index.js
 const request = require('../../../../utils/request');
 const auth = require('../../../../utils/auth');
-const { formatImageUrl, toRelativePath } = require('../../../../utils/util');
+const { formatImageUrl, toRelativePath, DEFAULT_PROCESS_SPECS, normalizeSpecsList } = require('../../../../utils/util');
 
 Page({
   data: {
@@ -28,12 +28,8 @@ Page({
       description: '',
       isOnSale: 1
     },
-    specsList: [
-      { name: '整块不切' },
-      { name: '切薄片' },
-      { name: '绞肉馅' },
-      { name: '切小块/肉丁' }
-    ],
+    // 加工方式与具体规格列表：[{ name: '切片', options: ['薄片', '厚片'] }]
+    specsList: JSON.parse(JSON.stringify(DEFAULT_PROCESS_SPECS)),
     submitting: false
   },
 
@@ -161,17 +157,7 @@ Page({
     wx.showLoading({ title: '加载中...' });
     request.get(`/product/detail/${id}`)
       .then(res => {
-        let specs = [];
-        if (res.specsJson) {
-          try {
-            const parsed = JSON.parse(res.specsJson);
-            if (Array.isArray(parsed)) {
-              specs = parsed.map(item => (typeof item === 'string' ? { name: item } : item));
-            }
-          } catch (e) {
-            console.error('解析规格失败', e);
-          }
-        }
+        const specs = normalizeSpecsList(res.specsJson, true);
 
         const effectiveShopId = res.shopId || this.data.shopId;
         let shopIdx = this.data.shopIndex;
@@ -292,28 +278,144 @@ Page({
     });
   },
 
-  // 添加切法规格
-  onAddSpec() {
-    wx.showModal({
-      title: '添加切法规格',
-      editable: true,
-      placeholderText: '如：切薄片、包饺子肉馅、剁大块',
+  // 添加加工方式
+  onAddProcessMethod() {
+    const presets = [
+      { name: '整块', defaultOptions: ['原样整块', '去皮整块'] },
+      { name: '切片', defaultOptions: ['0.2cm薄切(涮烤/爆炒)', '0.5cm厚切(家常炒肉)'] },
+      { name: '切块', defaultOptions: ['煲汤大块(约4-5cm)', '红烧小块(约2-3cm)', '小肉丁(约1cm)'] },
+      { name: '绞肉', defaultOptions: ['细馅(包子/饺子/馄饨)', '粗肉末(炸酱/肉丸)'] }
+    ];
+
+    // 微信限制 itemList 最多为 6 个（此处 4 个常用预设 + 1 个自定义 = 5 项）
+    const actionList = presets.map(p => p.name).concat(['✍️ 自定义加工方式']);
+
+    wx.showActionSheet({
+      itemList: actionList,
       success: (res) => {
-        if (res.confirm && res.content) {
-          const name = res.content.trim();
-          if (name) {
-            const list = this.data.specsList.concat([{ name: name }]);
-            this.setData({ specsList: list });
+        const tapIndex = res.tapIndex;
+        if (tapIndex < presets.length) {
+          const selected = presets[tapIndex];
+          const exists = this.data.specsList.some(item => item.name === selected.name);
+          if (exists) {
+            wx.showToast({ title: `「${selected.name}」已存在`, icon: 'none' });
+            return;
           }
+          const list = this.data.specsList.concat([{
+            name: selected.name,
+            options: [...selected.defaultOptions]
+          }]);
+          this.setData({ specsList: list });
+          wx.showToast({ title: `已添加「${selected.name}」`, icon: 'success' });
+        } else {
+          this.promptCustomMethod();
+        }
+      },
+      fail: (err) => {
+        // 若非用户主动点击取消，降级为直接输入弹窗
+        if (err && err.errMsg && !err.errMsg.includes('cancel')) {
+          this.promptCustomMethod();
         }
       }
     });
   },
 
-  onRemoveSpec(e) {
+  promptCustomMethod() {
+    wx.showModal({
+      title: '添加加工方式',
+      editable: true,
+      placeholderText: '如：切薄片、剃骨切排、切肉丝',
+      success: (modalRes) => {
+        if (modalRes.confirm && modalRes.content) {
+          const name = modalRes.content.trim();
+          if (!name) return;
+          const exists = this.data.specsList.some(item => item.name === name);
+          if (exists) {
+            wx.showToast({ title: `「${name}」已存在`, icon: 'none' });
+            return;
+          }
+          const list = this.data.specsList.concat([{
+            name: name,
+            options: ['标准加工']
+          }]);
+          this.setData({ specsList: list });
+          wx.showToast({ title: '添加成功', icon: 'success' });
+        }
+      }
+    });
+  },
+
+  // 删除某种加工方式
+  onRemoveProcessMethod(e) {
     const idx = e.currentTarget.dataset.index;
-    const list = this.data.specsList.filter((_, i) => i !== idx);
+    const methodItem = this.data.specsList[idx];
+    if (!methodItem) return;
+
+    wx.showModal({
+      title: '删除加工方式确认',
+      content: `确定删除加工方式「${methodItem.name}」及其下的所有具体规格吗？`,
+      confirmColor: '#FF4757',
+      success: (res) => {
+        if (res.confirm) {
+          const list = this.data.specsList.filter((_, i) => i !== idx);
+          this.setData({ specsList: list });
+        }
+      }
+    });
+  },
+
+  // 给指定加工方式添加具体规格
+  onAddOption(e) {
+    const methodIndex = e.currentTarget.dataset.index;
+    const methodItem = this.data.specsList[methodIndex];
+    if (!methodItem) return;
+
+    wx.showModal({
+      title: `添加「${methodItem.name}」的具体规格`,
+      editable: true,
+      placeholderText: '如：0.2cm薄片、带皮厚切、小肉丁',
+      success: (res) => {
+        if (res.confirm && res.content) {
+          const opt = res.content.trim();
+          if (!opt) return;
+          const currentOpts = methodItem.options || [];
+          if (currentOpts.includes(opt)) {
+            wx.showToast({ title: '规格已存在', icon: 'none' });
+            return;
+          }
+          const list = [...this.data.specsList];
+          list[methodIndex].options = currentOpts.concat([opt]);
+          this.setData({ specsList: list });
+        }
+      }
+    });
+  },
+
+  // 删除指定加工方式下的具体规格
+  onRemoveOption(e) {
+    const { methodIndex, optionIndex } = e.currentTarget.dataset;
+    const list = [...this.data.specsList];
+    const method = list[methodIndex];
+    if (!method || !method.options) return;
+
+    method.options = method.options.filter((_, i) => i !== optionIndex);
     this.setData({ specsList: list });
+  },
+
+  // 一键恢复推荐配置
+  onResetDefaultSpecs() {
+    wx.showModal({
+      title: '恢复推荐规格',
+      content: '是否重置并应用肉铺常用的推荐加工方式与具体规格配置？',
+      success: (res) => {
+        if (res.confirm) {
+          this.setData({
+            specsList: JSON.parse(JSON.stringify(DEFAULT_PROCESS_SPECS))
+          });
+          wx.showToast({ title: '已恢复推荐规格', icon: 'success' });
+        }
+      }
+    });
   },
 
   onSaleChange(e) {
@@ -348,6 +450,23 @@ Page({
     if (!values.price || isNaN(parseFloat(values.price)) || parseFloat(values.price) <= 0) {
       wx.showToast({ title: '请输入合法的销售单价', icon: 'none' });
       return;
+    }
+
+    // 校验加工方式与规格结构
+    if (!this.data.specsList || this.data.specsList.length === 0) {
+      wx.showToast({ title: '请至少添加一种加工方式', icon: 'none' });
+      return;
+    }
+    for (let i = 0; i < this.data.specsList.length; i++) {
+      const item = this.data.specsList[i];
+      if (!item.name || !item.name.trim()) {
+        wx.showToast({ title: '加工方式名称不能为空', icon: 'none' });
+        return;
+      }
+      if (!item.options || item.options.length === 0) {
+        wx.showToast({ title: `请为【${item.name}】添加具体规格`, icon: 'none' });
+        return;
+      }
     }
 
     const payload = {

@@ -1,33 +1,129 @@
 /* pages/merchant/orders/orders.wxss - 维琼鲜肉铺 掌柜订单管理 */
 
 .container {
-  padding-bottom: 40rpx;
+  padding-bottom: 50rpx;
   background-color: var(--bg-cream);
   min-height: 100vh;
 }
 
-/* ================= 1. 顶部状态筛选胶囊 ================= */
-.status-tabs {
+/* ================= 1. 搜索框与一键提货码核销 ================= */
+.search-filter-box {
+  background-color: #FFFFFF;
+  padding: 16rpx 24rpx;
+  border-bottom: 2rpx solid #FFF2EF;
+}
+
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.search-input-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  background-color: #F8F9FA;
+  border-radius: var(--radius-round);
+  padding: 10rpx 20rpx;
+  border: 1rpx solid #EFEFEF;
+}
+
+.verify-action-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background: var(--primary-gradient);
+  color: #FFFFFF;
+  padding: 12rpx 22rpx;
+  border-radius: var(--radius-round);
+  font-size: 24rpx;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 4rpx 14rpx rgba(255, 107, 107, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.verify-action-btn:active {
+  transform: scale(0.95);
+}
+
+.verify-btn-icon {
+  margin-right: 6rpx;
+}
+
+.search-icon {
+  font-size: 26rpx;
+  margin-right: 12rpx;
+  color: #888888;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 24rpx;
+  color: var(--text-main);
+}
+
+.clear-icon {
+  font-size: 24rpx;
+  color: #999999;
+  padding: 4rpx 12rpx;
+}
+
+.type-filter-row {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 14rpx;
+}
+
+.type-pill {
+  font-size: 22rpx;
+  font-weight: 700;
+  padding: 8rpx 20rpx;
+  border-radius: var(--radius-round);
+  background-color: #F5F5F5;
+  color: var(--text-sub);
+  border: 1rpx solid transparent;
+  transition: all 0.2s ease;
+}
+
+.type-pill.pill-active {
+  background-color: #FFF0F0;
+  color: var(--primary);
+  border-color: #FFCDD2;
+  font-weight: 800;
+}
+
+/* ================= 3. 顶部横向滚动状态标签 ================= */
+.status-tabs-scroll {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
   background-color: #FFFFFF;
-  padding: 16rpx 20rpx;
+  white-space: nowrap;
   box-shadow: 0 4rpx 16rpx rgba(255, 107, 107, 0.08);
-  gap: 12rpx;
+}
+
+.status-tabs {
+  display: inline-flex;
+  padding: 16rpx 20rpx;
+  gap: 14rpx;
 }
 
 .tab-item {
-  flex: 1;
-  text-align: center;
-  font-size: 26rpx;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
   color: var(--text-sub);
-  padding: 14rpx 0;
+  padding: 12rpx 24rpx;
   background-color: var(--bg-pink);
   border-radius: var(--radius-round);
   font-weight: 600;
   transition: all 0.25s ease;
+  flex-shrink: 0;
 }
 
 .tab-item.tab-active {
@@ -37,10 +133,58 @@
   font-weight: 800;
 }
 
-/* ================= 2. 订单列表与卡片 ================= */
+.badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  background-color: #FF3B30;
+  color: #FFFFFF;
+  font-size: 20rpx;
+  line-height: 1;
+  height: 32rpx;
+  min-width: 32rpx;
+  padding: 0 10rpx;
+  border-radius: 16rpx;
+  text-align: center;
+  font-weight: 800;
+  margin-left: 8rpx;
+}
+
+.tab-item.tab-active .badge {
+  background-color: #FFFFFF;
+  color: #D32F2F;
+}
+
+/* ================= 4. 订单列表与卡片 ================= */
 .order-list {
   padding: 20rpx 24rpx;
   box-sizing: border-box;
+}
+
+.empty-box {
+  text-align: center;
+  padding: 100rpx 0;
+}
+
+.empty-icon {
+  font-size: 80rpx;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.empty-text {
+  font-size: 30rpx;
+  font-weight: 800;
+  color: var(--text-main);
+  display: block;
+}
+
+.empty-sub {
+  font-size: 24rpx;
+  color: var(--text-light);
+  margin-top: 8rpx;
 }
 
 .order-card {
@@ -56,111 +200,107 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12rpx;
   padding-bottom: 18rpx;
-  border-bottom: 2rpx dashed #FFF0ED;
+  border-bottom: 2rpx dashed #FFE4DC;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 12rpx;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .delivery-badge {
-  font-size: 20rpx;
-  padding: 4rpx 14rpx;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 36rpx;
+  padding: 0 14rpx;
+  box-sizing: border-box;
+  font-size: 19rpx;
+  line-height: 34rpx;
+  font-weight: 700;
+  white-space: nowrap;
   border-radius: var(--radius-round);
-  font-weight: 800;
 }
 
-.order-shop-badge {
-  font-size: 20rpx;
-  background-color: #FFF3E0;
-  color: #E65100;
-  border: 1rpx solid #FFE0B2;
-  padding: 4rpx 10rpx;
-  border-radius: 8rpx;
-  font-weight: 700;
+.status-chip {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .order-no {
-  font-size: 24rpx;
-  color: var(--text-sub);
-}
-
-.status-name {
-  font-size: 26rpx;
-  font-weight: 800;
-  color: var(--primary);
-}
-
-/* 顾客与收货信息 */
-.receiver-box {
-  padding: 18rpx 0;
-  border-bottom: 2rpx solid #FFF5F2;
-}
-
-.rec-name-row {
-  display: flex;
-  align-items: center;
-  font-size: 28rpx;
-  font-weight: 800;
-  color: var(--text-main);
-  margin-bottom: 10rpx;
-}
-
-.rec-name {
-  margin-right: 16rpx;
-}
-
-.rec-phone {
-  margin-right: 16rpx;
-  color: var(--text-sub);
-}
-
-.call-btn {
   font-size: 22rpx;
+  color: var(--text-light);
+  max-width: 300rpx;
+}
+
+.copy-tag {
+  font-size: 20rpx;
   color: var(--sky-blue);
-  background-color: #EBF4FF;
-  padding: 4rpx 16rpx;
-  border-radius: var(--radius-round);
-  font-weight: 700;
-}
-
-.rec-addr {
-  font-size: 24rpx;
-  color: var(--text-main);
-  display: block;
-  line-height: 1.4;
-  margin-bottom: 6rpx;
-}
-
-.rec-dist {
-  font-size: 22rpx;
-  color: var(--primary);
-  display: inline-block;
-  background-color: #FFF0F0;
-  padding: 2rpx 12rpx;
-  border-radius: 8rpx;
+  background-color: #F0F7FF;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
   font-weight: 600;
 }
 
-.remark-box {
-  margin-top: 10rpx;
-  background-color: #FFFBE6;
-  padding: 10rpx 14rpx;
-  border-radius: 12rpx;
+/* 下单时间 */
+.order-time-row {
+  margin-top: 12rpx;
+}
+
+.order-time {
   font-size: 22rpx;
-  border: 1rpx dashed #FFE58F;
+  color: var(--text-light);
+  line-height: 1.3;
 }
 
-.remark-tag {
+/* 自提核销码醒目卡片 */
+.pickup-code-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16rpx 0;
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFF2CC 100%);
+  border: 2rpx solid #FFE58F;
+  border-radius: 14rpx;
+  padding: 14rpx 20rpx;
+}
+
+.pickup-left {
+  display: flex;
+  align-items: baseline;
+}
+
+.pickup-label {
+  font-size: 24rpx;
+  font-weight: 700;
   color: #D48806;
-  font-weight: 800;
 }
 
-.remark-val {
-  color: var(--text-main);
+.pickup-val {
+  font-size: 34rpx;
+  font-weight: 900;
+  letter-spacing: 4rpx;
+  color: #AD6800;
+}
+
+.pickup-btn-mini {
+  margin: 0;
+  padding: 0 20rpx;
+  height: 48rpx;
+  line-height: 48rpx;
+  font-size: 22rpx;
+  font-weight: 800;
+  background: linear-gradient(135deg, #FA8C16 0%, #FFA940 100%);
+  color: #FFFFFF;
+  border-radius: var(--radius-round);
+  box-shadow: 0 2rpx 8rpx rgba(250, 140, 22, 0.3);
 }
 
 /* 商品清单 */
@@ -222,7 +362,7 @@
   color: var(--text-sub);
 }
 
-/* ================= 3. 底部金额与操作按钮 ================= */
+/* ================= 5. 底部金额与操作按钮 ================= */
 .order-footer {
   padding-top: 18rpx;
   border-top: 2rpx solid #FFF5F2;
@@ -230,7 +370,7 @@
 
 .total-row {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: baseline;
   font-size: 24rpx;
   margin-bottom: 18rpx;
@@ -238,6 +378,17 @@
 
 .pay-type {
   color: var(--text-sub);
+}
+
+.price-info-wrap {
+  display: flex;
+  align-items: baseline;
+}
+
+.original-price {
+  font-size: 22rpx;
+  color: #999999;
+  text-decoration: line-through;
   margin-right: 12rpx;
 }
 
@@ -256,16 +407,22 @@
 .actions-row {
   display: flex;
   justify-content: flex-end;
-  gap: 16rpx;
+  align-items: center;
+  gap: 14rpx;
+  flex-wrap: wrap;
 }
 
 .actions-row button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
   margin: 0;
-  padding: 0 32rpx;
-  height: 60rpx;
-  line-height: 60rpx;
+  padding: 0 24rpx;
+  height: 58rpx;
+  line-height: 58rpx;
   font-size: 24rpx;
   font-weight: 800;
+  white-space: nowrap;
   border-radius: var(--radius-round);
   transition: all 0.2s ease;
 }
@@ -274,22 +431,34 @@
   transform: scale(0.94);
 }
 
+.btn-cancel {
+  background-color: #FFFFFF;
+  border: 2rpx solid #D9D9D9;
+  color: #666666;
+}
+
+.btn-price {
+  background: linear-gradient(135deg, #FA8C16 0%, #FFA940 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 14rpx rgba(250, 140, 22, 0.3);
+}
+
 .btn-reject {
   background-color: #FFFFFF;
-  border: 2rpx solid #E0E0E0;
-  color: var(--text-sub);
+  border: 2rpx solid #FFCCC7;
+  color: #F5222D;
 }
 
 .btn-accept {
-  background: linear-gradient(135deg, #6BCB77 0%, #85E091 100%);
+  background: linear-gradient(135deg, #52C41A 0%, #73D13D 100%);
   color: #FFFFFF;
-  box-shadow: 0 4rpx 14rpx rgba(107, 203, 119, 0.3);
+  box-shadow: 0 4rpx 14rpx rgba(82, 196, 26, 0.3);
 }
 
 .btn-deliver {
-  background: linear-gradient(135deg, #4D96FF 0%, #6BAAFF 100%);
+  background: linear-gradient(135deg, #1890FF 0%, #40A9FF 100%);
   color: #FFFFFF;
-  box-shadow: 0 4rpx 14rpx rgba(77, 150, 255, 0.3);
+  box-shadow: 0 4rpx 14rpx rgba(24, 144, 255, 0.3);
 }
 
 .btn-finish {
@@ -304,3 +473,94 @@
   font-size: 24rpx;
   color: var(--text-light);
 }
+
+/* ================= 6. 通用弹窗组件 ================= */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx;
+  box-sizing: border-box;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 620rpx;
+  background-color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 36rpx 32rpx;
+  box-sizing: border-box;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--text-main);
+  text-align: center;
+  margin-bottom: 16rpx;
+}
+
+.modal-desc {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  display: block;
+  margin-bottom: 20rpx;
+  line-height: 1.4;
+}
+
+.price-origin-tip {
+  font-size: 24rpx;
+  color: var(--text-sub);
+  background-color: #F8F9FA;
+  padding: 12rpx 16rpx;
+  border-radius: 10rpx;
+  margin-bottom: 20rpx;
+}
+
+.po-amt {
+  display: block;
+  color: var(--price-color);
+  font-weight: 800;
+  margin-top: 4rpx;
+}
+
+.input-label {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 8rpx;
+}
+
+.modal-input {
+  height: 80rpx;
+  background-color: #F5F7FA;
+  border-radius: 12rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: var(--text-main);
+  border: 2rpx solid #E4E7ED;
+  margin-bottom: 24rpx;
+}
+
+.modal-btn-row {
+  display: flex;
+  gap: 20rpx;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 72rpx;
+  line-height: 72rpx;
+  font-size: 28rpx;
+  font-weight: 800;
+  border-radius: var(--radius-round);
+}
+

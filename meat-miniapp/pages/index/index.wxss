@@ -186,15 +186,19 @@
 
 .notice-track {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
   overflow: hidden;
   height: 36rpx;
 }
 
 .notice-marquee {
-  display: inline-block;
+  display: block;
+  flex: 0 0 auto;
   white-space: nowrap;
   font-size: 22rpx;
-  line-height: 36rpx;
+  line-height: 1;
   color: #874D00;
   font-weight: 600;
   padding-left: 100%;
@@ -449,6 +453,8 @@
 .spec-sheet {
   max-height: 84vh;
   overflow-y: auto;
+  /* tabBar 打开弹层时已隐藏，底部留出安全距离，保证「加入购物车」按钮完整可点 */
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
 }
 
 .sheet-handle {
@@ -514,11 +520,52 @@
 }
 
 .spec-group {
-  margin-top: 28rpx;
+  margin-top: 24rpx;
+}
+
+.spec-step-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.spec-step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: #FFFFFF;
+  font-size: 20rpx;
+  font-weight: 800;
+}
+
+.spec-step-tip {
+  font-size: 22rpx;
+  color: var(--text-light);
+  margin-left: 6rpx;
+}
+
+.spec-step-tip.tip-warn {
+  color: #FF6B6B;
+}
+
+.spec-step-two {
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx dashed #FFE4DC;
+}
+
+.spec-empty-hint {
+  font-size: 24rpx;
+  color: var(--text-light);
+  padding: 14rpx 0 6rpx;
 }
 
 .spec-group-title {
-  font-size: 28rpx;
+  font-size: 27rpx;
   font-weight: 800;
   color: var(--text-main);
   display: block;
@@ -553,36 +600,65 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 20rpx;
   margin-top: 32rpx;
   padding-top: 26rpx;
   border-top: 2rpx dashed #FFE4DC;
 }
 
-.quantity-label {
-  font-size: 28rpx;
+.quantity-info {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.quantity-title {
+  display: block;
+  margin-bottom: 6rpx;
+  font-size: 26rpx;
   font-weight: 800;
+  line-height: 1.35;
   color: var(--text-main);
+  white-space: nowrap;
+}
+
+.quantity-unit {
+  display: block;
+  font-size: 22rpx;
+  line-height: 1.35;
+  color: var(--text-light);
+  white-space: nowrap;
 }
 
 /* 萌趣步进器 */
 .stepper {
+  flex: 0 0 auto;
   display: flex;
+  flex-direction: row;
   align-items: center;
+  flex-wrap: nowrap;
   background-color: #FFF5F2;
   border-radius: var(--radius-round);
   padding: 4rpx;
 }
 
 .step-btn {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 58rpx;
   height: 58rpx;
-  line-height: 54rpx;
+  min-width: 58rpx;
+  max-width: 58rpx;
   padding: 0;
+  margin: 0;
+  line-height: 1;
   font-size: 32rpx;
   background-color: #FFFFFF;
   color: var(--primary);
   font-weight: 800;
   border-radius: 50%;
+  overflow: hidden;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
   transition: transform 0.15s ease;
 }
@@ -592,12 +668,14 @@
 }
 
 .step-val {
+  flex: 0 0 auto;
   min-width: 64rpx;
+  line-height: 1;
   text-align: center;
   font-size: 28rpx;
   font-weight: 800;
   color: var(--text-main);
-  margin: 0 10rpx;
+  margin: 0 6rpx;
 }
 
 .spec-footer {
@@ -634,6 +712,12 @@
 @keyframes shopMaskFade {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* 首页悬浮球位置：贴近自定义tabBar上方 */
+.index-cart-ball {
+  bottom: calc(126rpx + env(safe-area-inset-bottom));
+  z-index: 600;
 }
 
 @keyframes shopSheetUp {

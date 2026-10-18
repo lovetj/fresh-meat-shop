@@ -54,4 +54,29 @@ public interface OrderService extends IService<OrderInfo> {
      * 确认收货/核销完成 (配送中/待自提 -> 已完成)
      */
     boolean finishOrder(String orderId);
+
+    /**
+     * 商家端：获取订单状态数量统计 (待接单、待配货自提、配送中等计数)
+     */
+    com.freshmeat.dto.OrderStatusCountVO getAdminStatusCounts(String shopId);
+
+    /**
+     * 顾客端：获取当前用户各状态订单数量统计
+     */
+    com.freshmeat.dto.OrderStatusCountVO getCustomerStatusCounts();
+
+    /**
+     * 商家端：自提提货码一键核销
+     */
+    OrderVO verifyPickupByCode(com.freshmeat.dto.OrderPickupVerifyDTO dto);
+
+    /**
+     * 商家端：待支付订单改价 (如称重后金额调整)
+     */
+    boolean changeOrderPrice(String orderId, com.freshmeat.dto.OrderPriceChangeDTO dto);
+
+    /**
+     * 商家端：掌柜主动取消订单并原路退款 (如协商一致退款)
+     */
+    boolean adminCancelOrder(String orderId, OrderStatusUpdateDTO dto);
 }

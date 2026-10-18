@@ -1,11 +1,14 @@
 <!-- pages/orders/orders.wxml -->
 <view class="container">
   <!-- 顶部状态筛选胶囊 -->
-  <view class="status-tabs">
-    <view wx:for="{{tabs}}" wx:key="status" class="tab-item {{currentStatus === item.status ? 'tab-active' : ''}}" bindtap="onSwitchTab" data-status="{{item.status}}">
-      <text>{{item.label}}</text>
+  <scroll-view class="status-tabs-scroll" scroll-x enable-flex>
+    <view class="status-tabs">
+      <view wx:for="{{tabs}}" wx:key="status" class="tab-item {{currentStatus === item.status ? 'tab-active' : ''}}" bindtap="onSwitchTab" data-status="{{item.status}}">
+        <text>{{item.label}}</text>
+        <view class="badge" wx:if="{{statusCounts[item.countKey] > 0}}">{{statusCounts[item.countKey] > 99 ? '99+' : statusCounts[item.countKey]}}</view>
+      </view>
     </view>
-  </view>
+  </scroll-view>
 
   <!-- 订单列表 -->
   <scroll-view class="order-list" scroll-y bindscrolltolower="onLoadMore">
@@ -26,12 +29,16 @@
       <!-- 订单头：配送方式 + 订单号 + 状态软色标签 -->
       <view class="order-header">
         <view class="header-left">
-          <text class="delivery-badge {{item.deliveryType === 1 ? 'badge-orange' : 'badge-blue'}}">
-            {{item.deliveryTypeDesc}}
-          </text>
+          <text class="delivery-badge {{item.deliveryType === 1 ? 'badge-orange' : 'badge-blue'}}">{{item.deliveryTypeDesc}}</text>
+          <text class="pickup-pill" wx:if="{{item.deliveryType === 1 && item.pickupCode}}">提货码 {{item.pickupCode}}</text>
           <text class="order-no ellipsis">{{item.orderNo}}</text>
         </view>
         <text class="status-chip st-{{item.status}}">{{item.statusDesc}}</text>
+      </view>
+
+      <!-- 下单时间 -->
+      <view class="order-time-row">
+        <text class="order-time">下单时间：{{item.createTime}}</text>
       </view>
 
       <!-- 商品缩略图横排 -->
@@ -51,6 +58,7 @@
       <view class="order-footer">
         <view class="total-row">
           <text class="pay-method">{{item.payTypeDesc}}</text>
+          <text class="original-amount" wx:if="{{item.originalPayAmount && item.originalPayAmount != item.payAmount}}">原¥{{item.originalPayAmount}}</text>
           <text class="total-amount-label">实付</text>
           <text class="total-amount">¥{{item.payAmount}}</text>
         </view>

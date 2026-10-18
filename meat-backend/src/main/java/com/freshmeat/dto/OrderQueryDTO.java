@@ -14,6 +14,9 @@ public class OrderQueryDTO {
     /** 配送方式: 1自取, 2商家配送 */
     private Integer deliveryType;
 
+    /** 搜索关键字 (订单号/收货人/手机号/自提码) */
+    private String keyword;
+
     /** 页码 */
     private Long pageNum = 1L;
 

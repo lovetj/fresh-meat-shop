@@ -1,7 +1,8 @@
 // pages/index/index.js
 const request = require('../../utils/request');
 const auth = require('../../utils/auth');
-const { formatImageUrl } = require('../../utils/util');
+const cart = require('../../utils/cart');
+const { formatImageUrl, normalizeSpecsList } = require('../../utils/util');
 const app = getApp();
 
 // 「全部鲜肉」的虚拟分类ID：后端分类ID为雪花字符串，0 仅用于前端占位，不会下发给接口
@@ -41,7 +42,13 @@ Page({
     selectedSpecs: [],
     selectedSpecText: '',
     buyQuantity: 1,
-    totalPrice: '0.00'
+    totalPrice: '0.00',
+
+    // 购物车与悬浮球状态
+    cartCount: 0,
+    cartTotalAmount: '0.00',
+    cartList: [],
+    showCartDrawer: false
   },
 
   /**
@@ -51,11 +58,15 @@ Page({
    */
   onShow() {
     this.refreshPageData();
+    this.refreshCart();
 
-    // 同步自定义 tabBar 选中态（弹窗打开时保持隐藏）
+    // 同步自定义 tabBar 选中态（任一半屏弹层打开时保持隐藏）
     const tabBar = this.getTabBar ? this.getTabBar() : null;
     if (tabBar) {
-      tabBar.setData({ selected: 0, hidden: !!this.data.showShopModal });
+      tabBar.setData({
+        selected: 0,
+        hidden: !!(this.data.showShopModal || this.data.showSpecModal || this.data.showCartDrawer)
+      });
     }
   },
 
@@ -130,21 +141,60 @@ Page({
     });
   },
 
+  /**
+   * 将阶梯配送规则解析为便于展示的字段
+   */
+  formatShopDeliveryInfo(shop) {
+    if (!shop) return null;
+    const rules = Array.isArray(shop.deliveryRules) ? shop.deliveryRules : [];
+    let minOrder = 0;
+    let minFee = 0;
+    let maxDistance = 0;
+    let hasUnlimited = false;
+    if (rules.length > 0) {
+      minOrder = rules[0].minOrderAmount !== undefined ? rules[0].minOrderAmount : 0;
+      minFee = rules[0].deliveryFee !== undefined ? rules[0].deliveryFee : 0;
+      rules.forEach(r => {
+        if (r.maxDistance === null || r.maxDistance === undefined || Number(r.maxDistance) <= 0) {
+          hasUnlimited = true;
+        } else if (Number(r.maxDistance) > maxDistance) {
+          maxDistance = Number(r.maxDistance);
+        }
+      });
+    }
+    const deliveryRangeText = rules.length === 0 
+      ? '同城配送' 
+      : (hasUnlimited ? '不限距离' : `${maxDistance || 5}km 内`);
+    return {
+      ...shop,
+      minOrderAmountText: minOrder,
+      deliveryFeeText: minFee,
+      deliveryRangeText: deliveryRangeText
+    };
+  },
+
   /** 写入当前生效门店（页面、globalData、缓存三处同步） */
   applyCurrentShop(shop) {
     if (!shop) return null;
-    this.setData({ currentShopId: shop.id, shopInfo: shop });
-    app.globalData.shopInfo = shop;
-    app.globalData.currentShopId = shop.id;
-    wx.setStorageSync('currentShopId', shop.id);
-    return shop;
+    const formatted = this.formatShopDeliveryInfo(shop);
+    this.setData({ currentShopId: formatted.id, shopInfo: formatted }, () => {
+      this.refreshCart();
+    });
+    app.globalData.shopInfo = formatted;
+    app.globalData.currentShopId = formatted.id;
+    wx.setStorageSync('currentShopId', formatted.id);
+    return formatted;
   },
 
-  /** 从列表里还原上次选中的门店；不在当前页时按 shopId 单独查详情 */
+  /**
+   * 还原当前生效门店：
+   * 1. 用户明确选过门店（selectedShopId）→ 沿用历史选择；
+   * 2. 否则取列表首项，即后端按「营业中优先 + 距离由近到远」排序后的最近门店。
+   */
   resolveCurrentShop(list) {
     const shops = Array.isArray(list) ? list : [];
-    // 缓存优先级最高：掌柜后台「返回顾客选肉前台」会直接写入缓存指定门店
-    const storedShopId = wx.getStorageSync('currentShopId') || app.globalData.currentShopId || this.data.currentShopId;
+    // 仅「用户主动选店」或「掌柜切回前台指定门店」会写入 selectedShopId
+    const storedShopId = wx.getStorageSync('selectedShopId') || '';
     const matched = storedShopId ? shops.find((s) => s.id === storedShopId) : null;
 
     if (matched) {
@@ -157,15 +207,18 @@ Page({
           if (shop) {
             return this.applyCurrentShop(shop);
           }
-          return this.pickFirstShop(shops);
+          // 历史门店已不存在（被删除/下线），清除记录后回退最近门店
+          wx.removeStorageSync('selectedShopId');
+          return this.pickNearestShop(shops);
         })
-        .catch(() => this.pickFirstShop(shops));
+        .catch(() => this.pickNearestShop(shops));
     }
 
-    return Promise.resolve(this.pickFirstShop(shops));
+    return Promise.resolve(this.pickNearestShop(shops));
   },
 
-  pickFirstShop(shops) {
+  /** 未选过门店时，默认使用列表首个门店（已按距离由近到远排序） */
+  pickNearestShop(shops) {
     if (Array.isArray(shops) && shops.length > 0) {
       return this.applyCurrentShop(shops[0]);
     }
@@ -206,8 +259,9 @@ Page({
       }
 
       const rawList = (res && (res.list || res.records)) || [];
+      const formattedList = rawList.map(item => this.formatShopDeliveryInfo(item));
       const total = res && res.total !== undefined ? Number(res.total) : rawList.length;
-      const list = reset ? rawList : this.data.shopList.concat(rawList);
+      const list = reset ? formattedList : this.data.shopList.concat(formattedList);
 
       this.setData({
         shopList: list,
@@ -307,6 +361,8 @@ Page({
     const selectedShop = (this.data.shopList || []).find(s => s.id === shopId);
     if (selectedShop) {
       this.applyCurrentShop(selectedShop);
+      // 记录用户主动选择，后续进入首页优先展示该门店
+      wx.setStorageSync('selectedShopId', selectedShop.id);
       this.closeShopModal();
       wx.showToast({ title: `已切换至: ${selectedShop.name}`, icon: 'none' });
       // 切换门店后重置选中分类，并重新刷新该门店专属的分类和商品
@@ -453,44 +509,88 @@ Page({
   // ---------------- 选规格与直接购买 ----------------
   openSpecModal(e) {
     const product = e.currentTarget.dataset.item;
-    let specGroups = [];
-    try {
-      if (product.specsJson) {
-        specGroups = typeof product.specsJson === 'string' ? JSON.parse(product.specsJson) : product.specsJson;
-      }
-    } catch (err) {
-      specGroups = [];
+    const specsList = normalizeSpecsList(product.specsJson);
+
+    let selectedMethodIndex = -1;
+    let selectedMethod = '';
+    let currentOptions = [];
+    let selectedOption = '';
+
+    if (specsList.length > 0) {
+      selectedMethodIndex = 0;
+      selectedMethod = specsList[0].name;
+      currentOptions = specsList[0].options || [];
+      selectedOption = currentOptions.length > 0 ? currentOptions[0] : '';
     }
 
-    const selectedSpecs = specGroups.map(group => group.options && group.options.length ? group.options[0] : '');
-    const selectedSpecText = selectedSpecs.filter(Boolean).join(' / ');
+    const selectedSpecText = selectedMethod && selectedOption
+      ? (selectedMethod === selectedOption ? selectedMethod : `${selectedMethod} · ${selectedOption}`)
+      : (product.unit || '标准定制');
+
     const buyQuantity = 1;
     const totalPrice = (Number(product.price) * buyQuantity).toFixed(2);
 
     this.setData({
       currentProduct: product,
-      specGroups,
-      selectedSpecs,
+      specsList,
+      selectedMethodIndex,
+      selectedMethod,
+      currentOptions,
+      selectedOption,
       selectedSpecText,
       buyQuantity,
       totalPrice,
-      showSpecModal: true
+      showSpecModal: true,
+      pageStyle: 'overflow: hidden;'
     });
+
+    // 规格弹层打开时隐藏底部自定义 tabBar，避免遮挡「加入购物车」按钮
+    this.setTabBarHidden(true);
   },
 
   closeSpecModal() {
-    this.setData({ showSpecModal: false });
+    this.setData({ showSpecModal: false, pageStyle: '' });
+    // 若切换门店弹窗仍开着，则继续保持 tabBar 隐藏
+    this.setTabBarHidden(!!this.data.showShopModal);
   },
 
   preventBubble() {},
 
-  onSelectOption(e) {
-    const { groupIndex, option } = e.currentTarget.dataset;
-    const selectedSpecs = [...this.data.selectedSpecs];
-    selectedSpecs[groupIndex] = option;
-    const selectedSpecText = selectedSpecs.filter(Boolean).join(' / ');
+  // 选择加工方式
+  onSelectMethod(e) {
+    const index = Number(e.currentTarget.dataset.index);
+    const methodItem = this.data.specsList[index];
+    if (!methodItem) return;
+
+    const options = methodItem.options || [];
+    const selectedOption = options.length > 0 ? options[0] : '';
+    const selectedSpecText = methodItem.name && selectedOption
+      ? (methodItem.name === selectedOption ? methodItem.name : `${methodItem.name} · ${selectedOption}`)
+      : (this.data.currentProduct.unit || '标准定制');
+
     this.setData({
-      selectedSpecs,
+      selectedMethodIndex: index,
+      selectedMethod: methodItem.name,
+      currentOptions: options,
+      selectedOption,
+      selectedSpecText
+    });
+  },
+
+  // 选择加工方式下的具体规格
+  onSelectOption(e) {
+    if (this.data.selectedMethodIndex < 0 || !this.data.selectedMethod) {
+      wx.showToast({ title: '请先选择加工方式', icon: 'none' });
+      return;
+    }
+    const { opt } = e.currentTarget.dataset;
+    const selectedMethod = this.data.selectedMethod;
+    const selectedSpecText = selectedMethod && opt
+      ? (selectedMethod === opt ? selectedMethod : `${selectedMethod} · ${opt}`)
+      : (this.data.currentProduct.unit || '标准定制');
+
+    this.setData({
+      selectedOption: opt,
       selectedSpecText
     });
   },
@@ -512,17 +612,121 @@ Page({
     this.setData({ buyQuantity, totalPrice });
   },
 
-  goToCheckout() {
+  // 刷新当前门店购物车
+  refreshCart() {
+    const shopId = this.data.currentShopId || (this.data.shopInfo && this.data.shopInfo.id) || app.globalData.currentShopId || '';
+    if (!shopId) return;
+
+    const summary = cart.getCartSummary(shopId);
+    this.setData({
+      cartCount: summary.totalCount,
+      cartTotalAmount: summary.totalAmount,
+      cartList: summary.cartList
+    });
+  },
+
+  // 规格弹窗中点击「加入购物车」
+  onConfirmAddToCart() {
+    if (!auth.requireLogin({ content: '登录后才能将鲜肉加入购物车' })) return;
+
     const product = this.data.currentProduct;
     const quantity = this.data.buyQuantity;
+    const { specsList, selectedMethod, selectedOption } = this.data;
+
+    if (specsList && specsList.length > 0) {
+      if (!selectedMethod) {
+        wx.showToast({ title: '请选择加工方式', icon: 'none' });
+        return;
+      }
+      if (!selectedOption) {
+        wx.showToast({ title: '请选择具体加工规格', icon: 'none' });
+        return;
+      }
+    }
+
     const specInfo = this.data.selectedSpecText || product.unit;
     const shopId = product.shopId || this.data.currentShopId || '';
 
+    const res = cart.addToCart(shopId, product, specInfo, quantity);
     this.closeSpecModal();
 
-    // 直接带参跳转至下单结算页 (不做购物车，选完直接下单)
+    if (res.success) {
+      this.refreshCart();
+      wx.showToast({
+        title: '已入购物车🛒',
+        icon: 'success'
+      });
+    } else {
+      wx.showToast({
+        title: res.message || '加购失败',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 兼容老调用
+  goToCheckout() {
+    this.onConfirmAddToCart();
+  },
+
+  // 打开购物车展开抽屉
+  openCartDrawer() {
+    this.refreshCart();
+    this.setData({ showCartDrawer: true, pageStyle: 'overflow: hidden;' });
+    // 抽屉打开时隐藏底部自定义 tabBar，避免遮挡「立即下单」结算栏
+    this.setTabBarHidden(true);
+  },
+
+  // 关闭购物车展开抽屉
+  closeCartDrawer() {
+    this.setData({ showCartDrawer: false, pageStyle: '' });
+    this.setTabBarHidden(!!(this.data.showShopModal || this.data.showSpecModal));
+  },
+
+  // 购物车内商品增加数量
+  onCartInc(e) {
+    const id = e.currentTarget.dataset.id;
+    const shopId = this.data.currentShopId || (this.data.shopInfo && this.data.shopInfo.id) || app.globalData.currentShopId || '';
+    cart.changeQuantity(shopId, id, 1);
+    this.refreshCart();
+  },
+
+  // 购物车内商品减少数量
+  onCartDec(e) {
+    const id = e.currentTarget.dataset.id;
+    const shopId = this.data.currentShopId || (this.data.shopInfo && this.data.shopInfo.id) || app.globalData.currentShopId || '';
+    cart.changeQuantity(shopId, id, -1);
+    this.refreshCart();
+  },
+
+  // 清空当前门店购物车
+  onClearCart() {
+    const shopId = this.data.currentShopId || (this.data.shopInfo && this.data.shopInfo.id) || app.globalData.currentShopId || '';
+    wx.showModal({
+      title: '清空小推车',
+      content: '确定要清空购物车里的所有肉肉吗？',
+      confirmColor: '#FF6B6B',
+      success: (res) => {
+        if (res.confirm) {
+          cart.clearCart(shopId);
+          this.refreshCart();
+          wx.showToast({ title: '已清空购物车', icon: 'none' });
+        }
+      }
+    });
+  },
+
+  // 悬浮球抽屉中去结算
+  goToCartCheckout() {
+    if (this.data.cartCount <= 0) {
+      wx.showToast({ title: '购物车还是空的哦～', icon: 'none' });
+      return;
+    }
+
+    const shopId = this.data.currentShopId || (this.data.shopInfo && this.data.shopInfo.id) || app.globalData.currentShopId || '';
+    this.closeCartDrawer();
     wx.navigateTo({
-      url: `/pages/checkout/checkout?productId=${product.id}&quantity=${quantity}&specInfo=${encodeURIComponent(specInfo)}&shopId=${shopId}`
+      url: `/pages/checkout/checkout?from=cart&shopId=${shopId}`
     });
   }
 });

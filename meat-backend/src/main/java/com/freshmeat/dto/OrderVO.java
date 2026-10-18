@@ -23,6 +23,10 @@ public class OrderVO implements Serializable {
     private String orderNo;
     private String shopId;
     private String shopName;
+    /** 提货/下单门店地址与坐标，供顾客端导航使用 */
+    private String shopAddress;
+    private BigDecimal shopLng;
+    private BigDecimal shopLat;
     private String userId;
     private Integer deliveryType;
     private String deliveryTypeDesc;
@@ -45,6 +49,8 @@ public class OrderVO implements Serializable {
 
     private BigDecimal goodsAmount;
     private BigDecimal payAmount;
+    private BigDecimal originalPayAmount;
+    private String pickupCode;
 
     private String remark;
     private String cancelReason;
@@ -68,4 +74,6 @@ public class OrderVO implements Serializable {
     private Boolean canReject;     // 商家可拒单
     private Boolean canDeliver;    // 商家可发货/通知自取
     private Boolean canFinish;     // 商家可完成核销
+    private Boolean canChangePrice; // 商家可改价(未付款)
+    private Boolean canAdminCancel; // 商家可主动取消/退款
 }

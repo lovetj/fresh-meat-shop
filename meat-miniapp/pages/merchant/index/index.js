@@ -8,7 +8,12 @@ Page({
     shopInfo: {},
     myShops: [],
     currentShop: {},
-    showShopPicker: false
+    shopLoaded: false,
+    showShopPicker: false,
+    // 阶梯配送规则展示数据
+    deliveryTiers: [],
+    deliveryCoverText: '',
+    hasDeliveryTiers: false
   },
 
   onShow() {
@@ -40,30 +45,102 @@ Page({
 
       if (currentShop) {
         wx.setStorageSync('adminShopId', currentShop.id);
-        this.setData({
-          myShops,
-          currentShop,
-          shopInfo: currentShop
-        });
+        this.applyShopData(currentShop, myShops);
       } else {
-        // 回退加载常规 shop/info
-        this.loadShopInfo();
+        // 关联表中没有任何门店：不再回退默认门店，直接展示空状态
+        this.applyEmptyShop();
       }
     }).catch(() => {
-      this.loadShopInfo();
+      this.applyEmptyShop();
+      wx.showToast({ title: '门店列表加载失败', icon: 'none' });
     });
   },
 
-  loadShopInfo() {
-    request.get('/shop/info', {}, { silent: true }).then((res) => {
-      if (res) {
-        this.setData({
-          shopInfo: res,
-          currentShop: res,
-          myShops: [res]
-        });
-      }
+  /**
+   * 当前管理员在 shop_admin 中无任何关联门店时的空状态
+   */
+  applyEmptyShop() {
+    wx.removeStorageSync('adminShopId');
+    this.setData({
+      myShops: [],
+      currentShop: {},
+      shopInfo: {},
+      deliveryTiers: [],
+      deliveryCoverText: '',
+      hasDeliveryTiers: false,
+      showShopPicker: false,
+      shopLoaded: true
     });
+  },
+
+  /**
+   * 应用当前管理门店，并格式化阶梯配送信息
+   * @param {Object} shop 当前门店
+   * @param {Array} shops 可选门店列表（不传则沿用当前列表）
+   */
+  applyShopData(shop, shops) {
+    const view = this.buildDeliveryTiers(shop);
+    const list = shops || this.data.myShops || [];
+
+    // 列表卡片上的配送摘要统一格式化（有阶梯走阶梯，无阶梯回退半径）
+    const myShops = list.map((item) => ({
+      ...item,
+      deliveryText: item.id === shop.id ? view.cardText : this.buildDeliveryTiers(item).cardText
+    }));
+
+    this.setData({
+      myShops,
+      currentShop: { ...shop, deliveryText: view.cardText },
+      shopInfo: shop,
+      deliveryTiers: view.tiers,
+      deliveryCoverText: view.coverText,
+      hasDeliveryTiers: view.tiers.length > 0,
+      shopLoaded: true
+    });
+  },
+
+  /**
+   * 把阶梯配送规则格式化为展示数据
+   * @returns {{tiers: Array, coverText: string, cardText: string}}
+   */
+  buildDeliveryTiers(shop) {
+    const rawRules = (shop && Array.isArray(shop.deliveryRules)) ? shop.deliveryRules.slice() : [];
+    const fallbackMax = 5;
+
+    rawRules.sort((a, b) => (Number(a.minDistance) || 0) - (Number(b.minDistance) || 0));
+
+    const tiers = [];
+    let hasUnlimited = false;
+    let maxDistance = 0;
+
+    rawRules.forEach((rule) => {
+      const min = Number(rule.minDistance) || 0;
+      const fee = Number(rule.deliveryFee) || 0;
+      const minAmount = Number(rule.minOrderAmount) || 0;
+      const maxRaw = rule.maxDistance;
+      const isUnlimited = maxRaw === null || maxRaw === undefined || maxRaw === '' || Number(maxRaw) <= 0;
+
+      if (isUnlimited) {
+        hasUnlimited = true;
+      } else if (Number(maxRaw) > maxDistance) {
+        maxDistance = Number(maxRaw);
+      }
+
+      tiers.push({
+        rangeText: isUnlimited ? `${min}km 以上` : `${min}-${Number(maxRaw)}km`,
+        desc: minAmount > 0 ? `配送 ¥${fee} · 起送 ¥${minAmount}` : `配送 ¥${fee}`
+      });
+    });
+
+    const coverText = tiers.length === 0
+      ? ''
+      : (hasUnlimited ? '不限距离' : `最远 ${maxDistance || fallbackMax}km`);
+
+    const cardText = tiers.length === 0
+      ? `配送半径 ${fallbackMax}km`
+      : `${tiers.length} 段阶梯 · ${coverText}`;
+
+    return { tiers, coverText, cardText };
   },
 
   openShopPicker() {
@@ -82,39 +159,52 @@ Page({
     const shopId = e.currentTarget.dataset.id;
     const shop = this.data.myShops.find(s => s.id === shopId);
     if (shop) {
-      this.setData({
-        currentShop: shop,
-        shopInfo: shop,
-        showShopPicker: false
-      });
+      this.setData({ showShopPicker: false });
+      this.applyShopData(shop);
       wx.setStorageSync('adminShopId', shop.id);
       wx.showToast({ title: `已切换管理: ${shop.name}`, icon: 'none' });
     }
   },
 
-  goToOrders(e) {
-    const status = e.currentTarget.dataset.status || '';
+  /**
+   * 取当前门店 id，无关联门店时提示并阻止跳转
+   */
+  requireCurrentShop() {
     const shopId = (this.data.currentShop && this.data.currentShop.id) || '';
+    if (!shopId) {
+      wx.showToast({ title: '当前账号未关联门店', icon: 'none' });
+    }
+    return shopId;
+  },
+
+  goToOrders(e) {
+    const shopId = this.requireCurrentShop();
+    if (!shopId) return;
+    const status = e.currentTarget.dataset.status || '';
     wx.navigateTo({
       url: `/pages/merchant/orders/orders?status=${status}&shopId=${shopId}`
     });
   },
 
   goToProductList() {
-    const shopId = (this.data.currentShop && this.data.currentShop.id) || '';
+    const shopId = this.requireCurrentShop();
+    if (!shopId) return;
     wx.navigateTo({
       url: `/pages/merchant/products/list/index?shopId=${shopId}`
     });
   },
 
   goToCategoryList() {
+    const shopId = this.requireCurrentShop();
+    if (!shopId) return;
     wx.navigateTo({
       url: '/pages/merchant/category/index'
     });
   },
 
   goToShopSetting() {
-    const shopId = (this.data.currentShop && this.data.currentShop.id) || '';
+    const shopId = this.requireCurrentShop();
+    if (!shopId) return;
     wx.navigateTo({
       url: `/pages/merchant/shop-setting/index?shopId=${shopId}`
     });
@@ -126,26 +216,11 @@ Page({
     if (shop.id) {
       app.globalData.currentShopId = shop.id;
       wx.setStorageSync('currentShopId', shop.id);
+      // 掌柜回到顾客端属于明确选店，同步为用户历史选择门店
+      wx.setStorageSync('selectedShopId', shop.id);
     }
     wx.switchTab({
       url: '/pages/index/index'
-    });
-  },
-
-  logoutAdmin() {
-    wx.showModal({
-      title: '提示',
-      content: '确定退出管理员登录并切回顾客端吗？',
-      confirmText: '退出管理',
-      cancelText: '取消',
-      success: (res) => {
-        if (res.confirm) {
-          auth.logoutAdmin();
-          wx.switchTab({
-            url: '/pages/mine/mine'
-          });
-        }
-      }
     });
   }
 });

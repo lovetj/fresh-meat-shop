@@ -9,6 +9,7 @@ import com.freshmeat.dto.DistanceCheckVO;
 import com.freshmeat.dto.ShopInfoDTO;
 import com.freshmeat.dto.ShopQueryDTO;
 import com.freshmeat.entity.ShopAdmin;
+import com.freshmeat.entity.ShopDeliveryRule;
 import com.freshmeat.entity.ShopInfo;
 import com.freshmeat.entity.User;
 import com.freshmeat.exception.BusinessException;
@@ -39,6 +40,7 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
 
     private final ShopAdminMapper shopAdminMapper;
     private final UserMapper userMapper;
+    private final com.freshmeat.service.ShopDeliveryRuleService deliveryRuleService;
 
     @Override
     public ShopInfo getShopInfo() {
@@ -47,41 +49,43 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
 
     @Override
     public ShopInfo getShopInfo(String shopId) {
+        ShopInfo targetShop = null;
         if (StringUtils.hasText(shopId)) {
-            ShopInfo shop = this.getById(shopId);
-            if (shop != null) {
-                return shop;
+            targetShop = this.getById(shopId);
+        }
+
+        if (targetShop == null) {
+            // 默认策略：优先选择正在营业且排序最高的店铺
+            List<ShopInfo> shops = this.list(new LambdaQueryWrapper<ShopInfo>()
+                    .orderByDesc(ShopInfo::getStatus)
+                    .orderByDesc(ShopInfo::getSortOrder)
+                    .orderByAsc(ShopInfo::getCreateTime));
+
+            if (!CollectionUtils.isEmpty(shops)) {
+                targetShop = shops.get(0);
             }
         }
 
-        // 默认策略：优先选择正在营业且排序最高的店铺
-        List<ShopInfo> shops = this.list(new LambdaQueryWrapper<ShopInfo>()
-                .orderByDesc(ShopInfo::getStatus)
-                .orderByDesc(ShopInfo::getSortOrder)
-                .orderByAsc(ShopInfo::getCreateTime));
-
-        if (!CollectionUtils.isEmpty(shops)) {
-            return shops.get(0);
+        // 若库中完全无数据，提供兜底创建
+        if (targetShop == null) {
+            targetShop = ShopInfo.builder()
+                    .id("s_shop_000000000000000000000000001")
+                    .name("维琼鲜肉铺(科技园旗舰店)")
+                    .notice("每日清晨现宰直达，同城专人极速送达！")
+                    .phone("13800138000")
+                    .businessHours("06:30 - 20:00")
+                    .address("深圳市南山区科兴科学园A01")
+                    .longitude(new BigDecimal("113.9435000"))
+                    .latitude(new BigDecimal("22.5492000"))
+                    .status(1)
+                    .sortOrder(100)
+                    .build();
+            this.save(targetShop);
         }
 
-        // 若库中完全无数据，提供兜底创建
-        ShopInfo defaultShop = ShopInfo.builder()
-                .id("s_shop_000000000000000000000000001")
-                .name("维琼鲜肉铺(科技园旗舰店)")
-                .notice("每日清晨现宰直达，同城专人极速送达！")
-                .phone("13800138000")
-                .businessHours("06:30 - 20:00")
-                .address("深圳市南山区科兴科学园A01")
-                .longitude(new BigDecimal("113.9435000"))
-                .latitude(new BigDecimal("22.5492000"))
-                .maxDeliveryDistance(new BigDecimal("5.00"))
-                .minOrderAmount(new BigDecimal("15.00"))
-                .deliveryFee(new BigDecimal("3.00"))
-                .status(1)
-                .sortOrder(100)
-                .build();
-        this.save(defaultShop);
-        return defaultShop;
+        // 统一附带加载该店铺的同城多阶梯配送规则
+        targetShop.setDeliveryRules(deliveryRuleService.listRulesByShopId(targetShop.getId()));
+        return targetShop;
     }
 
     @Override
@@ -123,6 +127,10 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
                 double d2 = b.getDistance() != null ? b.getDistance() : 9999.0;
                 return Double.compare(d1, d2);
             });
+        }
+
+        for (ShopInfo s : shops) {
+            s.setDeliveryRules(deliveryRuleService.listRulesByShopId(s.getId()));
         }
 
         return shops;
@@ -188,6 +196,10 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
             });
         }
 
+        for (ShopInfo s : records) {
+            s.setDeliveryRules(deliveryRuleService.listRulesByShopId(s.getId()));
+        }
+
         return PageResult.of(resultPage.getTotal(), records, resultPage.getCurrent(), resultPage.getSize());
     }
 
@@ -203,42 +215,48 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
             throw new BusinessException(403, "非管理员无权访问");
         }
 
-        // 超级管理员账号拥有所有店铺权限
-        if ("admin".equalsIgnoreCase(user.getUsername())) {
-            return this.list(new LambdaQueryWrapper<ShopInfo>()
-                    .orderByDesc(ShopInfo::getSortOrder)
-                    .orderByAsc(ShopInfo::getCreateTime));
-        }
-
-        // 普通管理员按关联表查询
+        // 唯一依据是 shop_admin 关联表：OWNER / ADMIN 均可切换管理，不按 role_type 过滤
         List<ShopAdmin> relations = shopAdminMapper.selectList(
                 new LambdaQueryWrapper<ShopAdmin>().eq(ShopAdmin::getUserId, userId)
         );
 
         if (CollectionUtils.isEmpty(relations)) {
-            // 兼容容错：若未配置特定关联，则默认赋予首个店铺权限
-            ShopInfo defaultShop = getShopInfo();
-            if (defaultShop != null) {
-                ShopAdmin autoRel = ShopAdmin.builder()
-                        .shopId(defaultShop.getId())
-                        .userId(userId)
-                        .roleType("ADMIN")
-                        .createTime(LocalDateTime.now())
-                        .build();
-                shopAdminMapper.insert(autoRel);
-                return Collections.singletonList(defaultShop);
-            }
             return Collections.emptyList();
         }
 
-        List<String> shopIds = relations.stream().map(ShopAdmin::getShopId).distinct().collect(Collectors.toList());
-        return this.listByIds(shopIds);
+        List<String> shopIds = relations.stream()
+                .map(ShopAdmin::getShopId)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .collect(Collectors.toList());
+        if (shopIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<ShopInfo> adminShops = this.listByIds(shopIds);
+        fillDeliveryRules(adminShops);
+        return adminShops;
+    }
+
+    /**
+     * 为店铺列表补全阶梯配送规则，供掌柜后台展示配送范围
+     */
+    private void fillDeliveryRules(List<ShopInfo> shops) {
+        if (CollectionUtils.isEmpty(shops)) {
+            return;
+        }
+        for (ShopInfo shop : shops) {
+            shop.setDeliveryRules(deliveryRuleService.listRulesByShopId(shop.getId()));
+        }
     }
 
     @Override
     public List<User> listShopAdmins(String shopId) {
         if (!StringUtils.hasText(shopId)) {
             return Collections.emptyList();
+        }
+        if (!hasShopPermission(SecurityContextUtil.getUserId(), shopId)) {
+            throw new BusinessException(403, "无权查看该店铺管理员");
         }
 
         List<ShopAdmin> relations = shopAdminMapper.selectList(
@@ -261,6 +279,9 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
     public boolean bindShopAdmin(String shopId, String username, String roleType) {
         if (!StringUtils.hasText(shopId) || !StringUtils.hasText(username)) {
             throw new BusinessException("店铺ID和管理员账号不能为空");
+        }
+        if (!hasShopPermission(SecurityContextUtil.getUserId(), shopId)) {
+            throw new BusinessException(403, "无权管理该店铺");
         }
 
         ShopInfo shop = this.getById(shopId);
@@ -302,6 +323,12 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean unbindShopAdmin(String shopId, String userId) {
+        if (!StringUtils.hasText(shopId) || !StringUtils.hasText(userId)) {
+            throw new BusinessException("店铺ID和管理员ID不能为空");
+        }
+        if (!hasShopPermission(SecurityContextUtil.getUserId(), shopId)) {
+            throw new BusinessException(403, "无权管理该店铺");
+        }
         return shopAdminMapper.delete(new LambdaQueryWrapper<ShopAdmin>()
                 .eq(ShopAdmin::getShopId, shopId)
                 .eq(ShopAdmin::getUserId, userId)) > 0;
@@ -316,10 +343,7 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
         if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
             return false;
         }
-        // 超级管理员放行
-        if ("admin".equalsIgnoreCase(user.getUsername())) {
-            return true;
-        }
+        // 仅以 shop_admin 关联为准，OWNER / ADMIN 权限一致
         Long count = shopAdminMapper.selectCount(new LambdaQueryWrapper<ShopAdmin>()
                 .eq(ShopAdmin::getShopId, shopId)
                 .eq(ShopAdmin::getUserId, userId));
@@ -332,12 +356,10 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
             return Collections.emptyList();
         }
         User user = userMapper.selectById(userId);
-        if (user == null) {
+        if (user == null || !"ADMIN".equalsIgnoreCase(user.getRole())) {
             return Collections.emptyList();
         }
-        if ("admin".equalsIgnoreCase(user.getUsername())) {
-            return this.list().stream().map(ShopInfo::getId).collect(Collectors.toList());
-        }
+        // 仅以 shop_admin 关联为准，OWNER / ADMIN 权限一致
         List<ShopAdmin> list = shopAdminMapper.selectList(new LambdaQueryWrapper<ShopAdmin>().eq(ShopAdmin::getUserId, userId));
         return list.stream().map(ShopAdmin::getShopId).distinct().collect(Collectors.toList());
     }
@@ -346,6 +368,7 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
     @Transactional(rollbackFor = Exception.class)
     public boolean updateShopInfo(ShopInfoDTO dto) {
         String currentUserId = SecurityContextUtil.getUserId();
+        String targetShopId;
         if (StringUtils.hasText(dto.getId())) {
             // 权限检查
             if (!hasShopPermission(currentUserId, dto.getId())) {
@@ -356,7 +379,8 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
                 throw new BusinessException("待修改商铺不存在");
             }
             BeanUtils.copyProperties(dto, exist);
-            return this.updateById(exist);
+            this.updateById(exist);
+            targetShopId = exist.getId();
         } else {
             // 新增店铺
             ShopInfo newShop = new ShopInfo();
@@ -375,8 +399,14 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
                         .build();
                 shopAdminMapper.insert(sa);
             }
-            return saved;
+            targetShopId = newShop.getId();
         }
+
+        // 保存多阶梯配送规则
+        if (!CollectionUtils.isEmpty(dto.getDeliveryRules())) {
+            deliveryRuleService.saveShopRules(targetShopId, dto.getDeliveryRules());
+        }
+        return true;
     }
 
     @Override
@@ -390,27 +420,11 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
         double shopLat = shop.getLatitude().doubleValue();
         double userLng = dto.getLongitude().doubleValue();
         double userLat = dto.getLatitude().doubleValue();
-        double maxDist = shop.getMaxDeliveryDistance() != null ? shop.getMaxDeliveryDistance().doubleValue() : 5.0;
 
         // 计算球面距离 (km)
         double actualDistance = DistanceUtil.calculateDistance(shopLng, shopLat, userLng, userLat);
-        boolean canDeliver = actualDistance <= maxDist;
 
-        String message;
-        if (canDeliver) {
-            message = String.format("距「%s」约 %.2f 公里，在商家配送范围内", shop.getName(), actualDistance);
-        } else {
-            message = String.format("距「%s」约 %.2f 公里，超出最大配送范围(%.1f公里)，建议选择「自取」或切换至更近的分店",
-                    shop.getName(), actualDistance, maxDist);
-        }
-
-        return DistanceCheckVO.builder()
-                .distance(actualDistance)
-                .maxDeliveryDistance(maxDist)
-                .canDeliver(canDeliver)
-                .deliveryFee(shop.getDeliveryFee() != null ? shop.getDeliveryFee() : BigDecimal.ZERO)
-                .minOrderAmount(shop.getMinOrderAmount() != null ? shop.getMinOrderAmount() : BigDecimal.ZERO)
-                .message(message)
-                .build();
+        // 委托多阶梯配送规则计算器
+        return deliveryRuleService.calculateDelivery(shop, actualDistance);
     }
 }

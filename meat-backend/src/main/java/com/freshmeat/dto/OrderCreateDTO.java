@@ -2,9 +2,8 @@ package com.freshmeat.dto;
 
 import lombok.Data;
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 @Data
 public class OrderCreateDTO {
@@ -29,18 +28,30 @@ public class OrderCreateDTO {
     /** 自取人联系电话 (自提时可选) */
     private String pickupPhone;
 
-    /** 购买商品ID */
-    @NotBlank(message = "商品ID不能为空")
+    /** 购买商品ID (单商品下单兼容) */
     private String productId;
 
-    /** 购买数量/份数 */
-    @NotNull(message = "购买数量不能为空")
-    @Min(value = 1, message = "购买数量至少为1")
+    /** 购买数量/份数 (单商品下单兼容) */
     private Integer quantity;
 
-    /** 所选规格信息 (如: 500g(约1斤) / 切小块) */
+    /** 所选规格信息 (如: 500g(约1斤) / 切小块) (单商品下单兼容) */
     private String specInfo;
+
+    /** 多商品明细列表 (支持购物车批量下单) */
+    private List<OrderItemDTO> items;
 
     /** 顾客下单备注 */
     private String remark;
+
+    @Data
+    public static class OrderItemDTO {
+        /** 商品ID */
+        private String productId;
+
+        /** 购买数量/份数 */
+        private Integer quantity;
+
+        /** 所选规格信息 */
+        private String specInfo;
+    }
 }

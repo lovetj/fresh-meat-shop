@@ -36,9 +36,7 @@
       <view class="form-item form-item-switch">
         <text class="label">营业状态</text>
         <view class="switch-box">
-          <text class="status-txt {{shop.status === 1 ? 'txt-open' : 'txt-close'}}">
-            {{shop.status === 1 ? '正常营业' : '暂停歇业'}}
-          </text>
+          <text class="status-txt {{shop.status === 1 ? 'txt-open' : 'txt-close'}}">{{shop.status === 1 ? '正常营业' : '暂停歇业'}}</text>
           <switch checked="{{shop.status === 1}}" color="#FF6B6B" bindchange="onStatusChange"/>
         </view>
       </view>
@@ -73,40 +71,59 @@
       </view>
     </view>
 
-    <!-- 同城配送规则配置 -->
+    <!-- 同城配送规则配置 (多阶梯多区间) -->
     <view class="card form-card">
-      <view class="section-title">🛵 同城配送规则与范围</view>
-
-      <view class="form-item">
-        <view class="label-wrap">
-          <text class="label required">最大配送距离 (公里)</text>
-          <text class="sub-label">超出该距离将禁止顾客选择商家配送</text>
-        </view>
-        <input class="input highlight-input" name="maxDeliveryDistance" type="digit" placeholder="如：5.0" value="{{shop.maxDeliveryDistance}}"/>
+      <view class="section-header-row">
+        <view class="section-title">🛵 同城配送规则与阶梯范围</view>
+        <button class="add-rule-btn" type="button" bindtap="addDeliveryRule">+ 添加阶梯</button>
       </view>
+      <text class="section-desc">支持不同距离配置不同配送费与起送价；阶梯需首尾衔接（第 1 段从 0km 开始，后一段起始距离须等于前一段截止距离），超出最大距离将禁止选择商家配送</text>
 
-      <view class="form-item">
-        <view class="label-wrap">
-          <text class="label">起送金额 (元)</text>
-          <text class="sub-label">订单肉品满此金额方可配送</text>
-        </view>
-        <input class="input" name="minOrderAmount" type="digit" placeholder="默认：20.00" value="{{shop.minOrderAmount}}"/>
-      </view>
+      <view class="rule-list">
+        <view class="rule-card" wx:for="{{deliveryRules}}" wx:key="index">
+          <view class="rule-card-header">
+            <view class="rule-badge">阶梯 {{index + 1}}</view>
+            <view class="rule-range-preview">
+              {{item.isUnlimited ? (item.minDistance + 'km 以上 (不限距离)') : (item.minDistance + 'km - ' + item.maxDistance + 'km')}}
+            </view>
+            <view class="rule-header-actions">
+              <view class="rule-unlimited-btn {{item.isUnlimited ? 'btn-active' : ''}}" bindtap="toggleUnlimitedRule" data-index="{{index}}" wx:if="{{index === deliveryRules.length - 1}}">
+                {{item.isUnlimited ? '✓ 已设不限距离' : '♾️ 设为不限距离'}}
+              </view>
+              <view class="rule-del-btn" bindtap="deleteDeliveryRule" data-index="{{index}}" wx:if="{{deliveryRules.length > 1}}">
+                🗑️ 删除
+              </view>
+            </view>
+          </view>
 
-      <view class="form-item">
-        <view class="label-wrap">
-          <text class="label">基础配送费 (元)</text>
-          <text class="sub-label">每笔配送订单额外收取的运费</text>
+          <view class="rule-form-grid">
+            <view class="rule-grid-item">
+              <text class="rule-grid-label required">起始距离(km)</text>
+              <input class="rule-grid-input" type="digit" placeholder-class="rule-input-ph" placeholder="如 0" value="{{item.minDistance}}" data-index="{{index}}" data-field="minDistance" bindinput="onRuleFieldInput"/>
+            </view>
+            <view class="rule-grid-item">
+              <text class="rule-grid-label required">截止距离(km)</text>
+              <input class="rule-grid-input {{item.isUnlimited ? 'disabled' : ''}}" type="{{item.isUnlimited ? 'text' : 'digit'}}" placeholder-class="rule-input-ph" placeholder="{{item.isUnlimited ? '无上限(不限距离)' : '如 3.0'}}" value="{{item.isUnlimited ? '无上限 (不限距离)' : item.maxDistance}}" disabled="{{item.isUnlimited}}" data-index="{{index}}" data-field="maxDistance" bindinput="onRuleFieldInput"/>
+            </view>
+            <view class="rule-grid-item">
+              <text class="rule-grid-label">起送金额(元)</text>
+              <input class="rule-grid-input" type="digit" placeholder-class="rule-input-ph" placeholder="如 20.0" value="{{item.minOrderAmount}}" data-index="{{index}}" data-field="minOrderAmount" bindinput="onRuleFieldInput"/>
+            </view>
+            <view class="rule-grid-item">
+              <text class="rule-grid-label">配送费(元)</text>
+              <input class="rule-grid-input" type="digit" placeholder-class="rule-input-ph" placeholder="如 3.0" value="{{item.deliveryFee}}" data-index="{{index}}" data-field="deliveryFee" bindinput="onRuleFieldInput"/>
+            </view>
+          </view>
         </view>
-        <input class="input" name="deliveryFee" type="digit" placeholder="默认：3.00" value="{{shop.deliveryFee}}"/>
       </view>
     </view>
 
     <!-- 配送距离计算原理说明 -->
     <view class="rule-tip-card">
-      <view class="rule-tip-title">ℹ️ 配送距离校验机制说明</view>
+      <view class="rule-tip-title">ℹ️ 配送距离阶梯匹配机制说明</view>
       <text class="rule-tip-p">1. 系统基于 Haversine 大圆距离公式对顾客填写的收货地址经纬度与店铺门店坐标进行实时高精度测距。</text>
-      <text class="rule-tip-p">2. 当测算距离 > 设置的最大配送距离时，结算页将自动禁用【商家配送】，并友好提示顾客切换为【到店自取】。</text>
+      <text class="rule-tip-p">2. 系统将根据测算的实际距离，自动落入对应区间阶梯，按该阶梯精确收取配送费并校验起送价要求。</text>
+      <text class="rule-tip-p">3. 当测算距离超出所有阶梯的最大配送范围时，结算页将自动禁用【商家配送】，并友好提示顾客切换为【到店自取】。</text>
     </view>
 
     <!-- 底部保存按钮 -->

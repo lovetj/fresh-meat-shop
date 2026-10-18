@@ -45,15 +45,6 @@ public class ShopInfo implements Serializable {
     /** 店铺纬度 */
     private BigDecimal latitude;
 
-    /** 最大配送距离 (公里km) */
-    private BigDecimal maxDeliveryDistance;
-
-    /** 起送金额 (元) */
-    private BigDecimal minOrderAmount;
-
-    /** 默认配送费 (元) */
-    private BigDecimal deliveryFee;
-
     /** 营业状态: 1-营业中, 0-休息中 */
     private Integer status;
 
@@ -63,6 +54,10 @@ public class ShopInfo implements Serializable {
     /** 临时计算字段: 与当前定位距离(km)，不入库 */
     @com.baomidou.mybatisplus.annotation.TableField(exist = false)
     private Double distance;
+
+    /** 同城配送多阶梯规则列表，不入 shop_info 主表 */
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    private java.util.List<ShopDeliveryRule> deliveryRules;
 
     /** 创建时间 */
     private LocalDateTime createTime;

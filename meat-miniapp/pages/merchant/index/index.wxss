@@ -39,6 +39,10 @@
   font-weight: 800;
   color: var(--text-main);
   letter-spacing: 0.5rpx;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tag-status {
@@ -62,18 +66,23 @@
   align-items: center;
   gap: 12rpx;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .switch-badge {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
   gap: 4rpx;
   background: rgba(255, 107, 107, 0.15);
   border: 1.5rpx solid rgba(255, 107, 107, 0.4);
   color: #D32F2F;
   font-size: 20rpx;
   font-weight: 700;
-  padding: 4rpx 14rpx;
+  line-height: 1;
+  padding: 6rpx 14rpx;
   border-radius: 999rpx;
 }
 
@@ -94,6 +103,26 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ================= 空状态 ================= */
+.empty-shop-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: 32rpx;
+}
+
+.empty-shop-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.empty-shop-desc {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--text-sub);
 }
 
 /* ================= 弹窗样式 ================= */
@@ -232,6 +261,72 @@
   color: var(--text-sub);
 }
 
+/* ================= 阶梯配送信息 ================= */
+.delivery-summary {
+  position: relative;
+  z-index: 1;
+  margin-top: 14rpx;
+}
+
+.delivery-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.delivery-summary-title {
+  font-size: 23rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.delivery-cover-tag {
+  flex-shrink: 0;
+  font-size: 20rpx;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--primary);
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: var(--radius-round);
+  padding: 2rpx 14rpx;
+}
+
+.tier-scroll {
+  width: 100%;
+  margin-top: 10rpx;
+  white-space: nowrap;
+}
+
+.tier-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2rpx;
+  margin-right: 12rpx;
+  padding: 10rpx 18rpx;
+  box-sizing: border-box;
+  vertical-align: top;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1rpx solid #FFDCCF;
+  border-radius: 16rpx;
+}
+
+.tier-chip:last-child {
+  margin-right: 0;
+}
+
+.tier-range {
+  font-size: 22rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.tier-desc {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: #E8590C;
+}
+
 /* ================= 2. 功能管理四宫格 ================= */
 .menu-grid-card {
   /* 上移与顶部渐变头衔接（原待办卡片位置） */
@@ -329,17 +424,5 @@
   line-height: 84rpx;
   font-size: 28rpx;
   font-weight: 700;
-  border-radius: var(--radius-round);
-}
-
-.logout-admin-btn {
-  margin: 0;
-  height: 80rpx;
-  line-height: 78rpx;
-  font-size: 26rpx;
-  font-weight: 600;
-  color: #8C8C8C;
-  background-color: #F5F5F5;
-  border: 1rpx solid #E8E8E8;
   border-radius: var(--radius-round);
 }

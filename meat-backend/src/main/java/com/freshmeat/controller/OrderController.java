@@ -42,6 +42,15 @@ public class OrderController {
     }
 
     /**
+     * 顾客端：我的订单各状态数量统计
+     */
+    @ApiOperation(value = "我的订单各状态数量统计", notes = "用于订单列表顶部状态标签角标")
+    @GetMapping("/status-counts")
+    public Result<com.freshmeat.dto.OrderStatusCountVO> customerStatusCounts() {
+        return Result.success(orderService.getCustomerStatusCounts());
+    }
+
+    /**
      * 顾客端与商家端：查询订单详情
      */
     @ApiOperation(value = "查询订单详情", notes = "返回商品清单、配送信息、实付金额及状态流转信息")
@@ -122,5 +131,47 @@ public class OrderController {
     public Result<Boolean> finish(@PathVariable String id) {
         boolean ok = orderService.finishOrder(id);
         return Result.success("订单已完成", ok);
+    }
+
+    /**
+     * 商家端：订单状态统计数量 (待接单、待配货自提、配送中等计数)
+     */
+    @ApiOperation(value = "掌柜订单各状态数量统计", notes = "返回待接单、待自提、配送中、售后等角标统计")
+    @RequireAdmin
+    @GetMapping("/admin/status-counts")
+    public Result<com.freshmeat.dto.OrderStatusCountVO> statusCounts(@RequestParam(required = false) String shopId) {
+        return Result.success(orderService.getAdminStatusCounts(shopId));
+    }
+
+    /**
+     * 商家端：提货码一键核销
+     */
+    @ApiOperation(value = "自提提货码核销", notes = "输入顾客6位提货码一键核销完成")
+    @RequireAdmin
+    @PostMapping("/admin/verify-pickup")
+    public Result<OrderVO> verifyPickup(@RequestBody @Validated com.freshmeat.dto.OrderPickupVerifyDTO dto) {
+        return Result.success("核销成功", orderService.verifyPickupByCode(dto));
+    }
+
+    /**
+     * 商家端：待支付订单改价
+     */
+    @ApiOperation(value = "掌柜改价", notes = "生鲜称重后调整实付金额(仅未支付)")
+    @RequireAdmin
+    @PostMapping("/admin/change-price/{id}")
+    public Result<Boolean> changePrice(@PathVariable String id, @RequestBody @Validated com.freshmeat.dto.OrderPriceChangeDTO dto) {
+        boolean ok = orderService.changeOrderPrice(id, dto);
+        return Result.success("改价成功", ok);
+    }
+
+    /**
+     * 商家端：主动取消订单并退款
+     */
+    @ApiOperation(value = "掌柜主动取消订单", notes = "协商一致取消并退款")
+    @RequireAdmin
+    @PostMapping("/admin/cancel/{id}")
+    public Result<Boolean> adminCancel(@PathVariable String id, @RequestBody(required = false) OrderStatusUpdateDTO dto) {
+        boolean ok = orderService.adminCancelOrder(id, dto);
+        return Result.success("订单已取消退款", ok);
     }
 }
