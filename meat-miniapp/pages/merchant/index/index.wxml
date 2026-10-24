@@ -16,23 +16,6 @@
     </view>
     <view class="shop-meta-box" wx:if="{{currentShop.id}}">
       <text class="shop-sub ellipsis">📍 {{currentShop.address || '未配置地址'}}</text>
-
-      <!-- 阶梯配送规则：逐段展示距离区间与配送费 -->
-      <view class="delivery-summary" wx:if="{{hasDeliveryTiers}}">
-        <view class="delivery-summary-head">
-          <text class="delivery-summary-title">🛵 同城配送 · {{deliveryTiers.length}} 段阶梯</text>
-          <text class="delivery-cover-tag">{{deliveryCoverText}}</text>
-        </view>
-        <scroll-view class="tier-scroll" scroll-x>
-          <view class="tier-chip" wx:for="{{deliveryTiers}}" wx:key="rangeText">
-            <text class="tier-range">{{item.rangeText}}</text>
-            <text class="tier-desc">{{item.desc}}</text>
-          </view>
-        </scroll-view>
-      </view>
-
-      <!-- 未配置阶梯时默认提示 -->
-      <text class="shop-sub" wx:else>🛵 同城多阶梯配送</text>
     </view>
   </view>
 
@@ -63,7 +46,7 @@
       <!-- 3. 商品管理 -->
       <view class="grid-item" bindtap="goToProductList">
         <view class="item-icon-wrap icon-goods">🥩</view>
-        <text class="item-name">鲜肉商品管理</text>
+        <text class="item-name">商品管理</text>
         <text class="item-desc">上下架/修改价格库存</text>
       </view>
 
@@ -79,7 +62,7 @@
   <!-- 返回顾客端按钮 -->
   <view class="back-box">
     <button class="btn-secondary back-btn" bindtap="backToCustomer">
-      返回顾客选肉前台
+      返回商品选购前台
     </button>
   </view>
 
@@ -104,7 +87,6 @@
           </view>
           <text class="card-addr">📍 {{item.address}}</text>
           <view class="card-bottom">
-            <text class="card-meta">🛵 {{item.deliveryText || '同城多阶梯配送'}}</text>
             <text class="card-check" wx:if="{{currentShop.id === item.id}}">✓ 当前管辖</text>
           </view>
         </view>

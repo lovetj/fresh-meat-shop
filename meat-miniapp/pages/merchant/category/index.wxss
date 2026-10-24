@@ -1,4 +1,4 @@
-/* pages/merchant/category/index.wxss - 维琼鲜肉铺 鲜肉分类管理 */
+/* pages/merchant/category/index.wxss - 鲜肉铺 鲜肉分类管理 */
 
 .container {
   min-height: 100vh;

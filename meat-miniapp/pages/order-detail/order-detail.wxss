@@ -6,6 +6,11 @@
   min-height: 100vh;
 }
 
+/* 无可执行操作时不渲染悬浮栏，底部只留安全间距 */
+.container.no-actions {
+  padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
+}
+
 /* ================= 1. 顶部Q萌状态渐变横幅 ================= */
 .status-banner {
   background: linear-gradient(135deg, #FF6B6B 0%, #FFA07A 100%);
@@ -55,6 +60,183 @@
   animation: floatPiggy 3s ease-in-out infinite;
 }
 
+/* ================= 1.1 提货核销凭证（自提提货码） ================= */
+/* 卡片头部：待提货核销 / 已核销提货 状态标签 */
+.p-card-head {
+  display: flex;
+  align-items: center;
+}
+
+.p-card-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 18rpx;
+  border-radius: var(--radius-round);
+  font-size: 22rpx;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.status-wait {
+  color: #B26A00;
+  background-color: #FFF6DF;
+  border: 2rpx solid #FFE3A3;
+}
+
+.status-done {
+  color: #2E9E4F;
+  background-color: #EAF8EE;
+  border: 2rpx solid #C6EBD0;
+}
+
+.p-card-tip {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: var(--text-sub);
+}
+
+.p-code-box {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin: 12rpx 0 16rpx;
+  padding: 18rpx 24rpx;
+  background-color: #FFF6F2;
+  border: 2rpx dashed #FFC9B8;
+  border-radius: var(--radius-tag);
+}
+
+.p-code-label {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: var(--text-sub);
+}
+
+/* 提货码数字：放大加粗、字距拉开，方便对照报码 */
+.p-code-val {
+  flex: 1;
+  min-width: 0;
+  font-size: 46rpx;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 10rpx;
+  color: var(--primary);
+  font-family: "DIN Alternate", "SF Mono", Menlo, Consolas, monospace;
+  text-shadow: 0 4rpx 10rpx rgba(255, 107, 107, 0.16);
+}
+
+/* ================= 1.2 快递配送物流信息 ================= */
+.express-card {
+  position: relative;
+  z-index: 12;
+}
+
+.express-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+.express-label {
+  flex-shrink: 0;
+  width: 130rpx;
+  font-size: 24rpx;
+  color: var(--text-sub);
+}
+
+.express-value {
+  flex: 1;
+  min-width: 0;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* 快递单号：等宽字体便于核对与电话报号 */
+.express-no {
+  flex: 1;
+  min-width: 0;
+  font-size: 28rpx;
+  font-weight: 800;
+  letter-spacing: 1rpx;
+  color: var(--text-main);
+  font-family: "DIN Alternate", "SF Mono", Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+
+.copy-btn-mini {
+  flex-shrink: 0;
+  padding: 4rpx 18rpx;
+  border-radius: var(--radius-round);
+  background-color: var(--bg-pink);
+  border: 2rpx solid #FFD9D0;
+  color: var(--primary);
+  font-size: 20rpx;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* 物流查询提示：引导打开菜鸟/快递公司 App */
+.express-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10rpx;
+  margin-top: 16rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 16rpx;
+  background-color: #FFF7F3;
+  border: 2rpx dashed #FFD9C9;
+}
+
+.express-hint-icon {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.express-hint-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #B26A00;
+}
+
+.express-empty {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 23rpx;
+  line-height: 1.5;
+  color: var(--text-sub);
+}
+
+/* 快递发货弹窗：常用快递公司快捷选择 */
+.express-company-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 8rpx;
+}
+
+.express-chip {
+  padding: 8rpx 20rpx;
+  border-radius: var(--radius-round);
+  background-color: #FFF5F2;
+  border: 2rpx solid #FFE4DC;
+  font-size: 22rpx;
+  color: var(--text-main);
+}
+
+.express-chip-active {
+  background: var(--primary-gradient);
+  border-color: transparent;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
 /* ================= 2. 配送/自取信息卡片 ================= */
 .delivery-card {
   margin-top: -20rpx;
@@ -62,13 +244,94 @@
   z-index: 10;
 }
 
+.delivery-head-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
 .delivery-type-tag {
   display: inline-block;
+  flex-shrink: 0;
   font-size: 20rpx;
-  padding: 4rpx 14rpx;
+  line-height: 1;
+  padding: 6rpx 14rpx;
   border-radius: var(--radius-round);
   font-weight: 700;
-  margin-bottom: 12rpx;
+  white-space: nowrap;
+}
+
+.shop-bind-tag {
+  min-width: 0;
+  max-width: 62%;
+  font-size: 20rpx;
+  line-height: 1;
+  color: var(--text-sub);
+  background-color: #FFF7F3;
+  border: 1rpx solid #FFE0D6;
+  padding: 5rpx 14rpx;
+  border-radius: var(--radius-round);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 自取：提货人姓名 / 电话 */
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 8rpx 0;
+}
+
+.contact-label {
+  flex-shrink: 0;
+  width: 130rpx;
+  font-size: 24rpx;
+  color: var(--text-sub);
+}
+
+.contact-name {
+  font-size: 32rpx;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.contact-phone {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: 0.5rpx;
+}
+
+.call-btn-mini {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 22rpx;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--primary, #FF6B6B);
+  background-color: #FFF0F0;
+  border: 1rpx solid #FFCCD0;
+  padding: 8rpx 22rpx;
+  border-radius: var(--radius-round);
+  white-space: nowrap;
+}
+
+/* 顾客端自提：导航按钮 */
+.nav-btn {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 22rpx;
+  line-height: 1;
+  font-weight: 700;
+  color: #2E7D32;
+  background-color: #EAF7EE;
+  border: 1rpx solid #CDEBD6;
+  padding: 8rpx 22rpx;
+  border-radius: var(--radius-round);
+  white-space: nowrap;
 }
 
 .user-info-row {
@@ -97,6 +360,18 @@
   color: var(--text-main);
   line-height: 1.4;
   font-weight: 500;
+}
+
+/* 地址行带导航按钮（掌柜端商家配送跳转顾客收货地址） */
+.address-row-nav {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.address-row-nav .address-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .dist-row {
@@ -265,11 +540,31 @@
 }
 
 .bottom-actions button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
   height: 82rpx;
   line-height: 82rpx;
-  padding: 0 40rpx;
+  padding: 0 32rpx;
   font-size: 28rpx;
   font-weight: 700;
+  white-space: nowrap;
   margin: 0;
   border-radius: var(--radius-round);
+}
+
+/* 拒单 / 立即接单：与掌柜订单列表操作按钮保持一致 */
+.bottom-actions .btn-reject {
+  background-color: #FFFFFF;
+  border: 2rpx solid #FFCCC7;
+  color: #F5222D;
+  font-weight: 800;
+}
+
+.bottom-actions .btn-accept {
+  background: linear-gradient(135deg, #52C41A 0%, #73D13D 100%);
+  border: none;
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 4rpx 14rpx rgba(82, 196, 26, 0.3);
 }

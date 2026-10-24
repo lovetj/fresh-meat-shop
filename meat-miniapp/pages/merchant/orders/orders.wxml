@@ -32,6 +32,9 @@
       <view class="type-pill {{deliveryType === 2 ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="{{2}}">
         仅同城配送
       </view>
+      <view class="type-pill {{deliveryType === 4 ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="{{4}}">
+        仅快递配送
+      </view>
     </view>
   </view>
 
@@ -59,13 +62,12 @@
       <text class="empty-sub">切换状态或关键词试试看</text>
     </view>
 
-    <view wx:for="{{orderList}}" wx:key="id" class="card order-card" bindtap="goToDetail" data-id="{{item.id}}">
-      <!-- 订单头部 -->
+    <view wx:for="{{orderList}}" wx:key="id" class="order-card" bindtap="goToDetail" data-id="{{item.id}}">
+      <!-- 订单头：配送方式 + 提货码 + 状态软色标签 -->
       <view class="order-header">
         <view class="header-left">
           <text class="delivery-badge {{item.deliveryType === 1 ? 'badge-orange' : 'badge-blue'}}">{{item.deliveryTypeDesc}}</text>
-          <text class="order-no ellipsis">{{item.orderNo}}</text>
-          <text class="copy-tag" catchtap="copyOrderNo" data-no="{{item.orderNo}}">复制</text>
+          <text class="pickup-pill" wx:if="{{item.deliveryType === 1 && item.pickupCode}}">提货码 {{item.pickupCode}}</text>
         </view>
         <text class="status-chip st-{{item.status}}">{{item.statusDesc}}</text>
       </view>
@@ -75,53 +77,32 @@
         <text class="order-time">下单时间：{{item.createTime}}</text>
       </view>
 
-      <!-- 自提提货码醒目展示 (自取订单核心) -->
-      <view class="pickup-code-banner" wx:if="{{item.deliveryType === 1 && item.pickupCode}}">
-        <view class="pickup-left">
-          <text class="pickup-label">自提核销提货码：</text>
-          <text class="pickup-val">{{item.pickupCode}}</text>
+      <!-- 商品缩略图横排：图片区最多占屏幕 50%，超出时用「更多」提示 -->
+      <view class="thumb-row">
+        <view class="thumb-group">
+          <block wx:for="{{item.items}}" wx:key="id" wx:for-item="goods">
+            <image wx:if="{{index < (item.items.length > 4 ? 3 : 4)}}" class="thumb" src="{{goods.productImage}}" mode="aspectFill"/>
+          </block>
+          <view class="thumb-more" wx:if="{{item.items.length > 4}}">...</view>
         </view>
-        <button 
-          class="pickup-btn-mini" 
-          wx:if="{{item.status === 2}}" 
-          catchtap="onFinishOrder" 
-          data-id="{{item.id}}" 
-          data-type="{{item.deliveryType}}"
-        >
-          提货核销
-        </button>
-      </view>
 
-      <!-- 商品清单明细 -->
-      <view class="items-wrap">
-        <view class="goods-row" wx:for="{{item.items}}" wx:key="id" wx:for-item="goods">
-          <image class="goods-img" src="{{goods.productImage}}" mode="aspectFill"/>
-          <view class="goods-info">
-            <text class="goods-title">{{goods.productName}}</text>
-            <text class="goods-spec">规格: {{goods.specInfo}}</text>
-            <view class="price-row">
-              <text class="price">¥{{goods.price}}</text>
-              <text class="qty">x {{goods.quantity}}</text>
-            </view>
-          </view>
+        <view class="thumb-summary">
+          <text class="summary-name ellipsis">{{item.items[0].productName}}</text>
+          <text class="summary-count">共 {{item.items.length}} 件</text>
         </view>
       </view>
 
       <!-- 底部汇总与商家操作按钮 -->
       <view class="order-footer">
         <view class="total-row">
-          <text class="pay-type">[{{item.payTypeDesc}} · {{item.payStatusDesc}}]</text>
-          <view class="price-info-wrap">
-            <text class="original-price" wx:if="{{item.originalPayAmount && item.originalPayAmount != item.payAmount}}">
-              原价: ¥{{item.originalPayAmount}}
-            </text>
-            <text class="total-label">实付：</text>
-            <text class="total-val">¥{{item.payAmount}}</text>
-          </view>
+          <text class="pay-method">[{{item.payTypeDesc}} · {{item.payStatusDesc}}]</text>
+          <text class="original-amount" wx:if="{{item.originalPayAmount && item.originalPayAmount != item.payAmount}}">原¥{{item.originalPayAmount}}</text>
+          <text class="total-amount-label">实付</text>
+          <text class="total-amount">¥{{item.payAmount}}</text>
         </view>
 
         <!-- 商家操作按钮组 -->
-        <view class="actions-row" catchtap="preventBubble">
+        <view class="action-buttons" catchtap="preventBubble">
           <!-- 待支付(0) 时：掌柜改价 / 取消订单 -->
           <button class="btn-cancel" wx:if="{{item.status === 0}}" catchtap="onAdminCancelOrder" data-id="{{item.id}}">
             取消订单
@@ -147,6 +128,10 @@
           </button>
           <button class="btn-finish" wx:if="{{item.status === 2 && item.deliveryType === 1}}" catchtap="onFinishOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
             到店提货核销
+          </button>
+          <!-- 快递配送：进入详情填写快递公司与单号 -->
+          <button class="btn-deliver" wx:if="{{item.status === 2 && item.deliveryType === 4}}" catchtap="goToDetail" data-id="{{item.id}}">
+            填写快递单号
           </button>
 
           <!-- 配送中(3) 时：确认送达完成 -->

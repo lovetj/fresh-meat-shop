@@ -1,4 +1,4 @@
-/* pages/merchant/shop-setting/index.wxss - 维琼鲜肉铺 掌柜店铺与配送范围设置 */
+/* pages/merchant/shop-setting/index.wxss - 鲜肉铺 掌柜店铺与配送范围设置 */
 
 .container {
   padding: 24rpx;
@@ -223,11 +223,12 @@
   margin-bottom: 6rpx;
 }
 
-/* 添加阶梯按钮 */
+/* 添加阶梯 / 添加地区按钮（靠右对齐） */
 .add-rule-btn {
   flex: 0 0 auto;
   width: auto;
-  display: flex;
+  margin-left: auto;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   background: #FFF1E8;
@@ -239,7 +240,7 @@
   line-height: 1.4;
   white-space: nowrap;
   border: 2rpx solid #FFD3C4;
-  margin: 0;
+  margin: 0 0 0 auto;
 }
 
 .rule-list {
@@ -382,4 +383,148 @@
   line-height: 84rpx;
   height: 84rpx;
   box-shadow: 0 4rpx 16rpx rgba(255, 107, 107, 0.3);
+}
+
+/* ================= 不限距离提示 ================= */
+.unlimited-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10rpx;
+  margin-top: 16rpx;
+  padding: 16rpx 20rpx;
+  border-radius: 16rpx;
+  background-color: #FFF7F3;
+  border: 2rpx dashed #FFD9C9;
+}
+
+.unlimited-tip-icon {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.unlimited-tip-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #B26A00;
+}
+
+/* ================= 快递特殊地区配置 ================= */
+.region-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8rpx;
+  padding-top: 20rpx;
+  border-top: 2rpx dashed #FFEDE7;
+}
+
+.region-head-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.region-list {
+  margin-top: 16rpx;
+}
+
+.region-item {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 14rpx;
+}
+
+.region-input {
+  flex: 1;
+  min-width: 0;
+  height: 68rpx;
+  padding: 0 18rpx;
+  border-radius: 14rpx;
+  background-color: #FFF8F5;
+  border: 2rpx solid #FFE4DC;
+  font-size: 24rpx;
+  color: var(--text-main);
+  box-sizing: border-box;
+}
+
+.region-input.region-fee {
+  flex: 0 0 150rpx;
+}
+
+/* 可发/停发下拉选择 */
+.region-status-picker {
+  flex-shrink: 0;
+}
+
+.region-status {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  height: 68rpx;
+  padding: 0 16rpx;
+  border-radius: 14rpx;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #2E9E4F;
+  background-color: #EAF8EE;
+  border: 2rpx solid #C6EBD0;
+  box-sizing: border-box;
+}
+
+.region-status.is-stop {
+  color: #B26A00;
+  background-color: #FFF6DF;
+  border-color: #FFE3A3;
+}
+
+.region-status-arrow {
+  font-size: 18rpx;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.region-del {
+  flex-shrink: 0;
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 48rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: var(--text-light);
+}
+
+.region-empty {
+  display: block;
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: var(--text-light);
+}
+
+/* 特殊地区省份选择器 */
+.region-picker {
+  flex: 1;
+  min-width: 0;
+}
+
+.region-picker-btn {
+  height: 68rpx;
+  line-height: 68rpx;
+  padding: 0 18rpx;
+  border-radius: 14rpx;
+  background-color: #FFF8F5;
+  border: 2rpx solid #FFE4DC;
+  font-size: 24rpx;
+  color: var(--text-main);
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.region-picker-btn.is-empty {
+  color: var(--text-light);
 }

@@ -21,19 +21,6 @@
   display: block;
 }
 
-.banner-badge {
-  position: absolute;
-  left: 24rpx;
-  bottom: 60rpx;
-  padding: 8rpx 20rpx;
-  border-radius: var(--radius-round);
-  background-color: rgba(255, 255, 255, 0.94);
-  color: #2E9E4F;
-  font-size: 21rpx;
-  font-weight: 800;
-  box-shadow: 0 6rpx 16rpx rgba(0, 0, 0, 0.08);
-}
-
 .detail-card {
   margin: -44rpx 24rpx 24rpx;
   background-color: #FFFFFF;

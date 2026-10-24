@@ -12,8 +12,9 @@
         <text class="avatar-empty-tip">点击获取微信头像</text>
       </view>
       <view class="avatar-camera" wx:if="{{isLogin}}">📷</view>
-      <!-- 头像本身就是原生头像授权按钮：顾客与掌柜都可点击直接选图上传（未登录时顺便完成微信登录），不再跳转登录页 -->
+      <!-- 仅登录后展示原生头像授权按钮，可点击直接选图上传；未登录时点击头像走 onLogin 进入登录页 -->
       <button
+        wx:if="{{isLogin}}"
         class="avatar-hit"
         open-type="chooseAvatar"
         bindchooseavatar="onChooseAvatar"
@@ -24,52 +25,27 @@
     <view class="user-info" bindtap="onLogin">
       <view class="name-row">
         <text class="user-name ellipsis">{{userInfo.nickname || (isLogin ? '微信顾客' : '点击登录微信账号')}}</text>
-        <view class="biz-tag {{shopInfo.status === 1 ? 'biz-open' : 'biz-close'}}" wx:if="{{isLogin && (shopInfo.status === 0 || shopInfo.status === 1)}}" catchtap="preventBubble">{{shopInfo.status === 1 ? '营业中' : '休息中'}}</view>
-        <text class="role-badge" wx:if="{{isAdmin}}">肉铺掌柜</text>
+        <view class="biz-tag {{shopInfo.status === 1 ? 'biz-open' : 'biz-close'}}" wx:if="{{isAdmin && (shopInfo.status === 0 || shopInfo.status === 1)}}" catchtap="preventBubble">{{shopInfo.status === 1 ? '营业中' : '休息中'}}</view>
+        <text class="role-badge" wx:if="{{isAdmin}}">掌柜</text>
         <view class="logout-chip" wx:if="{{isLogin}}" catchtap="onLogoutCustomer">退出</view>
       </view>
-      <text class="user-sub">{{userInfo.phone ? userInfo.phone : (isAdmin ? '掌柜身份 · 点头像可直接更换头像' : (isLogin ? (hasProfile ? '尊享顾客' : '点击完善微信头像与昵称') : '登录后享受极速下单与专属优惠'))}}</text>
+      <!-- 掌柜端展示门店电话，不展示个人手机号 -->
+      <text class="user-sub" wx:if="{{isAdmin}}">门店电话：{{shopInfo.phone || '暂未配置'}}</text>
+      <text class="user-sub" wx:else>{{userInfo.phone ? userInfo.phone : (isLogin ? (hasProfile ? '尊享顾客' : '点击完善微信头像与昵称') : '登录后享受极速下单与专属优惠')}}</text>
     </view>
   </view>
 
   <!-- ================= 2. 掌柜管理端专属入口卡片 (仅当管理员已登录时展示) ================= -->
   <view class="admin-portal-card" wx:if="{{isAdmin}}">
     <view class="admin-left" bindtap="goToMerchantDashboard">
-      <text class="admin-icon">🥩</text>
       <view class="admin-text">
-        <text class="admin-title">进入肉铺掌柜工作台</text>
+        <text class="admin-title">进入掌柜工作台</text>
         <text class="admin-desc">商品管理、订单配送、店铺营业配置</text>
       </view>
     </view>
     <view class="admin-action-group">
       <button class="admin-enter-btn" bindtap="goToMerchantDashboard">进入后台</button>
       <button class="admin-switch-btn" bindtap="onLogoutAdmin">切回顾客端</button>
-    </view>
-  </view>
-
-  <!-- 我的订单快捷入口 -->
-  <view class="card order-entry-card">
-    <view class="entry-header" bindtap="goToOrders" data-status="">
-      <text class="entry-title">我的鲜肉订单</text>
-      <text class="entry-all">全部订单 ></text>
-    </view>
-    <view class="order-nav-grid">
-      <view class="nav-item" bindtap="goToOrders" data-status="0">
-        <view class="nav-icon icon-yellow">⏳</view>
-        <text class="nav-label">待支付</text>
-      </view>
-      <view class="nav-item" bindtap="goToOrders" data-status="1">
-        <view class="nav-icon icon-blue">📝</view>
-        <text class="nav-label">待接单</text>
-      </view>
-      <view class="nav-item" bindtap="goToOrders" data-status="2">
-        <view class="nav-icon icon-green">🛵</view>
-        <text class="nav-label">待收货</text>
-      </view>
-      <view class="nav-item" bindtap="goToOrders" data-status="4">
-        <view class="nav-icon icon-gray">✅</view>
-        <text class="nav-label">已完成</text>
-      </view>
     </view>
   </view>
 
@@ -81,13 +57,9 @@
         <view class="tool-icon icon-pink">📍</view>
         <text class="tool-label">收货地址</text>
       </view>
-      <view class="tool-item" bindtap="callShop">
+      <view class="tool-item" bindtap="callShopPhone">
         <view class="tool-icon icon-blue">📞</view>
-        <text class="tool-label">联系掌柜</text>
-      </view>
-      <view class="tool-item" bindtap="callShop">
-        <view class="tool-icon icon-purple">💬</view>
-        <text class="tool-label">售后咨询</text>
+        <text class="tool-label">联系门店</text>
       </view>
     </view>
   </view>

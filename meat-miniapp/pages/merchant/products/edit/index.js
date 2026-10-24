@@ -48,10 +48,10 @@ Page({
 
     if (id) {
       this.setData({ isEdit: true, id: id, shopId: initialShopId, initialCategoryId });
-      wx.setNavigationBarTitle({ title: '编辑鲜肉商品' });
+      wx.setNavigationBarTitle({ title: '编辑商品' });
     } else {
       this.setData({ shopId: initialShopId, initialCategoryId });
-      wx.setNavigationBarTitle({ title: '新增鲜肉商品' });
+      wx.setNavigationBarTitle({ title: '新增商品' });
     }
 
     this.loadShops(initialShopId).then(() => {
@@ -513,7 +513,7 @@ Page({
 
     wx.showModal({
       title: '删除确认',
-      content: `确定要彻底删除鲜肉商品【${name || '该商品'}】吗？删除后不可恢复。`,
+      content: `确定要彻底删除商品【${name || '该商品'}】吗？删除后不可恢复。`,
       confirmColor: '#FF4757',
       success: (res) => {
         if (res.confirm) {

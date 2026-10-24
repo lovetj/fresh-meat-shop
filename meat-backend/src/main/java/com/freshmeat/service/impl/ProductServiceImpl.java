@@ -61,7 +61,29 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                     .or().like(Product::getSummary, queryDTO.getKeyword()));
         }
 
-        qw.orderByDesc(Product::getSortOrder).orderByDesc(Product::getCreateTime);
+        // 排序规则：未指定排序方式时，按商品自身的排序字段（sortOrder）默认排序；
+        // 指定销量/价格时按对应字段排序，并以运营排序值、创建时间兜底，保证分页顺序稳定
+        boolean asc = "asc".equalsIgnoreCase(queryDTO.getSortOrder());
+        String sortBy = queryDTO.getSortBy();
+        if ("sales".equalsIgnoreCase(sortBy)) {
+            if (asc) {
+                qw.orderByAsc(Product::getSales);
+            } else {
+                qw.orderByDesc(Product::getSales);
+            }
+            qw.orderByDesc(Product::getSortOrder);
+        } else if ("price".equalsIgnoreCase(sortBy)) {
+            if (asc) {
+                qw.orderByAsc(Product::getPrice);
+            } else {
+                qw.orderByDesc(Product::getPrice);
+            }
+            qw.orderByDesc(Product::getSortOrder);
+        } else {
+            // 未选择排序：按商品排序字段默认排序
+            qw.orderByDesc(Product::getSortOrder);
+        }
+        qw.orderByDesc(Product::getCreateTime);
         Page<Product> resultPage = this.page(page, qw);
         fillCategoryInfo(resultPage.getRecords());
         return PageResult.of(resultPage.getTotal(), resultPage.getRecords(), resultPage.getCurrent(), resultPage.getSize());

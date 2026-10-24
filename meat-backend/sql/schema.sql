@@ -54,6 +54,11 @@ CREATE TABLE `shop_info` (
   `latitude` DECIMAL(10, 7) NOT NULL DEFAULT 22.5401390 COMMENT '店铺纬度',
   `status` TINYINT NOT NULL DEFAULT 1 COMMENT '营业状态: 1-正常营业, 0-休息中',
   `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序权重(越大越前)',
+  `merchant_delivery_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '是否开通同城商家配送: 1-开通, 0-未开通',
+  `takeout_enabled` TINYINT NOT NULL DEFAULT 0 COMMENT '是否开通外卖配送: 1-开通, 0-未开通(需求待定, 暂作配置预留)',
+  `express_enabled` TINYINT NOT NULL DEFAULT 0 COMMENT '是否开通快递配送: 1-开通, 0-未开通',
+  `express_fee` DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '快递基础运费(元)',
+  `express_regions` TEXT DEFAULT NULL COMMENT '快递特殊地区规则JSON: [{region,fee,deliverable}]',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`)
@@ -93,7 +98,7 @@ CREATE TABLE `shop_delivery_rule` (
   `id` VARCHAR(36) NOT NULL COMMENT '规则UUID',
   `shop_id` VARCHAR(36) NOT NULL COMMENT '所属店铺UUID',
   `min_distance` DECIMAL(6, 2) NOT NULL DEFAULT 0.00 COMMENT '起始距离(km)',
-  `max_distance` DECIMAL(6, 2) NULL DEFAULT NULL COMMENT '截止距离(km; 为空或0表示无上限/不限距离)',
+  `max_distance` DECIMAL(6, 2) NOT NULL DEFAULT 0.00 COMMENT '截止距离(km)',
   `min_order_amount` DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '该距离区间的起送金额(元)',
   `delivery_fee` DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '该距离区间的配送费(元)',
   `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序权重',
@@ -113,10 +118,10 @@ VALUES
 -- 西丽分店: 0-3km(20起送/4元费), 3-6km(35起送/6元费)
 ('dr_xili_00000000000000000000000001', 's_shop_000000000000000000000000002', 0.00, 3.00, 20.00, 4.00, 1),
 ('dr_xili_00000000000000000000000002', 's_shop_000000000000000000000000002', 3.00, 6.00, 35.00, 6.00, 2),
--- 前海中心店: 0-3km(25起送/5元费), 3-5km(40起送/8元费), 5km以上不限距离(60起送/12元费)
+-- 前海中心店: 0-3km(25起送/5元费), 3-5km(40起送/8元费), 5-8km(60起送/12元费)
 ('dr_qianhai_0000000000000000000001', 's_shop_000000000000000000000000003', 0.00, 3.00, 25.00, 5.00, 1),
 ('dr_qianhai_0000000000000000000002', 's_shop_000000000000000000000000003', 3.00, 5.00, 40.00, 8.00, 2),
-('dr_qianhai_0000000000000000000003', 's_shop_000000000000000000000000003', 5.00, NULL, 60.00, 12.00, 3);
+('dr_qianhai_0000000000000000000003', 's_shop_000000000000000000000000003', 5.00, 8.00, 60.00, 12.00, 3);
 
 -- 4. 商品分类表 (绑定具体商铺，分店独立维护分类体系)
 DROP TABLE IF EXISTS `category`;
@@ -217,7 +222,7 @@ CREATE TABLE `order_info` (
   `order_no` VARCHAR(40) NOT NULL COMMENT '唯一订单编号',
   `shop_id` VARCHAR(36) NOT NULL DEFAULT 's_shop_000000000000000000000000001' COMMENT '商铺UUID',
   `user_id` VARCHAR(36) NOT NULL COMMENT '下单顾客UUID',
-  `delivery_type` TINYINT NOT NULL COMMENT '配送方式: 1-自取(到店), 2-商家配送, 3-外卖(保留入口)',
+  `delivery_type` TINYINT NOT NULL COMMENT '配送方式: 1-自取(到店), 2-商家配送, 3-外卖(保留入口), 4-快递配送',
   `status` TINYINT NOT NULL DEFAULT 0 COMMENT '订单状态: 0-待支付, 1-待接单, 2-待配送/待自取, 3-配送中, 4-已完成, 5-已取消, 6-已拒单',
   `pay_type` TINYINT NOT NULL DEFAULT 1 COMMENT '支付方式: 1-微信线上支付, 2-货到付款(现金/到付)',
   `pay_status` TINYINT NOT NULL DEFAULT 0 COMMENT '支付状态: 0-未支付, 1-已支付, 2-已退款',
@@ -238,6 +243,10 @@ CREATE TABLE `order_info` (
   
   -- 自提核销凭据
   `pickup_code` VARCHAR(16) DEFAULT NULL COMMENT '自提核销码(自取订单生成的提货凭据)',
+
+  -- 快递配送信息
+  `express_company` VARCHAR(50) DEFAULT NULL COMMENT '快递公司名称(快递配送)',
+  `express_no` VARCHAR(64) DEFAULT NULL COMMENT '快递单号(快递配送)',
 
   -- 订单附注与处理原因
   `remark` VARCHAR(255) DEFAULT '' COMMENT '顾客备注(如切片要求、切丁等)',

@@ -90,14 +90,13 @@ public class ShopDeliveryRuleServiceImpl extends ServiceImpl<ShopDeliveryRuleMap
                 throw new BusinessException("配送起始距离必须大于或等于0");
             }
 
-            // 支持不限距离：maxDistance为null或<=0均表示无上限/不限距离
-            if (r.getMaxDistance() != null && r.getMaxDistance().compareTo(BigDecimal.ZERO) > 0) {
-                if (r.getMaxDistance().compareTo(r.getMinDistance()) <= 0) {
-                    throw new BusinessException(String.format("配送截止距离(%.2f)必须大于起始距离(%.2f)",
-                            r.getMaxDistance().doubleValue(), r.getMinDistance().doubleValue()));
-                }
-            } else {
-                r.setMaxDistance(null); // 统一将无上限置为null
+            // 已移除「不限距离」配置：每一档都必须填写明确的截止距离
+            if (r.getMaxDistance() == null || r.getMaxDistance().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessException(String.format("第 %d 档配送规则缺少截止距离，请填写具体公里数", order));
+            }
+            if (r.getMaxDistance().compareTo(r.getMinDistance()) <= 0) {
+                throw new BusinessException(String.format("配送截止距离(%.2f)必须大于起始距离(%.2f)",
+                        r.getMaxDistance().doubleValue(), r.getMinDistance().doubleValue()));
             }
 
             if (r.getMinOrderAmount() == null || r.getMinOrderAmount().compareTo(BigDecimal.ZERO) < 0) {
@@ -118,12 +117,9 @@ public class ShopDeliveryRuleServiceImpl extends ServiceImpl<ShopDeliveryRuleMap
         // 按起始距离从小到大排序
         cleanList.sort(Comparator.comparing(ShopDeliveryRule::getMinDistance));
 
-        // 重新分配序号，并校验无上限规则只允许在最后一档
+        // 重新分配序号
         for (int i = 0; i < cleanList.size(); i++) {
             cleanList.get(i).setSortOrder(i + 1);
-            if (cleanList.get(i).getMaxDistance() == null && i < cleanList.size() - 1) {
-                throw new BusinessException("不限距离(无上限)的阶梯规则必须作为最后一个阶梯配置");
-            }
         }
 
         // 删除旧规则
@@ -142,15 +138,39 @@ public class ShopDeliveryRuleServiceImpl extends ServiceImpl<ShopDeliveryRuleMap
         // 保留两位小数
         double roundedDist = BigDecimal.valueOf(actualDistance).setScale(2, RoundingMode.HALF_UP).doubleValue();
 
+        // 同城商家配送开关关闭：不参与测距计费，引导顾客选择到店自取或快递配送
+        if (shop.getMerchantDeliveryEnabled() == null || shop.getMerchantDeliveryEnabled() != 1) {
+            return DistanceCheckVO.builder()
+                    .distance(roundedDist)
+                    .maxDeliveryDistance(0D)
+                    .isUnlimitedDistance(false)
+                    .canDeliver(false)
+                    .deliveryFee(BigDecimal.ZERO)
+                    .minOrderAmount(BigDecimal.ZERO)
+                    .deliveryRules(Collections.emptyList())
+                    .message("本店暂未开通同城商家配送，可选择「到店自取」或「快递配送」下单")
+                    .build();
+        }
+
         List<ShopDeliveryRule> rules = listRulesByShopId(shop.getId());
+        // 已取消「不限距离」配置：历史遗留的无截止距离规则不再参与计算
+        if (!CollectionUtils.isEmpty(rules)) {
+            rules = rules.stream()
+                    .filter(rule -> rule.getMinDistance() != null)
+                    .filter(rule -> rule.getMaxDistance() != null
+                            && rule.getMaxDistance().compareTo(BigDecimal.ZERO) > 0)
+                    .sorted(Comparator.comparing(ShopDeliveryRule::getMinDistance))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
         if (CollectionUtils.isEmpty(rules)) {
-            // 无规则时使用默认阶梯配置兜底 (默认 5km 内起送15元，配送费3元)
+            // 无有效规则时使用默认范围兜底 (默认 5km 内起送15元，配送费3元)
             double maxDist = 5.0;
             boolean canDeliver = roundedDist <= maxDist;
 
             String msg = canDeliver
                     ? String.format("距「%s」约 %.2f 公里，在商家配送范围内", shop.getName(), roundedDist)
-                    : String.format("距「%s」约 %.2f 公里，超出最大配送范围(%.1f公里)，建议选择「自取」", shop.getName(), roundedDist, maxDist);
+                    : String.format("距「%s」约 %.2f 公里，超出最大配送范围(%.1f公里)，建议选择「到店自取」或「快递配送」", shop.getName(), roundedDist, maxDist);
 
             return DistanceCheckVO.builder()
                     .distance(roundedDist)
@@ -164,77 +184,32 @@ public class ShopDeliveryRuleServiceImpl extends ServiceImpl<ShopDeliveryRuleMap
                     .build();
         }
 
-        // 规则按 minDistance 从小到大排序
-        rules.sort(Comparator.comparing(ShopDeliveryRule::getMinDistance));
+        // 整体最大配送半径 = 最后一档的截止距离
+        double maxDist = rules.get(rules.size() - 1).getMaxDistance().doubleValue();
 
-        // 检查是否存在不限距离/无上限阶梯
-        ShopDeliveryRule unlimitedRule = null;
+        // 超出所有阶梯：不提供同城配送，引导到店自取或快递
+        if (roundedDist > maxDist) {
+            return DistanceCheckVO.builder()
+                    .distance(roundedDist)
+                    .maxDeliveryDistance(maxDist)
+                    .isUnlimitedDistance(false)
+                    .canDeliver(false)
+                    .deliveryFee(BigDecimal.ZERO)
+                    .minOrderAmount(BigDecimal.ZERO)
+                    .deliveryRules(rules)
+                    .message(String.format("距「%s」约 %.2f 公里，超出本店最大同城配送范围(%.1f公里)，建议选择「到店自取」或「快递配送」",
+                            shop.getName(), roundedDist, maxDist))
+                    .build();
+        }
+
+        // 命中区间阶梯（未命中时取最近的一档兜底）
+        ShopDeliveryRule matchedRule = null;
         for (ShopDeliveryRule rule : rules) {
-            if (rule.getMaxDistance() == null || rule.getMaxDistance().compareTo(BigDecimal.ZERO) <= 0) {
-                unlimitedRule = rule;
+            if (roundedDist <= rule.getMaxDistance().doubleValue()) {
+                matchedRule = rule;
                 break;
             }
         }
-
-        boolean isUnlimited = unlimitedRule != null;
-
-        // 若全部都有截止距离，计算整体最大配送半径
-        if (!isUnlimited) {
-            BigDecimal maxOverallDistance = rules.stream()
-                    .map(ShopDeliveryRule::getMaxDistance)
-                    .filter(java.util.Objects::nonNull)
-                    .max(Comparator.naturalOrder())
-                    .orElse(new BigDecimal("5.00"));
-            double maxDist = maxOverallDistance.doubleValue();
-
-            // 超出有限阶梯的最大配送范围
-            if (roundedDist > maxDist) {
-                String msg = String.format("距「%s」约 %.2f 公里，超出本店最大同城配送范围(%.1f公里)，建议选择「到店自取」或切换至更近的分店",
-                        shop.getName(), roundedDist, maxDist);
-                return DistanceCheckVO.builder()
-                        .distance(roundedDist)
-                        .maxDeliveryDistance(maxDist)
-                        .isUnlimitedDistance(false)
-                        .canDeliver(false)
-                        .deliveryFee(BigDecimal.ZERO)
-                        .minOrderAmount(BigDecimal.ZERO)
-                        .deliveryRules(rules)
-                        .message(msg)
-                        .build();
-            }
-        }
-
-        // 智能匹配对应阶梯
-        ShopDeliveryRule matchedRule = null;
-
-        // 1. 优先尝试匹配有确切截止距离的有限阶梯 [min, max]
-        for (ShopDeliveryRule rule : rules) {
-            if (rule.getMaxDistance() != null && rule.getMaxDistance().compareTo(BigDecimal.ZERO) > 0) {
-                double rMin = rule.getMinDistance().doubleValue();
-                double rMax = rule.getMaxDistance().doubleValue();
-                if (roundedDist <= rMax && roundedDist >= rMin) {
-                    matchedRule = rule;
-                    break;
-                }
-            }
-        }
-
-        // 2. 若未精确命中有限阶梯且存在无上限规则
-        if (matchedRule == null && isUnlimited) {
-            matchedRule = unlimitedRule;
-        }
-
-        // 3. 若仍未命中，尝试找最接近的阶梯兜底
-        if (matchedRule == null) {
-            for (ShopDeliveryRule rule : rules) {
-                if (rule.getMaxDistance() != null && rule.getMaxDistance().doubleValue() >= roundedDist) {
-                    matchedRule = rule;
-                    break;
-                }
-            }
-        }
-
-        // 4. 仍未命中则取最后一条
         if (matchedRule == null) {
             matchedRule = rules.get(rules.size() - 1);
         }
@@ -242,26 +217,17 @@ public class ShopDeliveryRuleServiceImpl extends ServiceImpl<ShopDeliveryRuleMap
         BigDecimal deliveryFee = matchedRule.getDeliveryFee() != null ? matchedRule.getDeliveryFee() : BigDecimal.ZERO;
         BigDecimal minOrderAmount = matchedRule.getMinOrderAmount() != null ? matchedRule.getMinOrderAmount() : BigDecimal.ZERO;
 
-        String msg;
-        if (matchedRule.getMaxDistance() == null || matchedRule.getMaxDistance().compareTo(BigDecimal.ZERO) <= 0) {
-            msg = String.format("距「%s」约 %.2f 公里 (命中 %.1f公里以上不限距离阶梯)：起送金额 ¥%.2f，配送费 ¥%.2f",
-                    shop.getName(), roundedDist,
-                    matchedRule.getMinDistance().doubleValue(),
-                    minOrderAmount.doubleValue(),
-                    deliveryFee.doubleValue());
-        } else {
-            msg = String.format("距「%s」约 %.2f 公里 (命中 %.1f-%.1f公里配送阶梯)：起送金额 ¥%.2f，配送费 ¥%.2f",
-                    shop.getName(), roundedDist,
-                    matchedRule.getMinDistance().doubleValue(),
-                    matchedRule.getMaxDistance().doubleValue(),
-                    minOrderAmount.doubleValue(),
-                    deliveryFee.doubleValue());
-        }
+        String msg = String.format("距「%s」约 %.2f 公里 (命中 %.1f-%.1f公里配送阶梯)：起送金额 ¥%.2f，配送费 ¥%.2f",
+                shop.getName(), roundedDist,
+                matchedRule.getMinDistance().doubleValue(),
+                matchedRule.getMaxDistance().doubleValue(),
+                minOrderAmount.doubleValue(),
+                deliveryFee.doubleValue());
 
         return DistanceCheckVO.builder()
                 .distance(roundedDist)
-                .maxDeliveryDistance(isUnlimited ? 0.0 : rules.stream().map(ShopDeliveryRule::getMaxDistance).filter(java.util.Objects::nonNull).max(Comparator.naturalOrder()).orElse(BigDecimal.ZERO).doubleValue())
-                .isUnlimitedDistance(isUnlimited)
+                .maxDeliveryDistance(maxDist)
+                .isUnlimitedDistance(false)
                 .canDeliver(true)
                 .deliveryFee(deliveryFee)
                 .minOrderAmount(minOrderAmount)

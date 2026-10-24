@@ -29,7 +29,7 @@
     <scroll-view class="category-scroll" scroll-x enable-flex enhanced show-scrollbar="{{false}}">
       <!-- 全部分类标签 -->
       <view class="category-item {{selectedCategoryId === '' ? 'cat-active' : ''}}" bindtap="onSelectCategory" data-id="">
-        <text class="cat-name">全部鲜肉</text>
+        <text class="cat-name">全部</text>
       </view>
 
       <!-- 门店所属分类列表 -->
@@ -69,7 +69,7 @@
   <scroll-view class="product-list" scroll-y bindscrolltolower="onLoadMore">
     <view wx:if="{{productList.length === 0 && !loading}}" class="empty-box">
       <text class="empty-icon">🥩</text>
-      <text class="empty-text">当前分类下暂无鲜肉商品</text>
+      <text class="empty-text">当前分类下暂无商品</text>
       <view class="empty-actions">
         <button class="empty-btn add" bindtap="goToAdd">+ 新增肉品</button>
       </view>

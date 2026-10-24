@@ -242,13 +242,13 @@
   border-radius: 50%;
 }
 
-/* ================= 3. 吸顶胶囊分类 ================= */
+/* ================= 3. 吸顶：分类胶囊 + 排序栏 ================= */
 .chip-bar {
   position: sticky;
   top: 0;
   z-index: 30;
   background-color: var(--bg-cream);
-  padding: 16rpx 0 16rpx;
+  padding: 16rpx 0 12rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.03);
 }
 
@@ -256,6 +256,103 @@
   width: 100%;
   height: 72rpx;
   box-sizing: border-box;
+}
+
+/* ================= 3.1 排序栏（分类下方，价格在前、销量在后） ================= */
+.sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 12rpx;
+  padding: 0 var(--gutter);
+}
+
+.sort-bar-label {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  margin-right: 4rpx;
+  color: var(--text-sub);
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.sort-bar-icon {
+  font-size: 24rpx;
+  line-height: 1;
+}
+
+.sort-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  height: 56rpx;
+  padding: 0 22rpx;
+  border-radius: var(--radius-round);
+  background-color: #FFFFFF;
+  border: 2rpx solid #FFE9E4;
+  color: var(--text-main);
+  font-size: 24rpx;
+  font-weight: 600;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.sort-item:active {
+  transform: scale(0.95);
+}
+
+.sort-item-active {
+  background: var(--primary-gradient);
+  border-color: transparent;
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 6rpx 16rpx rgba(255, 107, 107, 0.25);
+}
+
+.sort-item-text {
+  line-height: 1;
+}
+
+/* 价格的双向箭头：未选中时浅灰，选中的方向高亮 */
+.sort-arrows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sort-arrow {
+  font-size: 14rpx;
+  line-height: 12rpx;
+  color: #C9C9C9;
+  transition: color 0.2s ease;
+}
+
+.sort-arrow.is-up,
+.sort-arrow.is-down {
+  color: var(--primary);
+}
+
+.sort-item-active .sort-arrow {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sort-item-active .sort-arrow.is-up,
+.sort-item-active .sort-arrow.is-down {
+  color: #FFFFFF;
+}
+
+.sort-arrow.is-down-const {
+  font-size: 16rpx;
+  line-height: 1;
+  color: #C9C9C9;
+}
+
+.sort-item-active .sort-arrow.is-down-const {
+  color: #FFFFFF;
 }
 
 .chip-inner {
@@ -353,7 +450,7 @@
   display: block;
 }
 
-/* 左上角新鲜 / 特价角标 */
+/* 左上角特价角标 */
 .corner-badge {
   position: absolute;
   left: 0;
@@ -364,10 +461,6 @@
   color: #FFFFFF;
   border-radius: var(--radius-img) 0 16rpx 0;
   letter-spacing: 1rpx;
-}
-
-.badge-fresh {
-  background: linear-gradient(135deg, #6BCB77 0%, #8FDD9A 100%);
 }
 
 .badge-sale {

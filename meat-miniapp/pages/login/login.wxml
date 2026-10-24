@@ -5,8 +5,8 @@
     <view class="brand-deco">🥩</view>
     <view class="brand-deco-2">🐷</view>
     <view class="brand-logo">🐷</view>
-    <text class="brand-name">维琼鲜肉铺</text>
-    <text class="brand-slogan">登录后同步订单、收货地址与鲜肉偏好</text>
+    <text class="brand-name">鲜肉铺</text>
+    <text class="brand-slogan">登录后同步订单、收货地址与偏好</text>
   </view>
 
   <!-- 授权卡片 -->
@@ -70,7 +70,7 @@
 
     <view class="admin-entry-link" bindtap="openAdminModal">
       <text class="admin-entry-icon">🔐</text>
-      <text class="admin-entry-text">肉铺掌柜 · 账号密码登录</text>
+      <text class="admin-entry-text">掌柜 · 账号密码登录</text>
     </view>
   </view>
 
@@ -85,7 +85,7 @@
       </view>
       <view class="modal-body">
         <view class="modal-tips">
-          肉铺掌柜专属工作台，登录后可管理商品、处理订单、配置店铺，登录态保持7天。
+          掌柜专属工作台，登录后可管理商品、处理订单、配置店铺，登录态保持7天。
         </view>
         <view class="form-item">
           <text class="form-label">管理账号</text>
@@ -98,13 +98,16 @@
         </view>
         <view class="form-item">
           <text class="form-label">登录密码</text>
-          <view class="pwd-field">
+          <view class="pwd-field" bindtap="focusAdminPwd">
             <input 
               class="form-input pwd-input" 
               password="{{!showAdminPwd}}" 
               placeholder="请输入管理密码" 
               value="{{adminForm.password}}" 
+              focus="{{adminPwdFocus}}"
+              cursor-spacing="24"
               bindinput="onInputPassword"
+              bindblur="onAdminPwdBlur"
             />
             <view class="pwd-toggle" catchtap="toggleAdminPwd">
               <text class="pwd-eye">{{showAdminPwd ? '🙈' : '👁️'}}</text>

@@ -7,7 +7,7 @@
 
       <view class="form-item">
         <text class="label required">店铺名称</text>
-        <input class="input" name="name" placeholder="如：维琼鲜肉铺 (总店)" value="{{shop.name}}"/>
+        <input class="input" name="name" placeholder="如：鲜肉铺 (总店)" value="{{shop.name}}"/>
       </view>
 
       <view class="form-item">
@@ -74,22 +74,29 @@
     <!-- 同城配送规则配置 (多阶梯多区间) -->
     <view class="card form-card">
       <view class="section-header-row">
-        <view class="section-title">🛵 同城配送规则与阶梯范围</view>
-        <button class="add-rule-btn" type="button" bindtap="addDeliveryRule">+ 添加阶梯</button>
+        <view class="section-title">🛵 同城商家配送</view>
+        <view class="switch-box">
+          <text class="status-txt {{merchantDeliveryEnabled === 1 ? 'txt-open' : 'txt-close'}}">{{merchantDeliveryEnabled === 1 ? '已开通' : '未开通'}}</text>
+          <switch checked="{{merchantDeliveryEnabled === 1}}" color="#FF6B6B" bindchange="onMerchantDeliveryChange"/>
+        </view>
       </view>
-      <text class="section-desc">支持不同距离配置不同配送费与起送价；阶梯需首尾衔接（第 1 段从 0km 开始，后一段起始距离须等于前一段截止距离），超出最大距离将禁止选择商家配送</text>
+      <text class="section-desc">开通后顾客下单可选择「商家配送」，按距离阶梯收取配送费并校验起送价；关闭后顾客仅可选择「到店自取」或「快递配送」</text>
 
-      <view class="rule-list">
+      <block wx:if="{{merchantDeliveryEnabled === 1}}">
+        <view class="region-head-row">
+          <text class="region-head-title">配送阶梯范围</text>
+          <view class="add-rule-btn" bindtap="addDeliveryRule">+ 添加阶梯</view>
+        </view>
+        <text class="section-desc">支持不同距离配置不同配送费与起送价；阶梯需首尾衔接（第 1 段从 0km 开始，后一段起始距离须等于前一段截止距离），超出最后一档截止距离即不提供同城配送</text>
+
+        <view class="rule-list">
         <view class="rule-card" wx:for="{{deliveryRules}}" wx:key="index">
           <view class="rule-card-header">
             <view class="rule-badge">阶梯 {{index + 1}}</view>
             <view class="rule-range-preview">
-              {{item.isUnlimited ? (item.minDistance + 'km 以上 (不限距离)') : (item.minDistance + 'km - ' + item.maxDistance + 'km')}}
+              {{item.minDistance}}km - {{item.maxDistance}}km
             </view>
             <view class="rule-header-actions">
-              <view class="rule-unlimited-btn {{item.isUnlimited ? 'btn-active' : ''}}" bindtap="toggleUnlimitedRule" data-index="{{index}}" wx:if="{{index === deliveryRules.length - 1}}">
-                {{item.isUnlimited ? '✓ 已设不限距离' : '♾️ 设为不限距离'}}
-              </view>
               <view class="rule-del-btn" bindtap="deleteDeliveryRule" data-index="{{index}}" wx:if="{{deliveryRules.length > 1}}">
                 🗑️ 删除
               </view>
@@ -103,7 +110,7 @@
             </view>
             <view class="rule-grid-item">
               <text class="rule-grid-label required">截止距离(km)</text>
-              <input class="rule-grid-input {{item.isUnlimited ? 'disabled' : ''}}" type="{{item.isUnlimited ? 'text' : 'digit'}}" placeholder-class="rule-input-ph" placeholder="{{item.isUnlimited ? '无上限(不限距离)' : '如 3.0'}}" value="{{item.isUnlimited ? '无上限 (不限距离)' : item.maxDistance}}" disabled="{{item.isUnlimited}}" data-index="{{index}}" data-field="maxDistance" bindinput="onRuleFieldInput"/>
+              <input class="rule-grid-input" type="digit" placeholder-class="rule-input-ph" placeholder="如 3.0" value="{{item.maxDistance}}" data-index="{{index}}" data-field="maxDistance" bindinput="onRuleFieldInput"/>
             </view>
             <view class="rule-grid-item">
               <text class="rule-grid-label">起送金额(元)</text>
@@ -116,14 +123,94 @@
           </view>
         </view>
       </view>
+      </block>
+
+      <text class="region-empty" wx:else>同城商家配送已关闭，顾客无法选择商家配送下单；已配置的阶梯在重新开启后继续生效</text>
+    </view>
+
+    <!-- 快递配送配置 -->
+    <view class="card form-card">
+      <view class="section-header-row">
+        <view class="section-title">📦 快递配送与特殊地区</view>
+        <view class="switch-box">
+          <text class="status-txt {{expressEnabled === 1 ? 'txt-open' : 'txt-close'}}">{{expressEnabled === 1 ? '已开通' : '未开通'}}</text>
+          <switch checked="{{expressEnabled === 1}}" color="#FF6B6B" bindchange="onExpressEnabledChange"/>
+        </view>
+      </view>
+      <text class="section-desc">开通后顾客下单可选择快递配送，掌柜接单后手动填写快递公司与单号发货。特殊地区可单独设置运费，或直接停发</text>
+
+      <view class="form-item" wx:if="{{expressEnabled === 1}}">
+        <text class="label">快递基础运费(元)</text>
+        <input class="input" type="digit" placeholder="如 8.00，0 表示包邮" value="{{expressFee}}" bindinput="onExpressFeeInput"/>
+      </view>
+
+      <block wx:if="{{expressEnabled === 1}}">
+        <view class="region-head-row">
+          <text class="region-head-title">特殊地区规则</text>
+          <view class="add-rule-btn" bindtap="addExpressRegion">+ 添加地区</view>
+        </view>
+
+        <view class="region-list" wx:if="{{expressRegions.length > 0}}">
+          <view class="region-item" wx:for="{{expressRegions}}" wx:key="index">
+            <picker
+              class="region-picker"
+              mode="region"
+              level="province"
+              data-index="{{index}}"
+              bindchange="onExpressRegionPick"
+            >
+              <view class="region-picker-btn {{item.region ? '' : 'is-empty'}}">
+                {{item.region || '请选择省份'}}
+              </view>
+            </picker>
+            <input
+              class="region-input region-fee"
+              type="digit"
+              placeholder="运费(元)"
+              value="{{item.fee}}"
+              data-index="{{index}}"
+              data-field="fee"
+              bindinput="onExpressRegionInput"
+            />
+            <picker
+              class="region-status-picker"
+              mode="selector"
+              range="{{deliverOptions}}"
+              value="{{item.deliverable === 0 ? 1 : 0}}"
+              data-index="{{index}}"
+              bindchange="onExpressRegionDeliverableChange"
+            >
+              <view class="region-status {{item.deliverable === 0 ? 'is-stop' : ''}}">
+                <text>{{item.deliverable === 0 ? '停发' : '可发'}}</text>
+                <text class="region-status-arrow">▾</text>
+              </view>
+            </picker>
+            <view class="region-del" bindtap="deleteExpressRegion" data-index="{{index}}">✕</view>
+          </view>
+        </view>
+        <text class="region-empty" wx:else>暂无特殊地区，所有地区按基础运费配送</text>
+      </block>
+    </view>
+
+    <!-- 外卖配送配置（需求待定，暂仅作配置预留） -->
+    <view class="card form-card">
+      <view class="section-header-row">
+        <view class="section-title">🥡 外卖配送</view>
+        <view class="switch-box">
+          <text class="status-txt {{takeoutEnabled === 1 ? 'txt-open' : 'txt-close'}}">{{takeoutEnabled === 1 ? '已开通' : '未开通'}}</text>
+          <switch checked="{{takeoutEnabled === 1}}" color="#FF6B6B" bindchange="onTakeoutEnabledChange"/>
+        </view>
+      </view>
+      <text class="section-desc">第三方外卖平台对接需求尚未确认，当前仅保留开关配置；开启后顾客端「外卖配送」下单方式暂不开放，待需求明确后再接入</text>
     </view>
 
     <!-- 配送距离计算原理说明 -->
     <view class="rule-tip-card">
-      <view class="rule-tip-title">ℹ️ 配送距离阶梯匹配机制说明</view>
-      <text class="rule-tip-p">1. 系统基于 Haversine 大圆距离公式对顾客填写的收货地址经纬度与店铺门店坐标进行实时高精度测距。</text>
-      <text class="rule-tip-p">2. 系统将根据测算的实际距离，自动落入对应区间阶梯，按该阶梯精确收取配送费并校验起送价要求。</text>
-      <text class="rule-tip-p">3. 当测算距离超出所有阶梯的最大配送范围时，结算页将自动禁用【商家配送】，并友好提示顾客切换为【到店自取】。</text>
+      <view class="rule-tip-title">ℹ️ 配送方式说明</view>
+      <text class="rule-tip-p">1. 同城商家配送：系统基于 Haversine 大圆距离公式对收货地址与门店坐标实时测距，落入对应阶梯后按该阶梯收取配送费并校验起送价。</text>
+      <text class="rule-tip-p">2. 每一档阶梯都必须填写明确的截止距离；超出最后一档截止距离的地址不再提供同城配送，可提示顾客改为「到店自取」或「快递配送」。</text>
+      <text class="rule-tip-p">3. 快递配送：运费按「基础运费 + 特殊地区规则」计算；命中停发地区的地址无法下单快递，可提示顾客更换地址。</text>
+      <text class="rule-tip-p">4. 外卖配送：第三方外卖平台对接需求待定，当前仅保留开关配置，暂不影响顾客下单方式。</text>
     </view>
 
     <!-- 底部保存按钮 -->

@@ -318,7 +318,7 @@ Page({
 
     wx.showModal({
       title: '删除确认',
-      content: `确定要彻底删除鲜肉商品【${name}】吗？删除后不可恢复。`,
+      content: `确定要彻底删除商品【${name}】吗？删除后不可恢复。`,
       confirmColor: '#FF4757',
       success: (res) => {
         if (res.confirm) {

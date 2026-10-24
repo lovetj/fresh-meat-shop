@@ -1,5 +1,6 @@
 // pages/address/edit/index.js
 const request = require('../../../utils/request');
+const auth = require('../../../utils/auth');
 
 Page({
   data: {
@@ -97,7 +98,10 @@ Page({
     }
 
     wx.showLoading({ title: '保存中...' });
-    request.post('/address/save', f).then(() => {
+    // 使用当前生效身份的 Token，地址保存到该身份本人的账号下
+    const token = auth.getActiveToken();
+    const header = token ? { header: { Authorization: `Bearer ${token}` } } : {};
+    request.post('/address/save', f, header).then(() => {
       wx.hideLoading();
       wx.showToast({ title: '保存成功', icon: 'success' });
       setTimeout(() => {

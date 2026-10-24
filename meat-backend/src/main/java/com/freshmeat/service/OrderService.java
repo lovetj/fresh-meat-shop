@@ -51,6 +51,11 @@ public interface OrderService extends IService<OrderInfo> {
     boolean deliverOrder(String orderId);
 
     /**
+     * 商家快递发货 (快递配送订单：填写快递公司与单号后流转为配送中)
+     */
+    boolean deliverByExpress(String orderId, com.freshmeat.dto.OrderExpressDTO dto);
+
+    /**
      * 确认收货/核销完成 (配送中/待自提 -> 已完成)
      */
     boolean finishOrder(String orderId);

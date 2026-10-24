@@ -11,7 +11,7 @@ public class OrderCreateDTO {
     /** 目标商铺ID (可选，若不传则自动取商品所属店铺) */
     private String shopId;
 
-    /** 配送方式: 1-自取, 2-商家配送, 3-外卖(保留入口) */
+    /** 配送方式: 1-自取, 2-商家配送, 3-外卖(保留入口), 4-快递配送 */
     @NotNull(message = "请选择配送方式")
     private Integer deliveryType;
 

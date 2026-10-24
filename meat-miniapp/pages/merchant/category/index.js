@@ -1,4 +1,4 @@
-// pages/merchant/category/index.js - 维琼鲜肉铺 鲜肉分类管理 (门店专属独立分类)
+// pages/merchant/category/index.js - 鲜肉铺 鲜肉分类管理 (门店专属独立分类)
 const request = require('../../../utils/request');
 const auth = require('../../../utils/auth');
 

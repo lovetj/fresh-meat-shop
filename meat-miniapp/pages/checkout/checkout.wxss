@@ -70,6 +70,7 @@
   font-size: 26rpx;
   font-weight: 800;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .tab-active .tab-name {
@@ -190,20 +191,6 @@
   border: 2rpx dashed #CFE5FF;
 }
 
-.addr-icon {
-  width: 76rpx;
-  height: 76rpx;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background-color: #FFFFFF;
-  border: 2rpx solid #E3EFFF;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 36rpx;
-  animation: floatPiggy 3.2s ease-in-out infinite;
-}
-
 .addr-content {
   flex: 1;
   min-width: 0;
@@ -301,6 +288,30 @@
   font-size: 21rpx;
   color: #E03131;
   line-height: 1.4;
+}
+
+/* 超出配送范围：可选下单方式快捷入口 */
+.range-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 14rpx;
+}
+
+.range-action {
+  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  border: 2rpx solid #FFC9C4;
+  background-color: #FFFFFF;
+  color: #E03131;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.range-action-primary {
+  background-color: #FF6B6B;
+  border-color: #FF6B6B;
+  color: #FFFFFF;
 }
 
 /* ================= 4. 商品明细卡片 ================= */
@@ -819,4 +830,173 @@
   font-size: 28rpx;
   font-weight: 700;
   text-align: center;
+}
+
+/* ================= 超范围 / 切换配送方式：底部弹层 ================= */
+.sheet-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1100;
+  display: flex;
+  align-items: flex-end;
+  animation: sheetMaskIn 0.18s ease-out;
+}
+
+.sheet-box {
+  width: 100%;
+  background-color: #FFFFFF;
+  border-radius: 36rpx 36rpx 0 0;
+  padding: 18rpx 32rpx 24rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  box-shadow: 0 -12rpx 48rpx rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+  animation: sheetSlideUp 0.24s cubic-bezier(0.22, 0.68, 0.35, 1);
+}
+
+.sheet-handle {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 4rpx;
+  background-color: #F0E6E1;
+  margin: 0 auto 22rpx;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.sheet-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.sheet-sub {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 23rpx;
+  color: var(--text-sub);
+  line-height: 1.5;
+}
+
+.sheet-close {
+  flex-shrink: 0;
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 48rpx;
+  text-align: center;
+  font-size: 30rpx;
+  color: #BFB2AC;
+}
+
+.sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 26rpx;
+}
+
+.sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 22rpx 24rpx;
+  border-radius: 22rpx;
+  background-color: #FFF8F5;
+  border: 2rpx solid #FFEDE7;
+  transition: transform 0.12s ease;
+}
+
+.sheet-item:active {
+  transform: scale(0.985);
+}
+
+.sheet-item.is-primary {
+  background: linear-gradient(135deg, #FFF3EE 0%, #FFE4DB 100%);
+  border-color: #FFC8B9;
+}
+
+.sheet-item-icon {
+  flex-shrink: 0;
+  width: 68rpx;
+  height: 68rpx;
+  line-height: 68rpx;
+  text-align: center;
+  font-size: 32rpx;
+  border-radius: 50%;
+  background-color: #FFFFFF;
+  box-shadow: 0 6rpx 16rpx rgba(255, 107, 107, 0.12);
+}
+
+.sheet-item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-item-label {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.sheet-item-desc {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 22rpx;
+  color: var(--text-sub);
+  line-height: 1.4;
+}
+
+.sheet-item-arrow {
+  flex-shrink: 0;
+  font-size: 34rpx;
+  color: #D8C7C0;
+  line-height: 1;
+}
+
+.sheet-cancel {
+  margin-top: 24rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: var(--radius-round);
+  background-color: #F7F2EF;
+  color: var(--text-sub);
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+@keyframes sheetMaskIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }

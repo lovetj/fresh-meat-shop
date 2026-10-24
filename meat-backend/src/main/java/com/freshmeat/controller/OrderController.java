@@ -123,6 +123,17 @@ public class OrderController {
     }
 
     /**
+     * 商家端：快递配送发货（填写快递公司与快递单号）
+     */
+    @ApiOperation(value = "掌柜填写快递单号发货", notes = "仅快递配送且已接单的订单可用，发货后流转为配送中(3)")
+    @RequireAdmin
+    @PostMapping("/admin/express/{id}")
+    public Result<Boolean> deliverByExpress(@PathVariable String id, @RequestBody @Validated com.freshmeat.dto.OrderExpressDTO dto) {
+        boolean ok = orderService.deliverByExpress(id, dto);
+        return Result.success("快递已发出", ok);
+    }
+
+    /**
      * 商家端：完成订单 / 核销
      */
     @ApiOperation(value = "掌柜到店核销/确认送达", notes = "订单流转为已完成(4)")

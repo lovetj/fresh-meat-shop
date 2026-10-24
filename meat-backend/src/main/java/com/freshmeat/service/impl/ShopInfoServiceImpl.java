@@ -6,15 +6,19 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.freshmeat.common.PageResult;
 import com.freshmeat.dto.DistanceCheckDTO;
 import com.freshmeat.dto.DistanceCheckVO;
+import com.freshmeat.dto.ExpressCheckVO;
 import com.freshmeat.dto.ShopInfoDTO;
 import com.freshmeat.dto.ShopQueryDTO;
 import com.freshmeat.entity.ShopAdmin;
 import com.freshmeat.entity.ShopDeliveryRule;
+import com.freshmeat.entity.ShopExpressRegion;
 import com.freshmeat.entity.ShopInfo;
 import com.freshmeat.entity.User;
+import com.freshmeat.entity.UserAddress;
 import com.freshmeat.exception.BusinessException;
 import com.freshmeat.mapper.ShopAdminMapper;
 import com.freshmeat.mapper.ShopInfoMapper;
+import com.freshmeat.mapper.UserAddressMapper;
 import com.freshmeat.mapper.UserMapper;
 import com.freshmeat.service.ShopInfoService;
 import com.freshmeat.util.DistanceUtil;
@@ -40,6 +44,7 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
 
     private final ShopAdminMapper shopAdminMapper;
     private final UserMapper userMapper;
+    private final UserAddressMapper userAddressMapper;
     private final com.freshmeat.service.ShopDeliveryRuleService deliveryRuleService;
 
     @Override
@@ -83,8 +88,8 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
             this.save(targetShop);
         }
 
-        // 统一附带加载该店铺的同城多阶梯配送规则
-        targetShop.setDeliveryRules(deliveryRuleService.listRulesByShopId(targetShop.getId()));
+        // 统一附带加载配送配置（同城阶梯规则、同城配送开通状态、快递特殊地区）
+        fillShopExtras(targetShop);
         return targetShop;
     }
 
@@ -129,9 +134,7 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
             });
         }
 
-        for (ShopInfo s : shops) {
-            s.setDeliveryRules(deliveryRuleService.listRulesByShopId(s.getId()));
-        }
+        fillShopExtras(shops);
 
         return shops;
     }
@@ -196,9 +199,7 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
             });
         }
 
-        for (ShopInfo s : records) {
-            s.setDeliveryRules(deliveryRuleService.listRulesByShopId(s.getId()));
-        }
+        fillShopExtras(records);
 
         return PageResult.of(resultPage.getTotal(), records, resultPage.getCurrent(), resultPage.getSize());
     }
@@ -234,19 +235,60 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
         }
 
         List<ShopInfo> adminShops = this.listByIds(shopIds);
-        fillDeliveryRules(adminShops);
+        fillShopExtras(adminShops);
         return adminShops;
     }
 
     /**
-     * 为店铺列表补全阶梯配送规则，供掌柜后台展示配送范围
+     * 为店铺列表补全配送配置，供掌柜后台与顾客端展示配送范围
      */
-    private void fillDeliveryRules(List<ShopInfo> shops) {
+    private void fillShopExtras(List<ShopInfo> shops) {
         if (CollectionUtils.isEmpty(shops)) {
             return;
         }
         for (ShopInfo shop : shops) {
-            shop.setDeliveryRules(deliveryRuleService.listRulesByShopId(shop.getId()));
+            fillShopExtras(shop);
+        }
+    }
+
+    /**
+     * 补全单个店铺的配送配置：
+     * 1. 同城多阶梯配送规则（均为有截止距离的有限阶梯）
+     * 2. 快递配送开关、基础运费与特殊地区规则
+     */
+    private void fillShopExtras(ShopInfo shop) {
+        if (shop == null) {
+            return;
+        }
+        List<ShopDeliveryRule> rules = deliveryRuleService.listRulesByShopId(shop.getId());
+        shop.setDeliveryRules(rules);
+
+        shop.setExpressRegions(parseExpressRegions(shop.getExpressRegionsJson()));
+        if (shop.getMerchantDeliveryEnabled() == null) {
+            shop.setMerchantDeliveryEnabled(1);
+        }
+        if (shop.getTakeoutEnabled() == null) {
+            shop.setTakeoutEnabled(0);
+        }
+        if (shop.getExpressEnabled() == null) {
+            shop.setExpressEnabled(0);
+        }
+        if (shop.getExpressFee() == null) {
+            shop.setExpressFee(BigDecimal.ZERO);
+        }
+    }
+
+    /** 解析快递特殊地区 JSON 配置，异常时降级为空列表 */
+    private List<ShopExpressRegion> parseExpressRegions(String json) {
+        if (!StringUtils.hasText(json)) {
+            return Collections.emptyList();
+        }
+        try {
+            List<ShopExpressRegion> list = com.alibaba.fastjson2.JSON.parseArray(json, ShopExpressRegion.class);
+            return list == null ? Collections.emptyList() : list;
+        } catch (Exception e) {
+            log.warn("解析店铺快递特殊地区配置失败: {}", json, e);
+            return Collections.emptyList();
         }
     }
 
@@ -378,7 +420,29 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
             if (exist == null) {
                 throw new BusinessException("待修改商铺不存在");
             }
+            // 配送能力配置：未传的字段保持原值，避免旧客户端保存时把配送能力清空
+            Integer oldMerchantEnabled = exist.getMerchantDeliveryEnabled();
+            Integer oldTakeoutEnabled = exist.getTakeoutEnabled();
+            Integer oldExpressEnabled = exist.getExpressEnabled();
+            BigDecimal oldExpressFee = exist.getExpressFee();
+            String oldExpressRegions = exist.getExpressRegionsJson();
+
             BeanUtils.copyProperties(dto, exist);
+            if (dto.getMerchantDeliveryEnabled() == null) {
+                exist.setMerchantDeliveryEnabled(oldMerchantEnabled == null ? 1 : oldMerchantEnabled);
+            }
+            if (dto.getTakeoutEnabled() == null) {
+                exist.setTakeoutEnabled(oldTakeoutEnabled == null ? 0 : oldTakeoutEnabled);
+            }
+            if (dto.getExpressEnabled() == null) {
+                exist.setExpressEnabled(oldExpressEnabled == null ? 0 : oldExpressEnabled);
+            }
+            if (dto.getExpressFee() == null) {
+                exist.setExpressFee(oldExpressFee);
+            }
+            if (dto.getExpressRegions() != null) {
+                exist.setExpressRegionsJson(com.alibaba.fastjson2.JSON.toJSONString(dto.getExpressRegions()));
+            }
             this.updateById(exist);
             targetShopId = exist.getId();
         } else {
@@ -388,6 +452,20 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
             if (newShop.getSortOrder() == null) {
                 newShop.setSortOrder(0);
             }
+            if (newShop.getMerchantDeliveryEnabled() == null) {
+                newShop.setMerchantDeliveryEnabled(1);
+            }
+            if (newShop.getTakeoutEnabled() == null) {
+                newShop.setTakeoutEnabled(0);
+            }
+            if (newShop.getExpressEnabled() == null) {
+                newShop.setExpressEnabled(0);
+            }
+            if (newShop.getExpressFee() == null) {
+                newShop.setExpressFee(BigDecimal.ZERO);
+            }
+            newShop.setExpressRegionsJson(com.alibaba.fastjson2.JSON.toJSONString(
+                    dto.getExpressRegions() == null ? Collections.emptyList() : dto.getExpressRegions()));
             boolean saved = this.save(newShop);
             if (saved && currentUserId != null) {
                 // 自动绑定当前管理员为该店铺的 OWNER
@@ -426,5 +504,83 @@ public class ShopInfoServiceImpl extends ServiceImpl<ShopInfoMapper, ShopInfo> i
 
         // 委托多阶梯配送规则计算器
         return deliveryRuleService.calculateDelivery(shop, actualDistance);
+    }
+
+    @Override
+    public ExpressCheckVO checkExpressDelivery(String shopId, String addressId) {
+        String userId = SecurityContextUtil.getUserId();
+        if (userId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
+        if (!StringUtils.hasText(addressId)) {
+            throw new BusinessException("请选择收货地址");
+        }
+        UserAddress address = userAddressMapper.selectById(addressId);
+        if (address == null || !userId.equals(address.getUserId())) {
+            throw new BusinessException("收货地址不存在");
+        }
+        return calculateExpress(getShopInfo(shopId), address);
+    }
+
+    @Override
+    public ExpressCheckVO calculateExpress(ShopInfo shop, UserAddress address) {
+        if (shop == null || address == null) {
+            return ExpressCheckVO.builder()
+                    .canDeliver(false)
+                    .fee(BigDecimal.ZERO)
+                    .message("快递配送信息不完整，请稍后重试")
+                    .build();
+        }
+
+        // 1. 店铺是否开通快递配送
+        if (shop.getExpressEnabled() == null || shop.getExpressEnabled() != 1) {
+            return ExpressCheckVO.builder()
+                    .canDeliver(false)
+                    .fee(BigDecimal.ZERO)
+                    .message("本店暂未开通快递配送，请选择「到店自取」")
+                    .build();
+        }
+
+        BigDecimal baseFee = shop.getExpressFee() != null ? shop.getExpressFee() : BigDecimal.ZERO;
+        List<ShopExpressRegion> regions = shop.getExpressRegions() != null
+                ? shop.getExpressRegions()
+                : parseExpressRegions(shop.getExpressRegionsJson());
+
+        // 2. 特殊地区优先匹配：按省份/完整地址包含关键字
+        String province = address.getProvince();
+        String fullAddress = address.getFullAddress();
+        for (ShopExpressRegion region : regions) {
+            if (region == null || !StringUtils.hasText(region.getRegion())) {
+                continue;
+            }
+            String keyword = region.getRegion().trim();
+            boolean matched = (StringUtils.hasText(province) && province.contains(keyword))
+                    || (StringUtils.hasText(fullAddress) && fullAddress.contains(keyword));
+            if (!matched) {
+                continue;
+            }
+            if (region.getDeliverable() != null && region.getDeliverable() == 0) {
+                return ExpressCheckVO.builder()
+                        .canDeliver(false)
+                        .fee(BigDecimal.ZERO)
+                        .matchedRegion(keyword)
+                        .message(String.format("「%s」等地区暂停快递发货，请更换收货地址或选择到店自取", keyword))
+                        .build();
+            }
+            BigDecimal fee = region.getFee() != null ? region.getFee() : baseFee;
+            return ExpressCheckVO.builder()
+                    .canDeliver(true)
+                    .fee(fee)
+                    .matchedRegion(keyword)
+                    .message(String.format("该地址属于快递特殊地区「%s」，运费 ¥%.2f", keyword, fee.doubleValue()))
+                    .build();
+        }
+
+        // 3. 常规地区：使用店铺基础快递费
+        return ExpressCheckVO.builder()
+                .canDeliver(true)
+                .fee(baseFee)
+                .message(String.format("快递运费 ¥%.2f，掌柜接单后安排寄出", baseFee.doubleValue()))
+                .build();
     }
 }

@@ -1,4 +1,4 @@
-/* pages/merchant/products/list/index.wxss - 维琼鲜肉铺 掌柜鲜肉商品管理 */
+/* pages/merchant/products/list/index.wxss - 鲜肉铺 掌柜商品管理 */
 
 .container {
   padding-bottom: 40rpx;
@@ -92,6 +92,7 @@
 
 .search-box {
   flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   background-color: var(--bg-pink, #FFF5F2);
@@ -114,24 +115,26 @@
 }
 
 .add-btn {
-  /* 用固定高度 + flex 居中，避免 button 默认行高/内边距把按钮撑宽、文字偏上 */
+  /* 固定尺寸的小胶囊：避免微信 button 默认宽度把搜索条挤窄 */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: none;
+  flex: 0 0 auto;
   width: auto;
-  height: 56rpx;
-  padding: 0 22rpx;
+  min-width: 0;
+  max-width: 152rpx;
+  height: 52rpx;
+  padding: 0 16rpx;
   line-height: 1;
   white-space: nowrap;
   background: var(--primary-gradient, linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%));
   color: #FFFFFF;
-  font-size: 22rpx;
+  font-size: 21rpx;
   font-weight: 800;
   border-radius: var(--radius-round, 999rpx);
   margin: 0;
+  box-sizing: border-box;
   box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.3);
-  flex-shrink: 0;
 }
 
 /* 店铺专属分类横向滚动条 */

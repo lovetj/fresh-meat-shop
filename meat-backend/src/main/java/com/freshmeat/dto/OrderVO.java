@@ -25,6 +25,8 @@ public class OrderVO implements Serializable {
     private String shopName;
     /** 提货/下单门店地址与坐标，供顾客端导航使用 */
     private String shopAddress;
+    /** 门店联系电话，供顾客端一键拨打 */
+    private String shopPhone;
     private BigDecimal shopLng;
     private BigDecimal shopLat;
     private String userId;
@@ -51,6 +53,10 @@ public class OrderVO implements Serializable {
     private BigDecimal payAmount;
     private BigDecimal originalPayAmount;
     private String pickupCode;
+
+    /** 快递配送：快递公司名称与快递单号（掌柜发货时填写） */
+    private String expressCompany;
+    private String expressNo;
 
     private String remark;
     private String cancelReason;

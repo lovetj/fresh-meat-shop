@@ -1,5 +1,5 @@
 <!-- pages/order-detail/order-detail.wxml -->
-<view class="container">
+<view class="container {{hasActions ? '' : 'no-actions'}}">
   <!-- 顶部状态横幅 -->
   <view class="status-banner theme-bg">
     <view class="status-left">
@@ -10,7 +10,9 @@
       <text class="banner-sub" wx:if="{{order.status === 0}}">请在尽快完成支付，肉铺将及时备肉</text>
       <text class="banner-sub" wx:elif="{{order.status === 1}}">肉铺已收到订单，掌柜即将接单切肉</text>
       <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 1}}">鲜肉已备齐，请凭电话或提货码到店自提</text>
+      <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 4}}">肉铺已接单，正在打包，寄出后可在本页查看快递单号</text>
       <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 2}}">肉铺已接单，师傅正在排单切配</text>
+      <text class="banner-sub" wx:elif="{{order.status === 3 && order.deliveryType === 4}}">快递已寄出，请凭单号在快递App查询物流</text>
       <text class="banner-sub" wx:elif="{{order.status === 3}}">骑手/掌柜专人配送中，请保持电话畅通</text>
       <text class="banner-sub" wx:elif="{{order.status === 4}}">鲜肉订单已完成，祝您用餐愉快！</text>
       <text class="banner-sub" wx:elif="{{order.status === 5}}">订单已取消{{order.cancelReason ? '：' + order.cancelReason : ''}}</text>
@@ -27,17 +29,46 @@
   </view>
 
   <!-- 自提提货码醒目展示卡片 (顾客凭码提货 / 掌柜凭码核销) -->
-  <view class="card pickup-banner-card" wx:if="{{order.deliveryType === 1 && order.pickupCode}}">
+  <!-- 只要自提订单进入「待自提」及之后状态就展示状态标签，避免历史订单无提货码时整卡不显示 -->
+  <view class="card pickup-banner-card" wx:if="{{order.deliveryType === 1 && (order.pickupCode || (order.status >= 2 && order.status <= 4))}}">
     <view class="p-card-head">
-      <text class="p-card-status" wx:if="{{order.status === 4}}">✓ 已核销提货</text>
-      <text class="p-card-status status-wait" wx:elif="{{order.status === 2}}">待提货核销</text>
+      <text class="p-card-status status-done" wx:if="{{order.status === 4}}">✓ 已核销提货</text>
+      <text class="p-card-status status-wait" wx:else>待提货核销</text>
     </view>
-    <view class="p-code-box">
+
+    <view class="p-code-box" wx:if="{{order.pickupCode}}">
       <text class="p-code-label">提货核销凭据：</text>
       <text class="p-code-val">{{order.pickupCode}}</text>
     </view>
-    <text class="p-card-tip" wx:if="{{!isAdmin}}">到店后请向肉铺掌柜出示此 6 位提货码或手机号码提货</text>
-    <text class="p-card-tip" wx:else>顾客到店出示此提货码核销完成提货</text>
+
+    <text class="p-card-tip" wx:if="{{order.pickupCode && !isAdmin}}">到店后请向掌柜出示此 6 位提货码或手机号码提货</text>
+    <text class="p-card-tip" wx:elif="{{order.pickupCode}}">顾客到店出示此提货码核销完成提货</text>
+    <text class="p-card-tip" wx:elif="{{!isAdmin}}">到店后请向掌柜出示下单手机号码提货</text>
+  </view>
+
+  <!-- 快递配送物流信息卡片 -->
+  <view class="card express-card" wx:if="{{order.deliveryType === 4 && order.status >= 2 && order.status <= 4}}">
+    <view class="p-card-head">
+      <text class="p-card-status {{order.expressNo ? 'status-done' : 'status-wait'}}">{{order.expressNo ? '快递已寄出' : '待发货'}}</text>
+    </view>
+
+    <block wx:if="{{order.expressNo}}">
+      <view class="express-row">
+        <text class="express-label">快递公司</text>
+        <text class="express-value">{{order.expressCompany || '—'}}</text>
+      </view>
+      <view class="express-row">
+        <text class="express-label">快递单号</text>
+        <text class="express-no">{{order.expressNo}}</text>
+        <text class="copy-btn-mini" bindtap="copyExpressNo">复制</text>
+      </view>
+      <view class="express-hint">
+        <text class="express-hint-icon">💡</text>
+        <text class="express-hint-text">{{expressTipText}}</text>
+      </view>
+    </block>
+
+    <text class="express-empty" wx:else>肉铺正在打包，寄出后会在这里显示快递公司与快递单号</text>
   </view>
 
   <!-- 配送 / 自取信息卡片 -->
@@ -46,7 +77,8 @@
       <view class="delivery-type-tag {{order.deliveryType === 1 ? 'badge-orange' : 'badge-red'}}">
         {{order.deliveryTypeDesc}}
       </view>
-      <text class="shop-bind-tag" wx:if="{{order.deliveryType !== 1 && order.shopName}}">🏪 {{order.shopName}}</text>
+      <!-- 顾客端商家配送已在卡片内展示配送门店区域，头部标签不重复门店名 -->
+      <text class="shop-bind-tag" wx:if="{{order.shopName && (order.deliveryType === 4 || isAdmin)}}">🏪 {{order.shopName}}</text>
     </view>
 
     <!-- 到店自取 -->
@@ -68,16 +100,21 @@
         <view class="contact-row">
           <text class="contact-label">提货门店</text>
           <text class="contact-name">{{order.shopName || '未配置门店'}}</text>
-          <text class="nav-btn" bindtap="openShopLocation">导航</text>
         </view>
-        <view class="address-row">
+        <view class="contact-row" wx:if="{{order.shopPhone}}">
+          <text class="contact-label">门店电话</text>
+          <text class="contact-phone">{{order.shopPhone}}</text>
+          <text class="call-btn-mini" data-phone="{{order.shopPhone}}" bindtap="makePhoneCall">拨打</text>
+        </view>
+        <view class="address-row address-row-nav">
           <text class="address-text">📍 {{order.shopAddress || order.receiverAddress}}</text>
+          <text class="nav-btn" bindtap="openShopLocation">导航</text>
         </view>
       </block>
     </block>
 
-    <!-- 同城配送：展示收货人信息与收货地址 -->
-    <block wx:else>
+    <!-- 快递配送：顾客端与掌柜端均展示收货人信息与收货地址 -->
+    <block wx:elif="{{order.deliveryType === 4}}">
       <view class="user-info-row">
         <text class="user-name">{{order.receiverName}}</text>
         <text class="user-phone">{{order.receiverPhone}}</text>
@@ -87,8 +124,47 @@
         <text class="address-text">📍 {{order.receiverAddress}}</text>
       </view>
       <view class="dist-row" wx:if="{{order.deliveryDistance > 0}}">
-        <text class="dist-text">配送测算距离: 约 {{order.deliveryDistance}} km (同城配送费 ¥{{order.deliveryFee}})</text>
+        <text class="dist-text">配送测算距离: 约 {{order.deliveryDistance}} km</text>
       </view>
+    </block>
+
+    <!-- 商家配送：与到店自取一致，按角色只展示对方信息 -->
+    <block wx:else>
+      <!-- 掌柜端：只展示顾客（收货人）联系信息、收货地址与配送距离测算 -->
+      <block wx:if="{{isAdmin}}">
+        <view class="contact-row">
+          <text class="contact-label">收货人姓名</text>
+          <text class="contact-name">{{order.receiverName || '未填写'}}</text>
+        </view>
+        <view class="contact-row">
+          <text class="contact-label">收货人电话</text>
+          <text class="contact-phone">{{order.receiverPhone || '未填写'}}</text>
+          <text class="call-btn-mini" wx:if="{{order.receiverPhone}}" data-phone="{{order.receiverPhone}}" bindtap="makePhoneCall">拨打</text>
+        </view>
+        <view class="address-row address-row-nav">
+          <text class="address-text">📍 {{order.receiverAddress || '未填写收货地址'}}</text>
+          <text class="nav-btn" wx:if="{{order.receiverAddress}}" bindtap="openReceiverLocation">导航</text>
+        </view>
+        <view class="dist-row" wx:if="{{order.deliveryDistance > 0}}">
+          <text class="dist-text">配送测算距离: 约 {{order.deliveryDistance}} km</text>
+        </view>
+      </block>
+      <!-- 顾客端：只展示配送门店信息，不重复展示自己的收货信息 -->
+      <block wx:else>
+        <view class="contact-row">
+          <text class="contact-label">配送门店</text>
+          <text class="contact-name">{{order.shopName || '未配置门店'}}</text>
+        </view>
+        <view class="contact-row" wx:if="{{order.shopPhone}}">
+          <text class="contact-label">门店电话</text>
+          <text class="contact-phone">{{order.shopPhone}}</text>
+          <text class="call-btn-mini" data-phone="{{order.shopPhone}}" bindtap="makePhoneCall">拨打</text>
+        </view>
+        <view class="address-row address-row-nav">
+          <text class="address-text">📍 {{order.shopAddress || '未配置门店地址'}}</text>
+          <text class="nav-btn" bindtap="openShopLocation">导航</text>
+        </view>
+      </block>
     </block>
   </view>
 
@@ -174,52 +250,58 @@
   </view>
 
   <!-- ================= 底部操作按钮栏 ================= -->
-  <!-- 1. 掌柜端管理视角 -->
-  <view class="bottom-actions" wx:if="{{isAdmin}}">
-    <!-- 待支付(0) 时：掌柜改价 / 取消订单 -->
-    <button class="btn-secondary" wx:if="{{order.status === 0}}" bindtap="onAdminCancelOrder">
-      取消订单
-    </button>
-    <button class="btn-warn" wx:if="{{order.status === 0}}" bindtap="openPriceModal">
-      掌柜改价
-    </button>
+  <!-- 没有任何可执行操作时整条悬浮栏不渲染（避免空白悬浮区域遮挡内容） -->
+  <view class="bottom-actions" wx:if="{{hasActions}}">
+    <!-- 1. 掌柜端管理视角 -->
+    <block wx:if="{{isAdmin}}">
+      <!-- 待支付(0) 时：掌柜改价 / 取消订单 -->
+      <button class="btn-secondary" wx:if="{{order.status === 0}}" bindtap="onAdminCancelOrder">
+        取消订单
+      </button>
+      <button class="btn-warn" wx:if="{{order.status === 0}}" bindtap="openPriceModal">
+        掌柜改价
+      </button>
 
-    <!-- 待接单(1) 时：拒单 / 立即接单 -->
-    <button class="btn-reject" wx:if="{{order.status === 1}}" bindtap="onRejectOrder">
-      拒单退款
-    </button>
-    <button class="btn-accept" wx:if="{{order.status === 1}}" bindtap="onAcceptOrder">
-      立即接单
-    </button>
+      <!-- 待接单(1) 时：拒单 / 立即接单 -->
+      <button class="btn-reject" wx:if="{{order.status === 1}}" bindtap="onRejectOrder">
+        拒单退款
+      </button>
+      <button class="btn-accept" wx:if="{{order.status === 1}}" bindtap="onAcceptOrder">
+        立即接单
+      </button>
 
-    <!-- 待配送/自提(2) 时：开始配送/通知备好 / 到店核销 / 取消退款 -->
-    <button class="btn-secondary" wx:if="{{order.status === 2}}" bindtap="onAdminCancelOrder">
-      协商退款
-    </button>
-    <button class="btn-primary" wx:if="{{order.status === 2 && order.deliveryType === 2}}" bindtap="onDeliverOrder">
-      开始同城配送
-    </button>
-    <button class="btn-primary" wx:if="{{order.status === 2 && order.deliveryType === 1}}" bindtap="onFinishOrder">
-      到店提货核销
-    </button>
+      <!-- 待配送/自提(2) 时：开始配送/通知备好 / 到店核销 / 取消退款 -->
+      <button class="btn-secondary" wx:if="{{order.status === 2}}" bindtap="onAdminCancelOrder">
+        协商退款
+      </button>
+      <button class="btn-primary" wx:if="{{order.status === 2 && order.deliveryType === 2}}" bindtap="onDeliverOrder">
+        开始同城配送
+      </button>
+      <button class="btn-primary" wx:if="{{order.status === 2 && order.deliveryType === 1}}" bindtap="onFinishOrder">
+        到店提货核销
+      </button>
+      <button class="btn-primary" wx:if="{{order.status === 2 && order.deliveryType === 4}}" bindtap="openExpressModal">
+        填写快递单号发货
+      </button>
 
-    <!-- 配送中(3) 时：确认送达完成 -->
-    <button class="btn-primary" wx:if="{{order.status === 3}}" bindtap="onFinishOrder">
-      确认送达完成
-    </button>
-  </view>
+      <!-- 配送中(3) 时：确认送达完成 -->
+      <button class="btn-primary" wx:if="{{order.status === 3}}" bindtap="onFinishOrder">
+        确认送达完成
+      </button>
+    </block>
 
-  <!-- 2. 顾客普通视角 -->
-  <view class="bottom-actions" wx:elif="{{order.canPay || order.canCancel || order.canConfirm}}">
-    <button class="btn-secondary" wx:if="{{order.canCancel}}" bindtap="onCancelOrder">
-      取消订单
-    </button>
-    <button class="btn-primary" wx:if="{{order.canPay}}" bindtap="onPayOrder">
-      立即支付 (¥{{order.payAmount}})
-    </button>
-    <button class="btn-primary" wx:if="{{order.canConfirm}}" bindtap="onConfirmOrder">
-      确认收货
-    </button>
+    <!-- 2. 顾客普通视角 -->
+    <block wx:else>
+      <button class="btn-secondary" wx:if="{{order.canCancel}}" bindtap="onCancelOrder">
+        取消订单
+      </button>
+      <button class="btn-primary" wx:if="{{order.canPay}}" bindtap="onPayOrder">
+        立即支付 (¥{{order.payAmount}})
+      </button>
+      <button class="btn-primary" wx:if="{{order.canConfirm}}" bindtap="onConfirmOrder">
+        确认收货
+      </button>
+    </block>
   </view>
 
   <!-- 改价弹窗 -->
@@ -245,6 +327,46 @@
       <view class="modal-btn-row">
         <button class="btn-secondary modal-btn" bindtap="closePriceModal">取消</button>
         <button class="btn-primary modal-btn" bindtap="confirmChangePrice">确认改价</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快递发货弹窗 -->
+  <view class="modal-mask" wx:if="{{showExpressModal}}" bindtap="closeExpressModal">
+    <view class="modal-card" catchtap="preventBubble">
+      <view class="modal-title">📦 填写快递发货信息</view>
+      <view class="modal-desc">
+        填写后订单流转为「快递运输中」，顾客可在订单详情查看单号与物流查询方式：
+      </view>
+
+      <view class="express-company-list">
+        <view
+          wx:for="{{expressCompanies}}"
+          wx:key="*this"
+          class="express-chip {{expressCompany === item ? 'express-chip-active' : ''}}"
+          bindtap="onSelectExpressCompany"
+          data-company="{{item}}"
+        >{{item}}</view>
+      </view>
+
+      <input
+        class="modal-input"
+        placeholder="快递公司 (如：顺丰速运)"
+        maxlength="50"
+        value="{{expressCompany}}"
+        bindinput="onExpressCompanyInput"
+      />
+      <input
+        class="modal-input"
+        placeholder="快递单号"
+        maxlength="64"
+        value="{{expressNo}}"
+        bindinput="onExpressNoInput"
+      />
+
+      <view class="modal-btn-row">
+        <button class="btn-secondary modal-btn" bindtap="closeExpressModal">取消</button>
+        <button class="btn-primary modal-btn" bindtap="confirmExpressDeliver">确认发货</button>
       </view>
     </view>
   </view>

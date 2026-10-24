@@ -16,10 +16,20 @@ Page({
       latitude: '',
       status: 1
     },
+    // 同城商家配送开关: 1-开通, 0-未开通
+    merchantDeliveryEnabled: 1,
+    // 外卖配送开关: 1-开通, 0-未开通（需求待定，暂作配置预留）
+    takeoutEnabled: 0,
     // 同城多阶梯配送规则列表
     deliveryRules: [
       { minDistance: 0, maxDistance: 3.0, minOrderAmount: 20.0, deliveryFee: 3.0 }
     ],
+    // 快递配送配置
+    expressEnabled: 0,
+    expressFee: '',
+    expressRegions: [],
+    // 特殊地区配送状态下拉选项：0-可发 1-停发
+    deliverOptions: ['可发', '停发'],
     startTime: '06:00',
     endTime: '19:30',
     submitting: false
@@ -54,32 +64,39 @@ Page({
           const hours = this.parseBusinessHours(res.businessHours);
           let rules = [];
           if (Array.isArray(res.deliveryRules) && res.deliveryRules.length > 0) {
-            rules = res.deliveryRules.map((r, idx) => {
-              const isUnlim = r.maxDistance === null || r.maxDistance === undefined || Number(r.maxDistance) <= 0;
-              return {
-                id: r.id || null,
-                minDistance: r.minDistance !== undefined ? r.minDistance : 0,
-                maxDistance: isUnlim ? '' : r.maxDistance,
-                isUnlimited: isUnlim,
-                minOrderAmount: r.minOrderAmount !== undefined ? r.minOrderAmount : 20.0,
-                deliveryFee: r.deliveryFee !== undefined ? r.deliveryFee : 3.0
-              };
-            });
+            rules = res.deliveryRules.map(r => ({
+              id: r.id || null,
+              minDistance: r.minDistance !== undefined ? r.minDistance : 0,
+              maxDistance: (r.maxDistance === null || r.maxDistance === undefined) ? '' : r.maxDistance,
+              minOrderAmount: r.minOrderAmount !== undefined ? r.minOrderAmount : 20.0,
+              deliveryFee: r.deliveryFee !== undefined ? r.deliveryFee : 3.0
+            }));
           } else {
             // 默认初始阶梯规则
             rules = [{
               minDistance: 0,
               maxDistance: 3.0,
-              isUnlimited: false,
               minOrderAmount: 20.0,
               deliveryFee: 3.0
             }];
           }
 
+          // 快递配置：开关、基础运费与特殊地区规则
+          const expressRegions = (Array.isArray(res.expressRegions) ? res.expressRegions : []).map(r => ({
+            region: r.region || '',
+            fee: r.fee === null || r.fee === undefined ? '' : r.fee,
+            deliverable: r.deliverable === 0 ? 0 : 1
+          }));
+
           this.setData({
             shop: res,
             shopId: res.id,
+            merchantDeliveryEnabled: res.merchantDeliveryEnabled === 0 ? 0 : 1,
+            takeoutEnabled: res.takeoutEnabled === 1 ? 1 : 0,
             deliveryRules: rules,
+            expressEnabled: res.expressEnabled === 1 ? 1 : 0,
+            expressFee: res.expressFee === null || res.expressFee === undefined ? '' : res.expressFee,
+            expressRegions,
             startTime: hours.startTime,
             endTime: hours.endTime
           });
@@ -141,15 +158,6 @@ Page({
 
     if (rules.length > 0) {
       const last = rules[rules.length - 1];
-      if (last.isUnlimited) {
-        // 如果上一条已设为不限距离，提示掌柜
-        wx.showToast({
-          title: '上一阶梯已设为不限距离，如需新增请先取消其不限状态',
-          icon: 'none',
-          duration: 2500
-        });
-        return;
-      }
       nextMin = Number(last.maxDistance) || 0;
       nextMax = +(nextMin + 3.0).toFixed(1);
       nextMinAmt = +(Number(last.minOrderAmount || 0) + 10).toFixed(1);
@@ -159,28 +167,9 @@ Page({
     rules.push({
       minDistance: nextMin,
       maxDistance: nextMax,
-      isUnlimited: false,
       minOrderAmount: nextMinAmt,
       deliveryFee: nextFee
     });
-
-    this.setData({ deliveryRules: rules });
-  },
-
-  // 切换最后一个阶梯的“不限距离(无上限)”状态
-  toggleUnlimitedRule(e) {
-    const index = Number(e.currentTarget.dataset.index);
-    const rules = [...this.data.deliveryRules];
-    if (index !== rules.length - 1) return;
-
-    const current = rules[index];
-    const willUnlimited = !current.isUnlimited;
-    current.isUnlimited = willUnlimited;
-    if (willUnlimited) {
-      current.maxDistance = '';
-    } else {
-      current.maxDistance = +(Number(current.minDistance || 0) + 3.0).toFixed(1);
-    }
 
     this.setData({ deliveryRules: rules });
   },
@@ -196,9 +185,7 @@ Page({
     const target = rules[index];
     if (!target) return;
 
-    const rangeText = target.isUnlimited
-      ? `${target.minDistance}km 以上（不限距离）`
-      : `${target.minDistance}km - ${target.maxDistance}km`;
+    const rangeText = `${target.minDistance}km - ${target.maxDistance}km`;
 
     wx.showModal({
       title: '删除配送阶梯',
@@ -242,6 +229,88 @@ Page({
     this.setData({ deliveryRules: rules });
   },
 
+  // ---------------- 外卖配送开关 ----------------
+  onTakeoutEnabledChange(e) {
+    this.setData({ takeoutEnabled: e.detail.value ? 1 : 0 });
+  },
+
+  // ---------------- 同城商家配送开关 ----------------
+  onMerchantDeliveryChange(e) {
+    const enabled = e.detail.value ? 1 : 0;
+    if (enabled === 0) {
+      wx.showToast({ title: '已关闭商家配送，顾客仅能选自取或快递', icon: 'none' });
+    }
+    this.setData({ merchantDeliveryEnabled: enabled });
+  },
+
+  // ---------------- 快递配送配置 ----------------
+  onExpressEnabledChange(e) {
+    this.setData({ expressEnabled: e.detail.value ? 1 : 0 });
+  },
+
+  onExpressFeeInput(e) {
+    this.setData({ expressFee: e.detail.value });
+  },
+
+  addExpressRegion() {
+    const regions = [...this.data.expressRegions];
+    regions.push({ region: '', fee: '', deliverable: 1 });
+    this.setData({ expressRegions: regions });
+  },
+
+  deleteExpressRegion(e) {
+    const index = Number(e.currentTarget.dataset.index);
+    const target = this.data.expressRegions[index];
+    if (!target) return;
+
+    const regionName = (target.region || '').trim() || `第 ${index + 1} 行地区`;
+
+    wx.showModal({
+      title: '删除特殊地区',
+      content: `确定删除「${regionName}」的快递规则吗？删除后该地区将按基础运费计费。`,
+      confirmText: '删除',
+      confirmColor: '#FF6B6B',
+      cancelText: '取消',
+      success: (res) => {
+        if (!res.confirm) return;
+        const regions = this.data.expressRegions.filter((_, i) => i !== index);
+        this.setData({ expressRegions: regions });
+        wx.showToast({ title: '已删除该地区', icon: 'none' });
+      }
+    });
+  },
+
+  /** 特殊地区：地图选择省级/直辖市，仅取第一级省份，忽略市与区县 */
+  onExpressRegionPick(e) {
+    const idx = Number(e.currentTarget.dataset.index);
+    const value = e.detail.value || [];
+    const province = (value[0] || '').trim();
+    if (!province) return;
+    const regions = [...this.data.expressRegions];
+    if (!regions[idx]) return;
+    regions[idx] = { ...regions[idx], region: province };
+    this.setData({ expressRegions: regions });
+  },
+
+  onExpressRegionInput(e) {
+    const { index, field } = e.currentTarget.dataset;
+    const idx = Number(index);
+    const regions = [...this.data.expressRegions];
+    if (!regions[idx]) return;
+    regions[idx] = { ...regions[idx], [field]: e.detail.value };
+    this.setData({ expressRegions: regions });
+  },
+
+  // 特殊地区「可发/停发」下拉选择
+  onExpressRegionDeliverableChange(e) {
+    const idx = Number(e.currentTarget.dataset.index);
+    const selected = Number(e.detail.value);
+    const regions = [...this.data.expressRegions];
+    if (!regions[idx]) return;
+    regions[idx] = { ...regions[idx], deliverable: selected === 1 ? 0 : 1 };
+    this.setData({ expressRegions: regions });
+  },
+
   // 地图选点获取门店坐标
   chooseLocationOnMap() {
     wx.chooseLocation({
@@ -271,6 +340,63 @@ Page({
     });
   },
 
+  /**
+   * 校验并清洗同城配送阶梯规则
+   * 阶梯必须首尾连贯：第 1 段从 0km 起，之后每段的起始距离等于上一段截止距离
+   * @returns {Array|null} 校验失败返回 null
+   */
+  buildCleanRules(rawRules) {
+    const cleanRules = [];
+    const EPS = 0.01;
+    let prevMaxDistance = null;
+
+    for (let i = 0; i < rawRules.length; i++) {
+      const r = rawRules[i];
+      const minD = parseFloat(r.minDistance);
+      const minAmt = parseFloat(r.minOrderAmount) || 0;
+      const fee = parseFloat(r.deliveryFee) || 0;
+
+      if (isNaN(minD) || minD < 0) {
+        wx.showToast({ title: `第${i + 1}个阶梯的起始距离必须≥0`, icon: 'none' });
+        return null;
+      }
+
+      // 连贯性校验：起点必须承接上一段终点
+      if (i === 0) {
+        if (Math.abs(minD) > EPS) {
+          wx.showToast({ title: '第1个阶梯的起始距离必须为 0km', icon: 'none' });
+          return null;
+        }
+      } else if (prevMaxDistance !== null && Math.abs(minD - prevMaxDistance) > EPS) {
+        wx.showToast({
+          title: `第${i + 1}个阶梯的起始距离必须为 ${prevMaxDistance}km，与上一阶梯衔接`,
+          icon: 'none'
+        });
+        return null;
+      }
+
+      const maxD = parseFloat(r.maxDistance);
+      if (isNaN(maxD) || maxD <= minD) {
+        wx.showToast({ title: `第${i + 1}个阶梯的截止距离必须大于起始距离`, icon: 'none' });
+        return null;
+      }
+
+      // 记录本段终点，供下一段衔接校验
+      prevMaxDistance = maxD;
+
+      cleanRules.push({
+        id: r.id || null,
+        minDistance: minD,
+        maxDistance: maxD,
+        minOrderAmount: minAmt,
+        deliveryFee: fee,
+        sortOrder: i + 1
+      });
+    }
+
+    return cleanRules;
+  },
+
   // 提交保存店铺信息与配送设置
   onSubmitShopInfo(e) {
     if (this.data.submitting) return;
@@ -295,81 +421,52 @@ Page({
       return;
     }
 
-    // 校验多阶梯配送规则
-    const rawRules = this.data.deliveryRules;
-    if (!rawRules || rawRules.length === 0) {
-      wx.showToast({ title: '请至少配置一条配送阶梯规则', icon: 'none' });
-      return;
-    }
+    // 校验多阶梯配送规则（仅同城商家配送开启时校验）
+    const merchantDeliveryEnabled = this.data.merchantDeliveryEnabled === 1 ? 1 : 0;
+    let cleanRules = [];
 
-    const cleanRules = [];
-    let hasUnlimited = false;
-    let maxDist = 0;
-    // 阶梯必须首尾连贯：第 1 段从 0km 起，之后每段的起始距离等于上一段截止距离
-    const EPS = 0.01;
-    let prevMaxDistance = null;
-
-    for (let i = 0; i < rawRules.length; i++) {
-      const r = rawRules[i];
-      const minD = parseFloat(r.minDistance);
-      const isUnlim = Boolean(r.isUnlimited || r.maxDistance === '' || r.maxDistance === null || parseFloat(r.maxDistance) <= 0);
-      const minAmt = parseFloat(r.minOrderAmount) || 0;
-      const fee = parseFloat(r.deliveryFee) || 0;
-
-      if (isNaN(minD) || minD < 0) {
-        wx.showToast({ title: `第${i + 1}个阶梯的起始距离必须≥0`, icon: 'none' });
+    if (merchantDeliveryEnabled === 1) {
+      const rawRules = this.data.deliveryRules || [];
+      if (rawRules.length === 0) {
+        wx.showToast({ title: '请至少配置一条配送阶梯规则', icon: 'none' });
         return;
       }
-
-      // 连贯性校验：起点必须承接上一段终点
-      if (i === 0) {
-        if (Math.abs(minD) > EPS) {
-          wx.showToast({ title: '第1个阶梯的起始距离必须为 0km', icon: 'none' });
-          return;
-        }
-      } else if (prevMaxDistance !== null && Math.abs(minD - prevMaxDistance) > EPS) {
-        wx.showToast({
-          title: `第${i + 1}个阶梯的起始距离必须为 ${prevMaxDistance}km，与上一阶梯衔接`,
-          icon: 'none'
-        });
-        return;
-      }
-
-      let maxD = null;
-      if (isUnlim) {
-        if (i !== rawRules.length - 1) {
-          wx.showToast({ title: `不限距离规则必须作为最后一个阶梯配置`, icon: 'none' });
-          return;
-        }
-        hasUnlimited = true;
-        maxD = null;
-      } else {
-        maxD = parseFloat(r.maxDistance);
-        if (isNaN(maxD) || maxD <= minD) {
-          wx.showToast({ title: `第${i + 1}个阶梯的截止距离必须大于起始距离`, icon: 'none' });
-          return;
-        }
-        if (maxD > maxDist) {
-          maxDist = maxD;
-        }
-      }
-
-      // 记录本段终点，供下一段衔接校验
-      prevMaxDistance = maxD;
-
-      cleanRules.push({
-        id: r.id || null,
-        minDistance: minD,
-        maxDistance: maxD,
-        minOrderAmount: minAmt,
-        deliveryFee: fee,
-        sortOrder: i + 1
-      });
+      cleanRules = this.buildCleanRules(rawRules);
+      if (!cleanRules) return;
     }
 
     const businessHours = (this.data.startTime && this.data.endTime)
       ? `${this.data.startTime} - ${this.data.endTime}`
       : (values.businessHours ? values.businessHours.trim() : (this.data.shop.businessHours || '06:00 - 19:30'));
+
+    // 校验快递配送配置
+    const takeoutEnabled = this.data.takeoutEnabled === 1 ? 1 : 0;
+    const expressEnabled = this.data.expressEnabled === 1 ? 1 : 0;
+    const expressFeeNum = parseFloat(this.data.expressFee);
+    if (expressEnabled === 1 && this.data.expressFee !== ''
+      && (isNaN(expressFeeNum) || expressFeeNum < 0)) {
+      wx.showToast({ title: '快递基础运费需为不小于 0 的数字', icon: 'none' });
+      return;
+    }
+
+    const cleanRegions = [];
+    for (const r of this.data.expressRegions) {
+      const regionName = (r.region || '').trim();
+      if (!regionName) {
+        wx.showToast({ title: '请填写特殊地区名称，或删除该行', icon: 'none' });
+        return;
+      }
+      const feeNum = parseFloat(r.fee);
+      if (r.fee !== '' && (isNaN(feeNum) || feeNum < 0)) {
+        wx.showToast({ title: `「${regionName}」的运费需为不小于 0 的数字`, icon: 'none' });
+        return;
+      }
+      cleanRegions.push({
+        region: regionName,
+        fee: (r.fee === '' || isNaN(feeNum)) ? null : feeNum,
+        deliverable: r.deliverable === 0 ? 0 : 1
+      });
+    }
 
     const payload = {
       id: id || this.data.shopId || null,
@@ -380,7 +477,12 @@ Page({
       address: values.address.trim(),
       longitude: parseFloat(values.longitude),
       latitude: parseFloat(values.latitude),
+      merchantDeliveryEnabled,
+      takeoutEnabled,
       deliveryRules: cleanRules,
+      expressEnabled,
+      expressFee: isNaN(expressFeeNum) ? 0 : expressFeeNum,
+      expressRegions: cleanRegions,
       status: status !== undefined ? status : 1
     };
 

@@ -1,7 +1,7 @@
 /**
  * 全局配置环境项
  */
-const ENV = 'dev'; // 'dev' | 'prod'
+const ENV = 'prod'; // 'dev' | 'prod'
 
 const CONFIG = {
   dev: {

@@ -2,7 +2,6 @@
 <view class="container">
   <view class="banner-wrap">
     <image class="banner-img" src="{{product.coverImage}}" mode="aspectFill"/>
-    <view class="banner-badge">🟢 今日现宰 · 冷鲜直达</view>
   </view>
 
   <view class="detail-card">
@@ -80,7 +79,7 @@
   <view class="card desc-section">
     <text class="section-title">📖 鲜肉品质与加工说明</text>
     <view class="desc-content">
-      <text>{{product.description || '每日清晨现宰进店，排酸冷鲜处理，支持现场切丁、切片、剁肉泥等精细化加工定制。'}}</text>
+      <text>{{product.description}}</text>
     </view>
     <view class="shop-promise">
       <view class="promise-item">✅ 检验检疫合格</view>
@@ -116,7 +115,7 @@
       <view class="cart-drawer-header">
         <view class="cart-drawer-title-box">
           <text class="cart-drawer-title">🛒 购物车</text>
-          <text class="cart-drawer-count" wx:if="{{cartCount > 0}}">{{cartCount}}件好肉</text>
+          <text class="cart-drawer-count" wx:if="{{cartCount > 0}}">共{{cartCount}}件</text>
         </view>
         <view class="cart-drawer-actions">
           <view class="cart-clear-btn" bindtap="onClearCart" wx:if="{{cartList.length > 0}}">

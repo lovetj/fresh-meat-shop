@@ -12,7 +12,8 @@ Page({
       { label: '配送中', status: 3, countKey: 'deliveringCount' },
       { label: '待付款', status: 0, countKey: 'pendingPayCount' },
       { label: '已完成', status: 4, countKey: 'completedCount' },
-      { label: '取消/拒单', status: 5, countKey: 'closedCount' }
+      // 取消/拒单：同时查询 5(已取消) 与 6(已拒单)
+      { label: '取消/拒单', status: 5, queryStatus: '5,6', countKey: 'closedCount' }
     ],
     statusCounts: {
       allCount: 0,
@@ -64,12 +65,23 @@ Page({
       shopId: shopId
     });
 
+    // 首次展示由 onLoad 负责加载，避免 onShow 重复请求
+    this._firstShow = true;
     this.loadStatusCounts();
     this.loadOrders(true);
   },
 
   onShow() {
+    if (!auth.isAdmin()) return;
+
     this.loadStatusCounts();
+
+    // 首次展示由 onLoad 加载；从订单详情返回时掌柜可能已操作过订单，需重新拉取列表
+    if (this._firstShow) {
+      this._firstShow = false;
+      return;
+    }
+    this.loadOrders(true);
   },
 
   onPullDownRefresh() {
@@ -151,6 +163,16 @@ Page({
     this.loadOrders(true);
   },
 
+  /**
+   * 当前页签实际提交的状态查询值
+   * 「取消/拒单」需同时命中已取消(5)与已拒单(6)
+   */
+  getQueryStatus() {
+    if (this.data.currentStatus === '') return '';
+    const tab = (this.data.tabs || []).find((t) => t.status === this.data.currentStatus);
+    return (tab && tab.queryStatus) || this.data.currentStatus;
+  },
+
   loadOrders(refresh = false) {
     const page = refresh ? 1 : this.data.page;
     // 请求序号：搜索/切页签时丢弃已过期的响应，避免旧数据覆盖新条件的结果
@@ -164,8 +186,10 @@ Page({
     if (this.data.shopId) {
       params.shopId = this.data.shopId;
     }
-    if (this.data.currentStatus !== '') {
-      params.status = this.data.currentStatus;
+    // 「取消/拒单」需同时命中已取消(5)与已拒单(6)
+    const queryStatus = this.getQueryStatus();
+    if (queryStatus !== '') {
+      params.status = queryStatus;
     }
     if (this.data.deliveryType !== '') {
       params.deliveryType = this.data.deliveryType;
@@ -214,18 +238,6 @@ Page({
   },
 
   preventBubble() {},
-
-  copyOrderNo(e) {
-    const orderNo = e.currentTarget.dataset.no;
-    if (orderNo) {
-      wx.setClipboardData({
-        data: orderNo,
-        success: () => {
-          wx.showToast({ title: '已复制订单号', icon: 'none' });
-        }
-      });
-    }
-  },
 
   // ================= 快捷提货码核销 =================
   openVerifyModal() {

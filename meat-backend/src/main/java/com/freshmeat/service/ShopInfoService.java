@@ -4,10 +4,12 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.freshmeat.common.PageResult;
 import com.freshmeat.dto.DistanceCheckDTO;
 import com.freshmeat.dto.DistanceCheckVO;
+import com.freshmeat.dto.ExpressCheckVO;
 import com.freshmeat.dto.ShopInfoDTO;
 import com.freshmeat.dto.ShopQueryDTO;
 import com.freshmeat.entity.ShopInfo;
 import com.freshmeat.entity.User;
+import com.freshmeat.entity.UserAddress;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -73,4 +75,14 @@ public interface ShopInfoService extends IService<ShopInfo> {
      * 校验收货地址经纬度是否在商铺配送范围之内 (基于 Haversine 算法)
      */
     DistanceCheckVO checkDeliveryDistance(DistanceCheckDTO dto);
+
+    /**
+     * 顾客端：试算快递配送运费与可达性（含特殊地区运费/停发判断）
+     */
+    ExpressCheckVO checkExpressDelivery(String shopId, String addressId);
+
+    /**
+     * 按店铺快递配置与收货地址计算快递运费与是否可发货（下单时复用，防止前端传值）
+     */
+    ExpressCheckVO calculateExpress(ShopInfo shop, UserAddress address);
 }

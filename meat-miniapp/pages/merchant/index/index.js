@@ -9,11 +9,7 @@ Page({
     myShops: [],
     currentShop: {},
     shopLoaded: false,
-    showShopPicker: false,
-    // 阶梯配送规则展示数据
-    deliveryTiers: [],
-    deliveryCoverText: '',
-    hasDeliveryTiers: false
+    showShopPicker: false
   },
 
   onShow() {
@@ -65,82 +61,24 @@ Page({
       myShops: [],
       currentShop: {},
       shopInfo: {},
-      deliveryTiers: [],
-      deliveryCoverText: '',
-      hasDeliveryTiers: false,
       showShopPicker: false,
       shopLoaded: true
     });
   },
 
   /**
-   * 应用当前管理门店，并格式化阶梯配送信息
+   * 应用当前管理门店
    * @param {Object} shop 当前门店
    * @param {Array} shops 可选门店列表（不传则沿用当前列表）
    */
   applyShopData(shop, shops) {
-    const view = this.buildDeliveryTiers(shop);
     const list = shops || this.data.myShops || [];
-
-    // 列表卡片上的配送摘要统一格式化（有阶梯走阶梯，无阶梯回退半径）
-    const myShops = list.map((item) => ({
-      ...item,
-      deliveryText: item.id === shop.id ? view.cardText : this.buildDeliveryTiers(item).cardText
-    }));
-
     this.setData({
-      myShops,
-      currentShop: { ...shop, deliveryText: view.cardText },
+      myShops: list,
+      currentShop: shop,
       shopInfo: shop,
-      deliveryTiers: view.tiers,
-      deliveryCoverText: view.coverText,
-      hasDeliveryTiers: view.tiers.length > 0,
       shopLoaded: true
     });
-  },
-
-  /**
-   * 把阶梯配送规则格式化为展示数据
-   * @returns {{tiers: Array, coverText: string, cardText: string}}
-   */
-  buildDeliveryTiers(shop) {
-    const rawRules = (shop && Array.isArray(shop.deliveryRules)) ? shop.deliveryRules.slice() : [];
-    const fallbackMax = 5;
-
-    rawRules.sort((a, b) => (Number(a.minDistance) || 0) - (Number(b.minDistance) || 0));
-
-    const tiers = [];
-    let hasUnlimited = false;
-    let maxDistance = 0;
-
-    rawRules.forEach((rule) => {
-      const min = Number(rule.minDistance) || 0;
-      const fee = Number(rule.deliveryFee) || 0;
-      const minAmount = Number(rule.minOrderAmount) || 0;
-      const maxRaw = rule.maxDistance;
-      const isUnlimited = maxRaw === null || maxRaw === undefined || maxRaw === '' || Number(maxRaw) <= 0;
-
-      if (isUnlimited) {
-        hasUnlimited = true;
-      } else if (Number(maxRaw) > maxDistance) {
-        maxDistance = Number(maxRaw);
-      }
-
-      tiers.push({
-        rangeText: isUnlimited ? `${min}km 以上` : `${min}-${Number(maxRaw)}km`,
-        desc: minAmount > 0 ? `配送 ¥${fee} · 起送 ¥${minAmount}` : `配送 ¥${fee}`
-      });
-    });
-
-    const coverText = tiers.length === 0
-      ? ''
-      : (hasUnlimited ? '不限距离' : `最远 ${maxDistance || fallbackMax}km`);
-
-    const cardText = tiers.length === 0
-      ? `配送半径 ${fallbackMax}km`
-      : `${tiers.length} 段阶梯 · ${coverText}`;
-
-    return { tiers, coverText, cardText };
   },
 
   openShopPicker() {

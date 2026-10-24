@@ -162,7 +162,7 @@ Page({
     if (res.success) {
       this.refreshCart();
       wx.showToast({
-        title: '已入购物车🛒',
+        title: '已加入购物车',
         icon: 'success'
       });
     } else {

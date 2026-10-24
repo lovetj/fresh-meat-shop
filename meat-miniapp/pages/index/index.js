@@ -5,8 +5,18 @@ const cart = require('../../utils/cart');
 const { formatImageUrl, normalizeSpecsList } = require('../../utils/util');
 const app = getApp();
 
-// 「全部鲜肉」的虚拟分类ID：后端分类ID为雪花字符串，0 仅用于前端占位，不会下发给接口
+// 「全部」的虚拟分类ID：后端分类ID为雪花字符串，0 仅用于前端占位，不会下发给接口
 const ALL_CATEGORY_ID = '0';
+
+/**
+ * 商品排序方式（单选且可取消，价格在前、销量在后）
+ * - sortKey 为空：未选择排序，按商品自身的排序字段（sortOrder）展示，即后端默认排序
+ * - price：低→高(asc) → 高→低(desc) → 取消，循环切换
+ * - sales：选中后固定从高到低，再次点击取消
+ * 排序动作交给后端分页 SQL，避免只对已加载页排序导致翻页顺序错乱
+ */
+const DEFAULT_SORT_KEY = '';
+const DEFAULT_PRICE_ORDER = 'asc';
 
 Page({
   data: {
@@ -28,6 +38,11 @@ Page({
     categories: [],
     currentCategoryId: ALL_CATEGORY_ID,
     keyword: '',
+
+    // 排序（单选可取消）：sortKey 为空表示未选择，按商品排序字段默认排序
+    sortKey: DEFAULT_SORT_KEY,
+    priceOrder: DEFAULT_PRICE_ORDER,
+
     goodsList: [],
     pageNum: 1,
     pageSize: 4,
@@ -53,7 +68,7 @@ Page({
 
   /**
    * 页面数据统一在 onShow 中刷新：
-   * 首次进入、以及每次从其他页签切回「鲜肉选购」时，都会重新请求本页涉及的全部接口
+   * 首次进入、以及每次从其他页签切回「商品选购」时，都会重新请求本页涉及的全部接口
    * （onLoad 不再重复请求，避免首屏两次调用）
    */
   onShow() {
@@ -92,7 +107,7 @@ Page({
 
   // 页面滚动到底部（触底追加分页）
   onReachBottom() {
-    console.log('[鲜肉选购] 滚动触底，触发追加分页: hasMore =', this.data.hasMore, 'loading =', this.data.loading);
+    console.log('[商品选购] 滚动触底，触发追加分页: hasMore =', this.data.hasMore, 'loading =', this.data.loading);
     this.onLoadMore();
   },
 
@@ -115,7 +130,7 @@ Page({
           .then((page) => this.resolveCurrentShop(page.list))
           .then(resolve)
           .catch((err) => {
-            console.error('[鲜肉选购] 加载门店列表失败，回退单店:', err);
+            console.error('[商品选购] 加载门店列表失败，回退单店:', err);
             request.get('/shop/info', {}, { silent: true }).then((shop) => {
               if (shop) {
                 this.applyCurrentShop(shop);
@@ -147,24 +162,28 @@ Page({
   formatShopDeliveryInfo(shop) {
     if (!shop) return null;
     const rules = Array.isArray(shop.deliveryRules) ? shop.deliveryRules : [];
+    // 仅统计有截止距离的有效阶梯（历史遗留的无截止距离规则不参与计算）
+    const validRules = rules.filter(r => r.maxDistance !== null && r.maxDistance !== undefined && Number(r.maxDistance) > 0);
     let minOrder = 0;
     let minFee = 0;
     let maxDistance = 0;
-    let hasUnlimited = false;
-    if (rules.length > 0) {
-      minOrder = rules[0].minOrderAmount !== undefined ? rules[0].minOrderAmount : 0;
-      minFee = rules[0].deliveryFee !== undefined ? rules[0].deliveryFee : 0;
-      rules.forEach(r => {
-        if (r.maxDistance === null || r.maxDistance === undefined || Number(r.maxDistance) <= 0) {
-          hasUnlimited = true;
-        } else if (Number(r.maxDistance) > maxDistance) {
-          maxDistance = Number(r.maxDistance);
+    if (validRules.length > 0) {
+      minOrder = validRules[0].minOrderAmount !== undefined ? validRules[0].minOrderAmount : 0;
+      minFee = validRules[0].deliveryFee !== undefined ? validRules[0].deliveryFee : 0;
+      validRules.forEach(r => {
+        const max = Number(r.maxDistance) || 0;
+        if (max > maxDistance) {
+          maxDistance = max;
         }
       });
     }
-    const deliveryRangeText = rules.length === 0 
-      ? '同城配送' 
-      : (hasUnlimited ? '不限距离' : `${maxDistance || 5}km 内`);
+    // 未开通同城配送时，只展示快递/自提能力
+    const merchantEnabled = shop.merchantDeliveryEnabled !== undefined && shop.merchantDeliveryEnabled !== null
+      ? Boolean(shop.merchantDeliveryEnabled)
+      : true;
+    const deliveryRangeText = !merchantEnabled
+      ? '快递配送'
+      : (validRules.length === 0 ? '同城配送' : `${maxDistance || 5}km 内`);
     return {
       ...shop,
       minOrderAmountText: minOrder,
@@ -274,7 +293,7 @@ Page({
 
       return { list, total };
     }).catch((err) => {
-      console.error('[鲜肉选购] 加载门店分页失败:', err);
+      console.error('[商品选购] 加载门店分页失败:', err);
       this.setData({ shopLoading: false, shopLoadingMore: false });
       throw err;
     });
@@ -381,15 +400,15 @@ Page({
     if (this.data.currentShopId) {
       params.shopId = this.data.currentShopId;
     }
-    console.log('[鲜肉选购] 开始请求门店分类列表: /category/list', params);
+    console.log('[商品选购] 开始请求门店分类列表: /category/list', params);
     return request.get('/category/list', params, { silent: true }).then((res) => {
-      console.log('[鲜肉选购] 分类列表返回结果:', res);
+      console.log('[商品选购] 分类列表返回结果:', res);
       const rawList = Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []);
       // 分类ID统一为字符串，避免与 currentCategoryId 做 === 比较时类型不一致
       const categories = rawList.map((item) => ({ ...item, id: String(item.id) }));
       this.setData({ categories });
     }).catch((err) => {
-      console.error('[鲜肉选购] 加载分类列表异常:', err);
+      console.error('[商品选购] 加载分类列表异常:', err);
     });
   },
 
@@ -407,6 +426,14 @@ Page({
       pageNum,
       pageSize: this.data.pageSize
     };
+    // 未选择排序时不传排序参数，由后端按商品排序字段（sortOrder）默认排序
+    if (this.data.sortKey === 'price') {
+      params.sortBy = 'price';
+      params.sortOrder = this.data.priceOrder;
+    } else if (this.data.sortKey === 'sales') {
+      params.sortBy = 'sales';
+      params.sortOrder = 'desc';
+    }
     if (this.data.currentShopId) {
       params.shopId = this.data.currentShopId;
     }
@@ -417,12 +444,12 @@ Page({
       params.keyword = this.data.keyword.trim();
     }
 
-    console.log('[鲜肉选购] 发起商品请求:', params, reset ? '(重置首屏)' : '(追加分页)');
+    console.log('[商品选购] 发起商品请求:', params, reset ? '(重置首屏)' : '(追加分页)');
 
     return request.get('/product/list', params).then((res) => {
       // 已有更新的请求在途，忽略本次过期数据
       if (seq !== this._goodsReqSeq) return;
-      console.log('[鲜肉选购] 商品列表返回结果:', res);
+      console.log('[商品选购] 商品列表返回结果:', res);
       const rawList = res.list || res.records || [];
       const list = rawList.map((item) => ({
         ...item,
@@ -441,14 +468,54 @@ Page({
       });
     }).catch((err) => {
       if (seq !== this._goodsReqSeq) return;
-      console.error('[鲜肉选购] 加载商品列表异常:', err);
+      console.error('[商品选购] 加载商品列表异常:', err);
       this.setData({ loading: false, loadingMore: false });
     });
   },
 
+  /**
+   * 应用排序（单选）：切换后回到第 1 页并展示骨架屏，
+   * 由后端按新排序重新分页返回，保证翻页顺序正确
+   */
+  applySort(sortKey, priceOrder) {
+    const nextPriceOrder = priceOrder || this.data.priceOrder;
+    if (sortKey === this.data.sortKey && nextPriceOrder === this.data.priceOrder) return;
+
+    this.setData({
+      sortKey,
+      priceOrder: nextPriceOrder,
+      pageNum: 1,
+      hasMore: true,
+      goodsList: [],
+      loading: true
+    }, () => {
+      this.loadGoods(true);
+    });
+  },
+
+  /**
+   * 价格排序：低→高 → 高→低 → 取消（还原默认排序），循环切换
+   */
+  onSortPrice() {
+    if (this.data.sortKey !== 'price') {
+      this.applySort('price', DEFAULT_PRICE_ORDER);
+      return;
+    }
+    if (this.data.priceOrder === 'asc') {
+      this.applySort('price', 'desc');
+      return;
+    }
+    this.applySort(DEFAULT_SORT_KEY);
+  },
+
+  /** 销量排序：选中后从高到低，再次点击取消（还原默认排序） */
+  onSortSales() {
+    this.applySort(this.data.sortKey === 'sales' ? DEFAULT_SORT_KEY : 'sales');
+  },
+
   onSelectCategory(e) {
     const rawId = e.currentTarget.dataset.id;
-    // dataset 取值可能是字符串或数字，统一规范为字符串（「全部鲜肉」为 '0'）
+    // dataset 取值可能是字符串或数字，统一规范为字符串（「全部」为 '0'）
     const isAll = rawId === undefined || rawId === null || rawId === '' || rawId === 0 || rawId === '0';
     const id = isAll ? ALL_CATEGORY_ID : String(rawId);
     if (String(this.data.currentCategoryId) === id) return;
@@ -494,7 +561,7 @@ Page({
   openShopLocation() {
     const shop = this.data.shopInfo;
     if (!shop.latitude || !shop.longitude) {
-      wx.showToast({ title: '肉铺未配置坐标', icon: 'none' });
+      wx.showToast({ title: '未配置坐标', icon: 'none' });
       return;
     }
     wx.openLocation({
@@ -653,7 +720,7 @@ Page({
     if (res.success) {
       this.refreshCart();
       wx.showToast({
-        title: '已入购物车🛒',
+        title: '已加入购物车',
         icon: 'success'
       });
     } else {

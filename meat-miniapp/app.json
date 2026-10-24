@@ -19,7 +19,7 @@
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#FF6B6B",
-    "navigationBarTitleText": "维琼鲜肉铺 🥩",
+    "navigationBarTitleText": "鲜肉铺",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#FFF9F0"
   },
@@ -32,7 +32,7 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "鲜肉选购"
+        "text": "商品选购"
       },
       {
         "pagePath": "pages/orders/orders",

@@ -7,6 +7,36 @@
   background-color: var(--bg-cream);
 }
 
+/* ================= 0. 配送方式筛选 ================= */
+.type-filter-row {
+  display: flex;
+  gap: 16rpx;
+  padding: 16rpx 20rpx 12rpx;
+  background-color: #FFFFFF;
+  flex-shrink: 0;
+  /* 与下方状态分类之间补一条分隔横线（与掌柜订单处理一致） */
+  border-bottom: 2rpx solid #FFF2EF;
+}
+
+.type-pill {
+  font-size: 22rpx;
+  font-weight: 700;
+  padding: 8rpx 20rpx;
+  border-radius: var(--radius-round);
+  background-color: #F5F5F5;
+  color: var(--text-sub);
+  border: 1rpx solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.type-pill.pill-active {
+  background-color: #FFF0F0;
+  color: var(--primary);
+  border-color: #FFCDD2;
+  font-weight: 800;
+}
+
 /* ================= 1. 顶部吸顶状态筛选胶囊 ================= */
 .status-tabs-scroll {
   background-color: #FFFFFF;
@@ -136,12 +166,6 @@
   letter-spacing: 1rpx;
 }
 
-.order-no {
-  font-size: 22rpx;
-  color: var(--text-light);
-  max-width: 300rpx;
-}
-
 /* 下单时间 */
 .order-time-row {
   margin-top: 12rpx;
@@ -157,32 +181,36 @@
 .thumb-row {
   display: flex;
   align-items: center;
-  gap: 12rpx;
+  gap: 16rpx;
   padding: 20rpx 0;
 }
 
+/* 图片区最多占屏幕一半（50vw），避免图片把右侧文案挤压变形 */
+.thumb-group {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  max-width: 50vw;
+}
+
 .thumb {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: var(--radius-img);
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 16rpx;
   background-color: #FFF5F2;
   border: 2rpx solid #FFEDE7;
   flex-shrink: 0;
 }
 
+/* 商品超出展示数量时的省略号：纯文字，无底色/边框 */
 .thumb-more {
-  width: 112rpx;
-  height: 112rpx;
-  border-radius: var(--radius-img);
-  background-color: var(--bg-pink);
-  color: var(--primary);
-  font-size: 24rpx;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   flex-shrink: 0;
-  border: 2rpx dashed #FFD0D0;
+  color: var(--text-light);
+  font-size: 26rpx;
+  line-height: 1;
+  letter-spacing: 2rpx;
+  white-space: nowrap;
 }
 
 .thumb-summary {
@@ -249,18 +277,29 @@
 
 .action-buttons {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
   gap: 16rpx;
   margin-top: 20rpx;
 }
 
 .action-buttons button {
+  /* 覆盖微信 button 默认整行宽度，改为按文字内容自适应的小胶囊 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
   margin: 0;
-  padding: 0 30rpx;
-  height: 60rpx;
-  line-height: 60rpx;
-  font-size: 24rpx;
+  padding: 0 22rpx;
+  height: 54rpx;
+  line-height: 1;
+  font-size: 23rpx;
   font-weight: 700;
+  white-space: nowrap;
   border-radius: var(--radius-round);
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -283,10 +322,11 @@
 }
 
 .btn-confirm {
-  background: linear-gradient(135deg, #6BCB77 0%, #8FDD9A 100%);
+  /* 与订单详情的「确认收货」主按钮保持一致：主色红 */
+  background: var(--primary-gradient);
   color: #FFFFFF;
   font-weight: 800;
-  box-shadow: 0 4rpx 14rpx rgba(107, 203, 119, 0.3);
+  box-shadow: 0 4rpx 14rpx rgba(255, 107, 107, 0.3);
 }
 
 .load-more {

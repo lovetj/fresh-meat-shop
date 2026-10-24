@@ -8,7 +8,7 @@
 
     <view class="shop-brand-row">
       <view class="shop-title-wrap" bindtap="openShopModal">
-        <text class="shop-name ellipsis">{{shopInfo.name || '维琼鲜肉铺'}}</text>
+        <text class="shop-name ellipsis">{{shopInfo.name || '鲜肉铺'}}</text>
         <view class="switch-shop-badge">
           <text>切换门店</text>
           <text class="switch-arrow">▼</text>
@@ -48,12 +48,12 @@
     </view>
   </view>
 
-  <!-- ================= 吸顶胶囊分类栏 ================= -->
+  <!-- ================= 吸顶：分类胶囊 + 排序栏 ================= -->
   <view class="chip-bar">
     <scroll-view class="chip-scroll" scroll-x enable-flex enhanced show-scrollbar="{{false}}">
       <view class="chip-inner">
         <view class="chip {{currentCategoryId === '0' ? 'chip-active' : ''}}" bindtap="onSelectCategory" data-id="0">
-          全部鲜肉
+          全部
         </view>
         <view wx:for="{{categories}}" wx:key="id" class="chip {{currentCategoryId === item.id ? 'chip-active' : ''}}" bindtap="onSelectCategory" data-id="{{item.id}}">
           <text class="chip-icon" wx:if="{{item.icon}}">{{item.icon}}</text>
@@ -61,6 +61,31 @@
         </view>
       </view>
     </scroll-view>
+
+    <!-- 排序栏：位于分类下方，价格在前、销量在后，单选 -->
+    <view class="sort-bar">
+      <view class="sort-bar-label">
+        <text class="sort-bar-icon">⇅</text>
+        <text class="sort-bar-text">排序</text>
+      </view>
+
+      <!-- 价格：低→高 → 高→低 → 取消（循环切换） -->
+      <view class="sort-item {{sortKey === 'price' ? 'sort-item-active' : ''}}" bindtap="onSortPrice">
+        <text class="sort-item-text">价格</text>
+        <view class="sort-arrows">
+          <text class="sort-arrow {{sortKey === 'price' && priceOrder === 'asc' ? 'is-up' : ''}}">▲</text>
+          <text class="sort-arrow {{sortKey === 'price' && priceOrder === 'desc' ? 'is-down' : ''}}">▼</text>
+        </view>
+      </view>
+
+      <!-- 销量：选中后从高到低，再次点击取消 -->
+      <view class="sort-item {{sortKey === 'sales' ? 'sort-item-active' : ''}}" bindtap="onSortSales">
+        <text class="sort-item-text">销量</text>
+        <view class="sort-arrows">
+          <text class="sort-arrow is-down-const">▼</text>
+        </view>
+      </view>
+    </view>
   </view>
 
   <!-- ================= 双列商品网格 ================= -->
@@ -81,14 +106,13 @@
     <view wx:for="{{goodsList}}" wx:key="id" class="goods-card" bindtap="goToDetail" data-id="{{item.id}}">
       <view class="goods-thumb-wrap">
         <image class="goods-thumb" src="{{item.coverImage}}" mode="aspectFill"/>
-        <view class="corner-badge {{item.originalPrice ? 'badge-sale' : 'badge-fresh'}}">
-          {{item.originalPrice ? '特价' : '新鲜'}}
-        </view>
+        <!-- 仅特价商品展示角标，普通商品不展示默认角标 -->
+        <view class="corner-badge badge-sale" wx:if="{{item.originalPrice}}">特价</view>
       </view>
 
       <view class="goods-body">
         <text class="goods-name ellipsis-2">{{item.name}}</text>
-        <text class="goods-summary ellipsis">{{item.summary || '当日清晨直供 · 冷鲜排酸'}}</text>
+        <text class="goods-summary ellipsis">{{item.summary}}</text>
 
         <view class="goods-tags">
           <text class="mini-tag">已售 {{item.sales || 0}}</text>
@@ -112,9 +136,9 @@
   <!-- 空状态 -->
   <view wx:if="{{goodsList.length === 0 && !loading}}" class="empty-box">
     <text class="empty-icon">🐷</text>
-    <text class="empty-text">这个分类空空如也～去挑点好肉吧</text>
-    <text class="empty-sub">掌柜正在补货，先去逛逛全部鲜肉</text>
-    <view class="empty-btn" bindtap="onSelectCategory" data-id="0">看看全部鲜肉</view>
+    <text class="empty-text">这个分类空空如也～</text>
+    <text class="empty-sub">掌柜正在补货，先去逛逛全部</text>
+    <view class="empty-btn" bindtap="onSelectCategory" data-id="0">看看全部</view>
   </view>
 
   <!-- 加载更多 / 触底追加 -->
@@ -222,7 +246,7 @@
     <view class="cart-drawer-header">
       <view class="cart-drawer-title-box">
         <text class="cart-drawer-title">🛒 购物车</text>
-        <text class="cart-drawer-count" wx:if="{{cartCount > 0}}">{{cartCount}}件好肉</text>
+        <text class="cart-drawer-count" wx:if="{{cartCount > 0}}">共{{cartCount}}件</text>
       </view>
       <view class="cart-drawer-actions">
         <view class="cart-clear-btn" bindtap="onClearCart" wx:if="{{cartList.length > 0}}">

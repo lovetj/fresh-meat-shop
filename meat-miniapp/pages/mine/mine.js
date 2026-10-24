@@ -108,11 +108,35 @@ Page({
   },
 
   loadShopInfo() {
-    return request.get('/shop/info', {}, { silent: true }).then((res) => {
+    return this.loadCurrentShop().then((res) => {
       if (res) {
         this.setData({ shopInfo: res });
       }
     }).catch(console.error);
+  },
+
+  /**
+   * 取当前应展示的门店（电话一律取店铺资料的「客服/联系电话」，与个人手机号无关）：
+   * - 掌柜端：取该掌柜名下门店，优先当前选中门店，否则第一家，避免展示成别家门店的号码
+   * - 顾客端：取当前选中的门店，未选择时由后端返回默认营业门店
+   */
+  loadCurrentShop() {
+    const selectedId = wx.getStorageSync('currentShopId') || app.globalData.currentShopId || '';
+
+    if (this.data.isAdmin) {
+      return request.get('/shop/admin/my-shops', {}, {
+        silent: true,
+        header: { Authorization: `Bearer ${auth.getActiveToken()}` }
+      }).then((shops) => {
+        const list = Array.isArray(shops) ? shops : [];
+        if (!list.length) {
+          return request.get('/shop/info', {}, { silent: true });
+        }
+        return list.find((s) => s.id === selectedId) || list[0];
+      });
+    }
+
+    return request.get('/shop/info', selectedId ? { shopId: selectedId } : {}, { silent: true });
   },
 
   /**
@@ -153,6 +177,12 @@ Page({
    * 顾客与掌柜身份都可在个人中心点头像选图 → 上传 → 写回当前账号资料，不再进入登录页
    */
   onChooseAvatar(e) {
+    // 未登录不允许上传头像，直接引导去登录
+    if (!auth.isLoggedIn()) {
+      this.onLogin();
+      return;
+    }
+
     const tempPath = (e && e.detail && e.detail.avatarUrl) || '';
     if (!tempPath) return;
 
@@ -182,6 +212,9 @@ Page({
   /** 上传临时头像并写回当前账号资料（顾客/掌柜通用，只改头像，不动登录态） */
   uploadAvatar(tempPath) {
     const token = auth.getActiveToken();
+    if (!token) {
+      return Promise.reject(new Error('请先登录后再更换头像'));
+    }
     const currentUser = auth.getUserInfo() || {};
 
     return request.uploadFile({
@@ -195,12 +228,7 @@ Page({
       const avatarPath = (res && (res.relativePath || res.url)) || '';
       if (!avatarPath) throw new Error('头像上传失败');
 
-      // 未登录：顺手完成一次微信静默登录，把头像直接落到新账号上
-      if (!token) {
-        return auth.login({ avatarUrl: avatarPath }, { forceRole: 'CUSTOMER' });
-      }
-
-      // 已登录：严格使用当前身份 Token，确保掌柜改的是自己的账号
+      // 严格使用当前身份 Token，确保掌柜改的是自己的账号
       return request.put('/user/profile', { avatarUrl: avatarPath }, {
         header: { Authorization: `Bearer ${token}` }
       });
@@ -222,15 +250,6 @@ Page({
     });
   },
 
-  goToOrders(e) {
-    const status = e.currentTarget.dataset.status;
-    // 订单页是 tabBar 页，需用 switchTab 并通过 globalData 传递筛选状态
-    app.globalData.orderStatusFilter = status;
-    wx.switchTab({
-      url: '/pages/orders/orders'
-    });
-  },
-
   goToHome() {
     wx.switchTab({
       url: '/pages/index/index'
@@ -238,14 +257,23 @@ Page({
   },
 
   goToAddressList() {
+    if (!auth.requireLogin({ content: '登录后才能管理收货地址' })) return;
     wx.navigateTo({
       url: '/pages/address/list/index'
     });
   },
 
-  callShop() {
-    const phone = this.data.shopInfo.phone || '0755-88889999';
-    wx.makePhoneCall({ phoneNumber: phone });
+  /** 联系门店：拨打店铺配置的联系电话 */
+  callShopPhone() {
+    const phone = (this.data.shopInfo && this.data.shopInfo.phone) || '';
+    if (!phone) {
+      wx.showToast({ title: '门店暂未配置联系电话', icon: 'none' });
+      return;
+    }
+    wx.makePhoneCall({
+      phoneNumber: phone,
+      fail: () => {}
+    });
   },
 
   viewShopInfo() {
@@ -260,7 +288,7 @@ Page({
       });
     } else {
       wx.showModal({
-        title: shop.name || '维琼鲜肉铺',
+        title: shop.name || '鲜肉铺',
         content: `地址: ${shop.address || '未配置'}\n营业时间: ${shop.businessHours || '全天'}\n公告: ${shop.notice || '欢迎光临'}`,
         showCancel: false
       });

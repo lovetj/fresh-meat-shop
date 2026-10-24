@@ -34,6 +34,7 @@ public class OrderInfo implements Serializable {
     public static final int DELIVERY_PICKUP = 1;         // 自取
     public static final int DELIVERY_MERCHANT = 2;       // 商家配送
     public static final int DELIVERY_TAKEOUT = 3;        // 外卖(暂保留入口)
+    public static final int DELIVERY_EXPRESS = 4;        // 快递配送(掌柜接单后手动填写快递单号)
 
     /** 支付方式 */
     public static final int PAY_TYPE_WECHAT = 1;         // 微信支付
@@ -51,8 +52,14 @@ public class OrderInfo implements Serializable {
     /** 下单顾客ID */
     private String userId;
 
-    /** 配送方式: 1-自取, 2-商家配送, 3-外卖 */
+    /** 配送方式: 1-自取, 2-商家配送, 3-外卖, 4-快递配送 */
     private Integer deliveryType;
+
+    /** 快递公司名称 (快递配送订单发货时由掌柜填写) */
+    private String expressCompany;
+
+    /** 快递单号 (快递配送订单发货时由掌柜填写) */
+    private String expressNo;
 
     /** 订单状态: 0待支付 1待接单 2待配送/待自取 3配送中 4已完成 5已取消 6已拒单 */
     private Integer status;

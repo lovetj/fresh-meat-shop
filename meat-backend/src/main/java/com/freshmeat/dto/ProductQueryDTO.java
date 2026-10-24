@@ -17,6 +17,12 @@ public class ProductQueryDTO {
     /** 是否上架: 1-上架, 0-下架 (管理端可查全部或下架商品) */
     private Integer isOnSale;
 
+    /** 排序字段: sales-销量, price-价格, 空或其他-按排序值 (顾客端) */
+    private String sortBy;
+
+    /** 排序方向: asc-升序, 其他或空-desc-降序 */
+    private String sortOrder;
+
     /** 页码 */
     private Long pageNum = 1L;
 

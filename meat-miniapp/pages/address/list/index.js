@@ -1,5 +1,6 @@
 // pages/address/list/index.js
 const request = require('../../../utils/request');
+const auth = require('../../../utils/auth');
 
 Page({
   data: {
@@ -18,9 +19,19 @@ Page({
     this.loadList();
   },
 
+  /**
+   * 按「当前生效身份」取 Token：
+   * 掌柜身份下读写的是掌柜本人的地址，顾客身份下读写顾客本人的地址，
+   * 后端再按该 Token 的 user_id 过滤，避免两种身份互相串号
+   */
+  authHeader() {
+    const token = auth.getActiveToken();
+    return token ? { header: { Authorization: `Bearer ${token}` } } : {};
+  },
+
   loadList() {
     this.setData({ loading: true });
-    request.get('/address/list').then((res) => {
+    request.get('/address/list', {}, this.authHeader()).then((res) => {
       this.setData({
         addressList: res || [],
         loading: false
@@ -49,7 +60,7 @@ Page({
   onSetDefault(e) {
     const id = e.currentTarget.dataset.id;
     wx.showLoading({ title: '设置中...' });
-    request.post(`/address/default/${id}`).then(() => {
+    request.post(`/address/default/${id}`, {}, this.authHeader()).then(() => {
       wx.hideLoading();
       this.loadList();
     }).catch(() => {
@@ -78,7 +89,7 @@ Page({
       success: (res) => {
         if (res.confirm) {
           wx.showLoading({ title: '删除中...' });
-          request.delete(`/address/${id}`).then(() => {
+          request.delete(`/address/${id}`, {}, this.authHeader()).then(() => {
             wx.hideLoading();
             this.loadList();
           }).catch(() => {

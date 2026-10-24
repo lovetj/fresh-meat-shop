@@ -5,6 +5,8 @@ import com.freshmeat.common.PageResult;
 import com.freshmeat.common.Result;
 import com.freshmeat.dto.DistanceCheckDTO;
 import com.freshmeat.dto.DistanceCheckVO;
+import com.freshmeat.dto.ExpressCheckDTO;
+import com.freshmeat.dto.ExpressCheckVO;
 import com.freshmeat.dto.ShopInfoDTO;
 import com.freshmeat.dto.ShopQueryDTO;
 import com.freshmeat.entity.ShopInfo;
@@ -124,5 +126,15 @@ public class ShopInfoController {
     public Result<DistanceCheckVO> checkDistance(@RequestBody @Validated DistanceCheckDTO dto) {
         DistanceCheckVO result = shopInfoService.checkDeliveryDistance(dto);
         return Result.success(result);
+    }
+
+    /**
+     * 顾客端：快递配送运费试算
+     * 依据店铺快递开关、基础运费与特殊地区配置，返回是否可发货及运费
+     */
+    @ApiOperation(value = "快递配送运费试算", notes = "特殊地区可单独设置运费或停发；未开通快递配送时返回不可配送及原因")
+    @PostMapping("/express-check")
+    public Result<ExpressCheckVO> checkExpress(@RequestBody @Validated ExpressCheckDTO dto) {
+        return Result.success(shopInfoService.checkExpressDelivery(dto.getShopId(), dto.getAddressId()));
     }
 }

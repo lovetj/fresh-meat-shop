@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.freshmeat.common.PageResult;
 import com.freshmeat.dto.DistanceCheckVO;
+import com.freshmeat.dto.ExpressCheckVO;
 import com.freshmeat.dto.OrderCreateDTO;
+import com.freshmeat.dto.OrderExpressDTO;
 import com.freshmeat.dto.OrderQueryDTO;
 import com.freshmeat.dto.OrderStatusUpdateDTO;
 import com.freshmeat.dto.OrderVO;
@@ -68,9 +70,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
 
         // 1. 配送方式规则校验
         if (dto.getDeliveryType() == OrderInfo.DELIVERY_TAKEOUT) {
-            throw new BusinessException("外卖配送通道暂未开通，仅支持「自取」或「商家配送」");
+            throw new BusinessException("外卖配送通道暂未开通，仅支持「自取」「商家配送」或「快递配送」");
         }
-        if (dto.getDeliveryType() != OrderInfo.DELIVERY_PICKUP && dto.getDeliveryType() != OrderInfo.DELIVERY_MERCHANT) {
+        if (dto.getDeliveryType() != OrderInfo.DELIVERY_PICKUP
+                && dto.getDeliveryType() != OrderInfo.DELIVERY_MERCHANT
+                && dto.getDeliveryType() != OrderInfo.DELIVERY_EXPRESS) {
             throw new BusinessException("不支持的配送方式");
         }
 
@@ -177,7 +181,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
             receiverPhone = StringUtils.hasText(dto.getPickupPhone()) ? dto.getPickupPhone() : (user != null ? user.getPhone() : "");
             receiverAddress = "【自取】" + shop.getAddress();
         } else {
-            // 商家配送：校验地址与同城距离
+            // 商家配送 / 快递配送：均需选择收货地址
             if (dto.getAddressId() == null) {
                 throw new BusinessException("请选择收货地址");
             }
@@ -185,32 +189,45 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
             if (address == null || !address.getUserId().equals(userId)) {
                 throw new BusinessException("收货地址不存在");
             }
-            if (address.getLongitude() == null || address.getLatitude() == null) {
-                throw new BusinessException("该地址缺少经纬度定位，请重新编辑完善");
+
+            if (dto.getDeliveryType() == OrderInfo.DELIVERY_EXPRESS) {
+                // 快递配送：按店铺快递配置与收货地址计算运费（特殊地区可加价或停发），不受同城距离与起送价限制
+                ExpressCheckVO expressCheck = shopInfoService.calculateExpress(shop, address);
+                if (!Boolean.TRUE.equals(expressCheck.getCanDeliver())) {
+                    throw new BusinessException(expressCheck.getMessage());
+                }
+                deliveryFee = expressCheck.getFee() != null ? expressCheck.getFee() : BigDecimal.ZERO;
+                deliveryDistance = BigDecimal.ZERO;
+            } else {
+                // 商家配送：校验地址定位并进行同城测距与阶梯运费计算
+                if (address.getLongitude() == null || address.getLatitude() == null) {
+                    throw new BusinessException("该地址缺少经纬度定位，请重新编辑完善");
+                }
+
+                // 核心业务校验：根据经纬度进行同城测距与多阶梯配送规则计算
+                double actualDist = DistanceUtil.calculateDistance(
+                        shop.getLongitude().doubleValue(), shop.getLatitude().doubleValue(),
+                        address.getLongitude().doubleValue(), address.getLatitude().doubleValue()
+                );
+
+                DistanceCheckVO deliveryCheck = deliveryRuleService.calculateDelivery(shop, actualDist);
+                if (!Boolean.TRUE.equals(deliveryCheck.getCanDeliver())) {
+                    throw new BusinessException(deliveryCheck.getMessage());
+                }
+
+                // 动态起送金额校验
+                BigDecimal requiredMinOrder = deliveryCheck.getMinOrderAmount() != null
+                        ? deliveryCheck.getMinOrderAmount() : BigDecimal.ZERO;
+                if (goodsAmount.compareTo(requiredMinOrder) < 0) {
+                    BigDecimal diff = requiredMinOrder.subtract(goodsAmount);
+                    throw new BusinessException(String.format("当前配送距离约 %.2f 公里，未达到该距离起送金额(¥%.2f)，当前商品金额为¥%.2f，还差¥%.2f 起送",
+                            actualDist, requiredMinOrder.doubleValue(), goodsAmount.doubleValue(), diff.doubleValue()));
+                }
+
+                deliveryDistance = BigDecimal.valueOf(deliveryCheck.getDistance());
+                deliveryFee = deliveryCheck.getDeliveryFee() != null ? deliveryCheck.getDeliveryFee() : BigDecimal.ZERO;
             }
 
-            // 核心业务校验：根据经纬度进行同城测距与多阶梯配送规则计算
-            double actualDist = DistanceUtil.calculateDistance(
-                    shop.getLongitude().doubleValue(), shop.getLatitude().doubleValue(),
-                    address.getLongitude().doubleValue(), address.getLatitude().doubleValue()
-            );
-
-            DistanceCheckVO deliveryCheck = deliveryRuleService.calculateDelivery(shop, actualDist);
-            if (!Boolean.TRUE.equals(deliveryCheck.getCanDeliver())) {
-                throw new BusinessException(deliveryCheck.getMessage());
-            }
-
-            // 动态起送金额校验
-            BigDecimal requiredMinOrder = deliveryCheck.getMinOrderAmount() != null
-                    ? deliveryCheck.getMinOrderAmount() : BigDecimal.ZERO;
-            if (goodsAmount.compareTo(requiredMinOrder) < 0) {
-                BigDecimal diff = requiredMinOrder.subtract(goodsAmount);
-                throw new BusinessException(String.format("当前配送距离约 %.2f 公里，未达到该距离起送金额(¥%.2f)，当前商品金额为¥%.2f，还差¥%.2f 起送",
-                        actualDist, requiredMinOrder.doubleValue(), goodsAmount.doubleValue(), diff.doubleValue()));
-            }
-
-            deliveryDistance = BigDecimal.valueOf(deliveryCheck.getDistance());
-            deliveryFee = deliveryCheck.getDeliveryFee() != null ? deliveryCheck.getDeliveryFee() : BigDecimal.ZERO;
             receiverName = address.getContactName();
             receiverPhone = address.getContactPhone();
             receiverAddress = address.getFullAddress();
@@ -288,8 +305,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
         LambdaQueryWrapper<OrderInfo> qw = new LambdaQueryWrapper<OrderInfo>()
                 .eq(OrderInfo::getUserId, userId);
 
-        if (queryDTO.getStatus() != null) {
-            qw.eq(OrderInfo::getStatus, queryDTO.getStatus());
+        if (!org.springframework.util.CollectionUtils.isEmpty(queryDTO.getStatus())) {
+            qw.in(OrderInfo::getStatus, queryDTO.getStatus());
         }
         if (queryDTO.getDeliveryType() != null) {
             qw.eq(OrderInfo::getDeliveryType, queryDTO.getDeliveryType());
@@ -330,8 +347,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
             qw.in(OrderInfo::getShopId, adminShopIds);
         }
 
-        if (queryDTO.getStatus() != null) {
-            qw.eq(OrderInfo::getStatus, queryDTO.getStatus());
+        if (!org.springframework.util.CollectionUtils.isEmpty(queryDTO.getStatus())) {
+            qw.in(OrderInfo::getStatus, queryDTO.getStatus());
         }
         if (queryDTO.getDeliveryType() != null) {
             qw.eq(OrderInfo::getDeliveryType, queryDTO.getDeliveryType());
@@ -468,6 +485,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
         if (order.getStatus() != OrderInfo.STATUS_ACCEPTED) {
             throw new BusinessException("订单当前不是已接单待配货状态");
         }
+        if (order.getDeliveryType() != null && order.getDeliveryType() == OrderInfo.DELIVERY_EXPRESS) {
+            throw new BusinessException("快递配送订单请填写快递公司与快递单号发货");
+        }
 
         if (order.getDeliveryType() == OrderInfo.DELIVERY_MERCHANT) {
             // 商家配送：状态流转为 3 配送中
@@ -476,6 +496,34 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
             // 自取订单：保持状态或通知备好
             order.setStatus(OrderInfo.STATUS_ACCEPTED);
         }
+        order.setDeliverTime(LocalDateTime.now());
+        return this.updateById(order);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deliverByExpress(String orderId, OrderExpressDTO dto) {
+        OrderInfo order = this.getById(orderId);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        String currentUserId = SecurityContextUtil.getUserId();
+        if (!shopInfoService.hasShopPermission(currentUserId, order.getShopId())) {
+            throw new BusinessException(403, "无权处理该分店订单");
+        }
+        if (order.getDeliveryType() == null || order.getDeliveryType() != OrderInfo.DELIVERY_EXPRESS) {
+            throw new BusinessException("该订单不是快递配送订单");
+        }
+        if (order.getStatus() != OrderInfo.STATUS_ACCEPTED) {
+            throw new BusinessException("仅已接单待发货的快递订单可填写快递单号");
+        }
+        if (dto == null || !StringUtils.hasText(dto.getExpressCompany()) || !StringUtils.hasText(dto.getExpressNo())) {
+            throw new BusinessException("请填写完整的快递公司与快递单号");
+        }
+
+        order.setExpressCompany(dto.getExpressCompany().trim());
+        order.setExpressNo(dto.getExpressNo().trim());
+        order.setStatus(OrderInfo.STATUS_DELIVERING);
         order.setDeliverTime(LocalDateTime.now());
         return this.updateById(order);
     }
@@ -544,6 +592,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
             vo.setShopName(shop != null ? shop.getName() : "维琼鲜肉铺");
             if (shop != null) {
                 vo.setShopAddress(shop.getAddress());
+                vo.setShopPhone(shop.getPhone());
                 vo.setShopLng(shop.getLongitude());
                 vo.setShopLat(shop.getLatitude());
             }
@@ -556,6 +605,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
             vo.setDeliveryTypeDesc("自取(到店)");
         } else if (order.getDeliveryType() == OrderInfo.DELIVERY_MERCHANT) {
             vo.setDeliveryTypeDesc("商家配送");
+        } else if (order.getDeliveryType() == OrderInfo.DELIVERY_EXPRESS) {
+            vo.setDeliveryTypeDesc("快递配送");
         } else {
             vo.setDeliveryTypeDesc("外卖");
         }
@@ -594,15 +645,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderInfoMapper, OrderInfo> im
                 vo.setCanAdminCancel(true);
                 break;
             case OrderInfo.STATUS_ACCEPTED:
-                vo.setStatusDesc(order.getDeliveryType() == OrderInfo.DELIVERY_PICKUP ? "待自提" : "待发货");
+                if (order.getDeliveryType() == OrderInfo.DELIVERY_PICKUP) {
+                    vo.setStatusDesc("待自提");
+                    vo.setCanFinish(true); // 自提可直接核销
+                } else if (order.getDeliveryType() == OrderInfo.DELIVERY_EXPRESS) {
+                    vo.setStatusDesc("待发货"); // 快递配送：等待掌柜填写快递单号
+                } else {
+                    vo.setStatusDesc("待发货");
+                }
                 vo.setCanDeliver(true);
                 vo.setCanAdminCancel(true);
-                if (order.getDeliveryType() == OrderInfo.DELIVERY_PICKUP) {
-                    vo.setCanFinish(true); // 自提可直接核销
-                }
                 break;
             case OrderInfo.STATUS_DELIVERING:
-                vo.setStatusDesc("配送中");
+                vo.setStatusDesc(order.getDeliveryType() == OrderInfo.DELIVERY_EXPRESS ? "快递运输中" : "配送中");
                 vo.setCanConfirm(true); // 顾客确认收货
                 vo.setCanFinish(true);  // 商家确认送达
                 break;

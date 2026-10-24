@@ -1,4 +1,4 @@
-/* pages/merchant/index/index.wxss - 维琼鲜肉铺 商家掌柜工作台 */
+/* pages/merchant/index/index.wxss - 鲜肉铺 商家掌柜工作台 */
 
 .container {
   padding-bottom: 60rpx;
@@ -259,72 +259,6 @@
   margin-top: 12rpx;
   font-size: 23rpx;
   color: var(--text-sub);
-}
-
-/* ================= 阶梯配送信息 ================= */
-.delivery-summary {
-  position: relative;
-  z-index: 1;
-  margin-top: 14rpx;
-}
-
-.delivery-summary-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12rpx;
-}
-
-.delivery-summary-title {
-  font-size: 23rpx;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.delivery-cover-tag {
-  flex-shrink: 0;
-  font-size: 20rpx;
-  font-weight: 800;
-  white-space: nowrap;
-  color: var(--primary);
-  background-color: rgba(255, 255, 255, 0.85);
-  border-radius: var(--radius-round);
-  padding: 2rpx 14rpx;
-}
-
-.tier-scroll {
-  width: 100%;
-  margin-top: 10rpx;
-  white-space: nowrap;
-}
-
-.tier-chip {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2rpx;
-  margin-right: 12rpx;
-  padding: 10rpx 18rpx;
-  box-sizing: border-box;
-  vertical-align: top;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: 1rpx solid #FFDCCF;
-  border-radius: 16rpx;
-}
-
-.tier-chip:last-child {
-  margin-right: 0;
-}
-
-.tier-range {
-  font-size: 22rpx;
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.tier-desc {
-  font-size: 20rpx;
-  font-weight: 600;
-  color: #E8590C;
 }
 
 /* ================= 2. 功能管理四宫格 ================= */

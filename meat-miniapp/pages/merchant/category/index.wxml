@@ -1,4 +1,4 @@
-<!-- pages/merchant/category/index.wxml - 维琼鲜肉铺 鲜肉分类管理 -->
+<!-- pages/merchant/category/index.wxml - 鲜肉铺 鲜肉分类管理 -->
 <view class="container">
   <!-- 0. 门店切换栏 (分店独立分类管理) -->
   <view class="shop-switch-bar" wx:if="{{shopList.length > 0}}">

@@ -139,11 +139,11 @@
 
       <view class="form-item-block">
         <text class="label">烹饪/加工建议与详情</text>
-        <textarea class="textarea" name="description" placeholder="建议红烧、包饺子、慢炖等烹饪做法与鲜度说明..." value="{{product.description}}"/>
+        <textarea class="textarea" name="description" placeholder="如：建议红烧、包饺子、慢炖等烹饪做法与鲜度说明..." value="{{product.description}}"/>
       </view>
 
       <view class="form-item form-item-switch">
-        <text class="label">是否立即上架</text>
+        <text class="label">是否上架</text>
         <switch checked="{{product.isOnSale === 1}}" color="#FF6B6B" bindchange="onSaleChange"/>
       </view>
     </view>

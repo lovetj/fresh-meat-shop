@@ -31,8 +31,23 @@ public class ShopInfoDTO {
     @NotNull(message = "店铺纬度不能为空")
     private BigDecimal latitude;
 
+    /** 是否开通同城商家配送: 1-开通, 0-未开通 */
+    private Integer merchantDeliveryEnabled;
+
+    /** 是否开通外卖配送: 1-开通, 0-未开通 */
+    private Integer takeoutEnabled;
+
     /** 多阶梯同城配送规则列表 */
     private java.util.List<com.freshmeat.entity.ShopDeliveryRule> deliveryRules;
+
+    /** 是否开启快递配送: 1-开启, 0-未开通 */
+    private Integer expressEnabled;
+
+    /** 快递基础运费(元) */
+    private BigDecimal expressFee;
+
+    /** 快递特殊地区规则（运费差异 / 停发地区） */
+    private java.util.List<com.freshmeat.entity.ShopExpressRegion> expressRegions;
 
     private Integer status;
 

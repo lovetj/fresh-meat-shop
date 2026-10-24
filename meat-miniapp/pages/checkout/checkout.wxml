@@ -8,11 +8,17 @@
       <text class="tab-name">到店自取</text>
       <text class="tab-tip">免配送费</text>
     </view>
-    <view class="tab-item {{deliveryType === 2 ? 'tab-active' : ''}}" bindtap="onSelectDeliveryType" data-type="{{2}}">
+    <view class="tab-item {{deliveryType === 2 ? 'tab-active' : ''}} {{shopInfo.merchantDeliveryEnabled === false ? 'tab-disabled' : ''}}" bindtap="onSelectDeliveryType" data-type="{{2}}">
       <text class="tab-check" wx:if="{{deliveryType === 2}}">✓</text>
       <text class="tab-icon">🛵</text>
       <text class="tab-name">商家配送</text>
-      <text class="tab-tip">{{shopInfo.deliveryRangeText || '阶梯计费'}}</text>
+      <text class="tab-tip">{{shopInfo.merchantDeliveryEnabled === false ? '未开通' : (shopInfo.deliveryRangeText || '阶梯计费')}}</text>
+    </view>
+    <view class="tab-item {{deliveryType === 4 ? 'tab-active' : ''}} {{shopInfo.expressEnabled !== 1 ? 'tab-disabled' : ''}}" bindtap="onSelectDeliveryType" data-type="{{4}}">
+      <text class="tab-check" wx:if="{{deliveryType === 4}}">✓</text>
+      <text class="tab-icon">📦</text>
+      <text class="tab-name">快递配送</text>
+      <text class="tab-tip">{{shopInfo.expressEnabled === 1 ? '快递到家' : '未开通'}}</text>
     </view>
     <view class="tab-item tab-disabled" bindtap="onSelectTakeout">
       <text class="tab-icon">🥡</text>
@@ -26,7 +32,7 @@
     <view class="section-title">🏪 自提门店</view>
     <view class="pickup-shop-info">
       <view class="pickup-title-row">
-        <text class="pickup-shop-name">{{shopInfo.name || '维琼鲜肉铺'}}</text>
+        <text class="pickup-shop-name">{{shopInfo.name || '鲜肉铺'}}</text>
         <text class="pickup-tag">自提免运费</text>
       </view>
       <text class="pickup-address">📍 {{shopInfo.address || '正在加载地址...'}}</text>
@@ -42,11 +48,10 @@
     </view>
   </view>
 
-  <!-- 2. 商家配送模式：地址选择与同城距离校验 -->
-  <view class="card address-box" wx:if="{{deliveryType === 2}}">
+  <!-- 2. 商家配送 / 快递配送：地址选择（快递配送不校验同城距离） -->
+  <view class="card address-box" wx:if="{{deliveryType === 2 || deliveryType === 4}}">
     <view class="section-title">📍 收货地址</view>
     <view class="address-header" bindtap="chooseAddress">
-      <view class="addr-icon">📍</view>
       <view class="addr-content" wx:if="{{selectedAddress}}">
         <view class="user-row">
           <text class="user-name">{{selectedAddress.contactName}}</text>
@@ -61,8 +66,19 @@
       <text class="arrow">></text>
     </view>
 
-    <!-- 配送距离校验状态提示条 -->
-    <view class="distance-alert {{distanceCheckResult.canDeliver ? 'alert-success' : 'alert-error'}}" wx:if="{{selectedAddress && distanceCheckResult}}">
+    <!-- 快递配送停发地区提示（可发货时不在地址区展示运费，费用在结算明细中体现） -->
+    <view class="distance-alert alert-error" wx:if="{{deliveryType === 4 && selectedAddress && expressCheckResult && !expressCheckResult.canDeliver}}">
+      <view class="alert-icon">⚠️</view>
+      <view class="alert-msg">
+        <text class="alert-text">{{expressCheckResult.message}}</text>
+        <view class="alert-sub">
+          该地区暂停快递发货，请更换收货地址或选择「到店自取」。
+        </view>
+      </view>
+    </view>
+
+    <!-- 配送距离校验状态提示条（仅同城商家配送） -->
+    <view class="distance-alert {{distanceCheckResult.canDeliver ? 'alert-success' : 'alert-error'}}" wx:if="{{deliveryType === 2 && selectedAddress && distanceCheckResult}}">
       <view class="alert-icon">{{distanceCheckResult.canDeliver ? '✅' : '⚠️'}}</view>
       <view class="alert-msg">
         <view class="alert-top-row">
@@ -70,13 +86,18 @@
           <text class="rules-link" bindtap="openRulesModal" wx:if="{{distanceCheckResult.deliveryRules && distanceCheckResult.deliveryRules.length > 0}}">规则明细 📋</text>
         </view>
         <view class="matched-rule-tag" wx:if="{{distanceCheckResult.canDeliver && distanceCheckResult.matchedRule}}">
-          当前距离 {{distanceCheckResult.distance}}km · 起送价 ¥{{distanceCheckResult.minOrderAmount}} · 配送费 ¥{{distanceCheckResult.deliveryFee}} {{distanceCheckResult.isUnlimitedDistance ? '(不限距离)' : ''}}
+          当前距离 {{distanceCheckResult.distance}}km · 起送价 ¥{{distanceCheckResult.minOrderAmount}} · 配送费 ¥{{distanceCheckResult.deliveryFee}}
         </view>
         <view class="short-amount-alert" wx:if="{{distanceCheckResult.canDeliver && shortAmount > 0}}">
           ⚠️ 商品金额未满起送价，还差 ¥{{shortAmount}} 即可送达
         </view>
         <view class="alert-sub" wx:if="{{!distanceCheckResult.canDeliver}}">
-          当前收货地址已超出店铺最大服务范围，请切换为「到店自取」或更换地址下单。
+          当前收货地址已超出店铺最大服务范围，可选择下方方式继续下单。
+        </view>
+        <view class="range-actions" wx:if="{{!distanceCheckResult.canDeliver}}">
+          <view class="range-action range-action-primary" bindtap="switchToPickup">🏪 到店自取</view>
+          <view class="range-action" wx:if="{{shopInfo.expressEnabled === 1}}" bindtap="switchToExpress">📦 快递配送</view>
+          <view class="range-action" bindtap="chooseAddress">📍 更换地址</view>
         </view>
       </view>
     </view>
@@ -178,7 +199,7 @@
   <view class="card fee-card">
     <text class="section-title">🧾 费用明细</text>
     <view class="fee-row">
-      <text class="fee-label">鲜肉商品金额</text>
+      <text class="fee-label">商品金额</text>
       <text class="fee-val">¥{{goodsAmount}}</text>
     </view>
     <view class="fee-row" wx:if="{{deliveryType === 2 && currentMinOrderAmount > 0}}">
@@ -188,9 +209,9 @@
       </text>
     </view>
     <view class="fee-row">
-      <text class="fee-label">同城配送费</text>
+      <text class="fee-label">{{deliveryType === 4 ? '快递运费' : '同城配送费'}}</text>
       <text class="fee-val {{deliveryType === 1 ? 'fee-free' : ''}}">
-        {{deliveryType === 1 ? '¥0.00 (自取免配送费)' : ('¥' + deliveryFee + (distanceCheckResult.distance ? ' (' + distanceCheckResult.distance + 'km)' : ''))}}
+        {{deliveryType === 1 ? '¥0.00 (自取免配送费)' : (deliveryType === 4 ? ('¥' + deliveryFee + (expressCheckResult.matchedRegion ? ' (' + expressCheckResult.matchedRegion + '特殊地区)' : '')) : ('¥' + deliveryFee + (distanceCheckResult.distance ? ' (' + distanceCheckResult.distance + 'km)' : '')))}}
       </text>
     </view>
     <view class="fee-row fee-total">
@@ -216,6 +237,37 @@
     <button class="btn-primary submit-btn {{isSubmitDisabled ? 'btn-disabled' : ''}}" bindtap="onSubmitOrder" disabled="{{submitting || isSubmitDisabled}}">
       {{submitting ? '提交中...' : submitButtonText}}
     </button>
+  </view>
+
+  <!-- 超出配送范围 / 切换配送方式：自定义底部弹层 -->
+  <view class="sheet-mask" wx:if="{{showRangePopup}}" bindtap="closeRangePopup">
+    <view class="sheet-box" catchtap="preventBubble">
+      <view class="sheet-handle"></view>
+      <view class="sheet-header">
+        <view class="sheet-header-text">
+          <text class="sheet-title">{{rangePopup.title}}</text>
+          <text class="sheet-sub" wx:if="{{rangePopup.subtitle}}">{{rangePopup.subtitle}}</text>
+        </view>
+        <text class="sheet-close" bindtap="closeRangePopup">✕</text>
+      </view>
+      <view class="sheet-list">
+        <view
+          class="sheet-item {{item.primary ? 'is-primary' : ''}}"
+          wx:for="{{rangePopup.options}}"
+          wx:key="key"
+          bindtap="onRangeOptionTap"
+          data-key="{{item.key}}"
+        >
+          <view class="sheet-item-icon">{{item.icon}}</view>
+          <view class="sheet-item-main">
+            <text class="sheet-item-label">{{item.label}}</text>
+            <text class="sheet-item-desc" wx:if="{{item.desc}}">{{item.desc}}</text>
+          </view>
+          <text class="sheet-item-arrow">›</text>
+        </view>
+      </view>
+      <view class="sheet-cancel" bindtap="closeRangePopup">取消</view>
+    </view>
   </view>
 
   <!-- 配送规则明细弹窗 -->
