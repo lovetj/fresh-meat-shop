@@ -37,6 +37,8 @@ Page({
     submittingAdmin: false,
     // 密码默认密文，点击「显示」切换为明文
     showAdminPwd: false,
+    // 密码框聚焦标记：首次点击弹窗内密码区时主动聚焦，避免原生 input 命中区错位导致第一次点击无效
+    adminPwdFocus: false,
     adminForm: {
       username: '',
       password: ''
@@ -267,6 +269,7 @@ Page({
     this.setData({
       showAdminModal: true,
       showAdminPwd: false,
+      adminPwdFocus: false,
       'adminForm.username': '',
       'adminForm.password': ''
     });
@@ -276,8 +279,26 @@ Page({
     this.setData({
       showAdminModal: false,
       submittingAdmin: false,
-      showAdminPwd: false
+      showAdminPwd: false,
+      adminPwdFocus: false
     });
+  },
+
+  /**
+   * 点击密码框区域时主动聚焦：
+   * 弹窗内的原生 input 在弹入动画/父级 transform 期间首次点击可能拿不到焦点，
+   * 由外层容器兜底聚焦，保证第一次点击就能唤起键盘并定位光标
+   */
+  focusAdminPwd() {
+    if (this.data.adminPwdFocus) {
+      // 已处于聚焦态时再点一次无需重复 setData（真机重复 setData 会重置光标）
+      return;
+    }
+    this.setData({ adminPwdFocus: true });
+  },
+
+  onAdminPwdBlur() {
+    this.setData({ adminPwdFocus: false });
   },
 
   // 密码明文 / 密文切换
