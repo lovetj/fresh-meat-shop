@@ -3,14 +3,14 @@
   <form bindsubmit="onSubmitForm">
     <!-- 基础信息卡片 -->
     <view class="card form-card">
-      <view class="section-title">🥩 基础信息</view>
+      <view class="section-title">基础信息</view>
 
       <!-- 所属门店 -->
       <view class="form-item">
         <text class="label required">所属门店</text>
         <picker range="{{shopList}}" range-key="name" value="{{shopIndex}}" bindchange="onShopChange">
           <view class="picker-val {{shopIndex >= 0 ? '' : 'placeholder'}}">
-            {{shopIndex >= 0 ? shopList[shopIndex].name : '请选择归属鲜肉铺分店'}}
+            {{shopIndex >= 0 ? shopList[shopIndex].name : '请选择归属分店'}}
           </view>
         </picker>
       </view>
@@ -25,7 +25,7 @@
                 <text wx:if="{{categories[categoryIndex].icon}}">{{categories[categoryIndex].icon}} </text>
                 <text>{{categories[categoryIndex].name}}</text>
               </block>
-              <block wx:else>请选择鲜肉分类</block>
+              <block wx:else>请选择分类</block>
             </view>
           </picker>
         </view>
@@ -59,7 +59,7 @@
 
     <!-- 价格与库存卡片 -->
     <view class="card form-card">
-      <view class="section-title">💰 价格与库存</view>
+      <view class="section-title">价格与库存</view>
 
       <view class="form-item">
         <text class="label required">销售单价 (元)</text>
@@ -90,7 +90,7 @@
     <!-- 肉铺特色：加工方式与具体规格选项 -->
     <view class="card form-card">
       <view class="section-header-row">
-        <view class="section-title">🔪 加工方式与具体规格</view>
+        <view class="section-title">加工方式与具体规格</view>
         <view class="spec-action-btns">
           <text class="reset-spec-btn" bindtap="onResetDefaultSpecs">恢复推荐</text>
           <text class="add-spec-btn" bindtap="onAddProcessMethod">+ 加工方式</text>
@@ -130,7 +130,7 @@
 
     <!-- 描述说明卡片 -->
     <view class="card form-card">
-      <view class="section-title">📝 详细介绍</view>
+      <view class="section-title">详细介绍</view>
 
       <view class="form-item">
         <text class="label">一句话卖点</text>

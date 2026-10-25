@@ -1,6 +1,7 @@
 package com.freshmeat.controller;
 
 import com.freshmeat.annotation.RequireAdmin;
+import com.freshmeat.annotation.RequireLogin;
 import com.freshmeat.common.PageResult;
 import com.freshmeat.common.Result;
 import com.freshmeat.dto.DistanceCheckDTO;
@@ -119,6 +120,29 @@ public class ShopInfoController {
     }
 
     /**
+     * 顾客端：查询门店当前是否允许下单（歇业中禁止下单）
+     * 结算页进入与提交前各调用一次，避免页面停留期间门店被设为歇业
+     */
+    @ApiOperation(value = "门店可下单性查询", notes = "返回实际展示状态与是否允许下单；歇业中 allowOrder=false 并给出提示文案")
+    @GetMapping("/order-check")
+    public Result<com.freshmeat.dto.ShopOrderCheckVO> checkShopOrderable(
+            @RequestParam(value = "shopId", required = false) String shopId) {
+        return Result.success(shopInfoService.checkShopOrderable(shopId));
+    }
+
+    /**
+     * 顾客端：期望送达 / 期望到店自取 时间可选项
+     * 按店铺「最小备货/配送时效 + 档位间隔 + 可预约天数 + 每日营业时间」动态计算
+     */
+    @ApiOperation(value = "期望送达/自取时间可选项", notes = "deliveryType: 1-到店自取, 2-商家配送, 3-外卖配送；快递配送无需选择送达时间")
+    @GetMapping("/delivery-time-options")
+    public Result<com.freshmeat.dto.DeliveryTimeOptionsVO> deliveryTimeOptions(
+            @RequestParam(value = "shopId", required = false) String shopId,
+            @RequestParam(value = "deliveryType", required = false, defaultValue = "1") Integer deliveryType) {
+        return Result.success(shopInfoService.getDeliveryTimeOptions(shopId, deliveryType));
+    }
+
+    /**
      * 校验收货地址是否在指定店铺配送范围之内
      */
     @ApiOperation(value = "收货地址配送测距校验", notes = "支持传入 shopId 测算对应分店的距离与起送费")
@@ -133,6 +157,7 @@ public class ShopInfoController {
      * 依据店铺快递开关、基础运费与特殊地区配置，返回是否可发货及运费
      */
     @ApiOperation(value = "快递配送运费试算", notes = "特殊地区可单独设置运费或停发；未开通快递配送时返回不可配送及原因")
+    @RequireLogin
     @PostMapping("/express-check")
     public Result<ExpressCheckVO> checkExpress(@RequestBody @Validated ExpressCheckDTO dto) {
         return Result.success(shopInfoService.checkExpressDelivery(dto.getShopId(), dto.getAddressId()));

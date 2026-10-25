@@ -18,13 +18,13 @@
   <view class="top-bar">
     <view class="search-box">
       <icon type="search" size="14" color="#999999"/>
-      <input class="search-input" placeholder="搜索鲜肉名称..." value="{{keyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm"/>
+      <input class="search-input" placeholder="搜索名称..." value="{{keyword}}" bindinput="onSearchInput" bindconfirm="onSearchConfirm"/>
       <view class="clear-icon" wx:if="{{keyword}}" bindtap="onClearSearch">✕</view>
     </view>
     <button class="add-btn" bindtap="goToAdd">+ 新增肉品</button>
   </view>
 
-  <!-- 店铺鲜肉分类横向展示栏 -->
+  <!-- 店铺分类横向展示栏 -->
   <view class="category-bar">
     <scroll-view class="category-scroll" scroll-x enable-flex enhanced show-scrollbar="{{false}}">
       <!-- 全部分类标签 -->

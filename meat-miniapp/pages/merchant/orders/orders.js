@@ -293,7 +293,7 @@ Page({
     const id = e.currentTarget.dataset.id;
     wx.showModal({
       title: '确认接单',
-      content: '确认接下此鲜肉订单并开始切配？',
+      content: '确认接下此订单并开始切配？',
       success: (res) => {
         if (res.confirm) {
           wx.showLoading({ title: '处理中...' });
@@ -375,7 +375,7 @@ Page({
   onFinishOrder(e) {
     const id = e.currentTarget.dataset.id;
     const type = e.currentTarget.dataset.type;
-    const tip = type === 1 ? '确认顾客已到店提走鲜肉？' : '确认该笔鲜肉订单已配送送达？';
+    const tip = type === 1 ? '确认顾客已到店提走？' : '确认该笔订单已配送送达？';
     wx.showModal({
       title: '订单完成确认',
       content: tip,

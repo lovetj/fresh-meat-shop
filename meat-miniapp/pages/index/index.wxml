@@ -8,21 +8,26 @@
 
     <view class="shop-brand-row">
       <view class="shop-title-wrap" bindtap="openShopModal">
-        <text class="shop-name ellipsis">{{shopInfo.name || '鲜肉铺'}}</text>
+        <text class="shop-name ellipsis">{{shopInfo.name || ''}}</text>
         <view class="switch-shop-badge">
           <text>切换门店</text>
           <text class="switch-arrow">▼</text>
         </view>
       </view>
-      <view class="shop-status {{shopInfo.status === 1 ? 'is-open' : 'is-close'}}">
+      <!-- 点击状态标签查看营业时间 -->
+      <view
+        class="shop-status {{shopInfo.displayStatus === 1 ? 'is-open' : (shopInfo.displayStatus === 3 ? 'is-closed' : 'is-close')}}"
+        bindtap="onTapShopStatus"
+        hover-class="shop-status-hover"
+      >
         <text class="status-dot"></text>
-        <text>{{shopInfo.status === 1 ? '营业中' : '休息中'}}</text>
+        <text>{{shopInfo.statusText || '营业中'}}</text>
       </view>
     </view>
 
-    <view class="shop-meta-row">
-      <text class="meta-item">⏰ {{shopInfo.businessHours || '06:30 - 20:00'}}</text>
-      <text class="meta-item">🛵 {{shopInfo.deliveryRangeText || '同城极速达'}}</text>
+    <!-- 非营业中提示：休息中可下单，歇业中禁止下单 -->
+    <view class="shop-state-tip {{shopInfo.displayStatus === 3 ? 'tip-closed' : 'tip-rest'}}" wx:if="{{shopInfo.displayStatus === 2 || shopInfo.displayStatus === 3}}">
+      <text>{{shopInfo.statusTip}}</text>
     </view>
 
     <view class="shop-addr" bindtap="openShopLocation">
@@ -48,107 +53,131 @@
     </view>
   </view>
 
-  <!-- ================= 吸顶：分类胶囊 + 排序栏 ================= -->
-  <view class="chip-bar">
-    <scroll-view class="chip-scroll" scroll-x enable-flex enhanced show-scrollbar="{{false}}">
-      <view class="chip-inner">
-        <view class="chip {{currentCategoryId === '0' ? 'chip-active' : ''}}" bindtap="onSelectCategory" data-id="0">
-          全部
+  <!-- ================= 左右布局：左侧分类 + 右侧商品 ================= -->
+  <view class="catalog-layout">
+    <!-- 左侧分类栏：宽度按屏宽比例分配（至少容纳 4 个字），文字居中，超出省略，独立滚动 -->
+    <scroll-view class="category-sidebar" scroll-y enhanced show-scrollbar="{{true}}">
+      <view class="category-list">
+        <view class="category-item {{currentCategoryId === '0' ? 'category-item-active' : ''}}" bindtap="onSelectCategory" data-id="0">
+          <text class="category-text">全部</text>
         </view>
-        <view wx:for="{{categories}}" wx:key="id" class="chip {{currentCategoryId === item.id ? 'chip-active' : ''}}" bindtap="onSelectCategory" data-id="{{item.id}}">
-          <text class="chip-icon" wx:if="{{item.icon}}">{{item.icon}}</text>
-          <text class="chip-name">{{item.name}}</text>
+        <view
+          wx:for="{{categories}}"
+          wx:key="id"
+          class="category-item {{currentCategoryId === item.id ? 'category-item-active' : ''}}"
+          bindtap="onSelectCategory"
+          data-id="{{item.id}}"
+        >
+          <text class="category-text">{{item.name}}</text>
         </view>
       </view>
     </scroll-view>
 
-    <!-- 排序栏：位于分类下方，价格在前、销量在后，单选 -->
-    <view class="sort-bar">
-      <view class="sort-bar-label">
-        <text class="sort-bar-icon">⇅</text>
-        <text class="sort-bar-text">排序</text>
-      </view>
-
-      <!-- 价格：低→高 → 高→低 → 取消（循环切换） -->
-      <view class="sort-item {{sortKey === 'price' ? 'sort-item-active' : ''}}" bindtap="onSortPrice">
-        <text class="sort-item-text">价格</text>
-        <view class="sort-arrows">
-          <text class="sort-arrow {{sortKey === 'price' && priceOrder === 'asc' ? 'is-up' : ''}}">▲</text>
-          <text class="sort-arrow {{sortKey === 'price' && priceOrder === 'desc' ? 'is-down' : ''}}">▼</text>
-        </view>
-      </view>
-
-      <!-- 销量：选中后从高到低，再次点击取消 -->
-      <view class="sort-item {{sortKey === 'sales' ? 'sort-item-active' : ''}}" bindtap="onSortSales">
-        <text class="sort-item-text">销量</text>
-        <view class="sort-arrows">
-          <text class="sort-arrow is-down-const">▼</text>
-        </view>
-      </view>
-    </view>
-  </view>
-
-  <!-- ================= 双列商品网格 ================= -->
-  <!-- 骨架屏 -->
-  <view class="goods-grid" wx:if="{{loading && goodsList.length === 0}}">
-    <view class="goods-card" wx:for="{{[1,2,3,4]}}" wx:key="*this">
-      <view class="skeleton skeleton-img"></view>
-      <view class="goods-body">
-        <view class="skeleton skeleton-line"></view>
-        <view class="skeleton skeleton-line short"></view>
-        <view class="skeleton skeleton-line short"></view>
-      </view>
-    </view>
-  </view>
-
-  <!-- 商品卡片 -->
-  <view class="goods-grid" wx:if="{{!(loading && goodsList.length === 0)}}">
-    <view wx:for="{{goodsList}}" wx:key="id" class="goods-card" bindtap="goToDetail" data-id="{{item.id}}">
-      <view class="goods-thumb-wrap">
-        <image class="goods-thumb" src="{{item.coverImage}}" mode="aspectFill"/>
-        <!-- 仅特价商品展示角标，普通商品不展示默认角标 -->
-        <view class="corner-badge badge-sale" wx:if="{{item.originalPrice}}">特价</view>
-      </view>
-
-      <view class="goods-body">
-        <text class="goods-name ellipsis-2">{{item.name}}</text>
-        <text class="goods-summary ellipsis">{{item.summary}}</text>
-
-        <view class="goods-tags">
-          <text class="mini-tag">已售 {{item.sales || 0}}</text>
-          <text class="mini-tag mini-tag-warn" wx:if="{{item.stock < 10}}">仅剩 {{item.stock}} {{item.unit}}</text>
+    <!-- 右侧商品区 -->
+    <view class="goods-panel">
+      <!-- 排序栏：固定在商品区顶部，价格在前、销量在后，单选 -->
+      <view class="sort-bar">
+        <view class="sort-bar-label">
+          <text class="sort-bar-icon">⇅</text>
+          <text class="sort-bar-text">排序</text>
         </view>
 
-        <!-- 价格与加购按钮同一行：按钮固定在右下角 -->
-        <view class="goods-price-row">
-          <view class="price-tag">
-            <text class="price-symbol">¥</text>
-            <text class="price-value">{{item.price}}</text>
-            <text class="price-unit">/{{item.unit}}</text>
+        <!-- 价格：低→高 → 高→低 → 取消（循环切换） -->
+        <view class="sort-item {{sortKey === 'price' ? 'sort-item-active' : ''}}" bindtap="onSortPrice">
+          <text class="sort-item-text">价格</text>
+          <view class="sort-arrows">
+            <text class="sort-arrow {{sortKey === 'price' && priceOrder === 'asc' ? 'is-up' : ''}}">▲</text>
+            <text class="sort-arrow {{sortKey === 'price' && priceOrder === 'desc' ? 'is-down' : ''}}">▼</text>
           </view>
-          <text class="price-original" wx:if="{{item.originalPrice}}">¥{{item.originalPrice}}</text>
-          <view class="quick-add" catchtap="openSpecModal" data-item="{{item}}">+</view>
+        </view>
+
+        <!-- 销量：选中后从高到低，再次点击取消 -->
+        <view class="sort-item {{sortKey === 'sales' ? 'sort-item-active' : ''}}" bindtap="onSortSales">
+          <text class="sort-item-text">销量</text>
+          <view class="sort-arrows">
+            <text class="sort-arrow is-down-const">▼</text>
+          </view>
         </view>
       </view>
-    </view>
-  </view>
 
-  <!-- 空状态 -->
-  <view wx:if="{{goodsList.length === 0 && !loading}}" class="empty-box">
-    <text class="empty-icon">🐷</text>
-    <text class="empty-text">这个分类空空如也～</text>
-    <text class="empty-sub">掌柜正在补货，先去逛逛全部</text>
-    <view class="empty-btn" bindtap="onSelectCategory" data-id="0">看看全部</view>
-  </view>
+      <!-- 商品列表：独立滚动 + 下拉刷新 + 触底分页 -->
+      <scroll-view
+        class="goods-scroll"
+        scroll-y
+        enhanced
+        show-scrollbar="{{true}}"
+        lower-threshold="120"
+        scroll-top="{{goodsScrollTop}}"
+        refresher-enabled="{{true}}"
+        refresher-triggered="{{refreshing}}"
+        bindrefresherrefresh="onGoodsRefresh"
+        bindscrolltolower="onGoodsScrollLower"
+      >
+        <view class="goods-scroll-inner">
+          <!-- 骨架屏 -->
+          <view class="goods-list" wx:if="{{loading && goodsList.length === 0}}">
+            <view class="goods-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+              <view class="skeleton skeleton-thumb"></view>
+              <view class="goods-body">
+                <view class="skeleton skeleton-line"></view>
+                <view class="skeleton skeleton-line short"></view>
+                <view class="skeleton skeleton-line short"></view>
+              </view>
+            </view>
+          </view>
 
-  <!-- 加载更多 / 触底追加 -->
-  <view class="load-more" wx:if="{{goodsList.length > 0}}" bindtap="onLoadMore">
-    <view class="loading-more" wx:if="{{loadingMore}}">
-      <text class="loading-meat-icon">🥩</text>
-      <text class="loading-more-text">正在切肉中...</text>
+          <!-- 商品卡片：单列横向卡片 -->
+          <view class="goods-list" wx:if="{{!(loading && goodsList.length === 0)}}">
+            <view wx:for="{{goodsList}}" wx:key="id" class="goods-card" bindtap="goToDetail" data-id="{{item.id}}">
+              <view class="goods-thumb-wrap">
+                <image class="goods-thumb" src="{{item.coverImage}}" mode="aspectFill"/>
+                <!-- 仅特价商品展示角标，普通商品不展示默认角标 -->
+                <view class="corner-badge badge-sale" wx:if="{{item.originalPrice}}">特价</view>
+              </view>
+
+              <view class="goods-body">
+                <text class="goods-name ellipsis-2">{{item.name}}</text>
+                <text class="goods-summary ellipsis">{{item.summary}}</text>
+
+                <view class="goods-tags">
+                  <text class="mini-tag">已售 {{item.sales || 0}}</text>
+                  <text class="mini-tag mini-tag-warn" wx:if="{{item.stock < 10}}">仅剩 {{item.stock}} {{item.unit}}</text>
+                </view>
+
+                <!-- 价格与加购按钮同一行：按钮固定在右下角 -->
+                <view class="goods-price-row">
+                  <view class="price-tag">
+                    <text class="price-symbol">¥</text>
+                    <text class="price-value">{{item.price}}</text>
+                    <text class="price-unit">/{{item.unit}}</text>
+                  </view>
+                  <text class="price-original" wx:if="{{item.originalPrice}}">¥{{item.originalPrice}}</text>
+                  <view class="quick-add {{shopInfo.displayStatus === 3 ? 'quick-add-disabled' : ''}}" catchtap="openSpecModal" data-item="{{item}}">+</view>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 空状态 / 加载失败重试 -->
+          <view wx:if="{{goodsList.length === 0 && !loading}}" class="empty-box goods-empty">
+            <text class="empty-icon">{{loadError ? '📡' : '🐷'}}</text>
+            <text class="empty-text">{{loadError ? '商品加载失败' : '这个分类空空如也～'}}</text>
+            <text class="empty-sub">{{loadError ? '网络可能开小差了，点一下重新加载' : '掌柜正在补货，先去逛逛全部'}}</text>
+            <view class="empty-btn" wx:if="{{loadError}}" bindtap="onRetryLoadGoods">重新加载</view>
+            <view class="empty-btn" wx:else bindtap="onSelectCategory" data-id="0">看看全部</view>
+          </view>
+
+          <!-- 加载更多 / 触底追加 -->
+          <view class="load-more" wx:if="{{goodsList.length > 0}}" bindtap="onLoadMore">
+            <view class="loading-more" wx:if="{{loadingMore}}">
+              <text class="loading-more-text">正在备货中...</text>
+            </view>
+            <text wx:elif="{{hasMore}}">下滑或点击加载更多 ▼</text>
+            <text wx:else>已经到底啦～</text>
+          </view>
+        </view>
+      </scroll-view>
     </view>
-    <text wx:elif="{{hasMore}}">下滑或点击加载更多鲜肉 ▼</text>
-    <text wx:else>已经到底啦～都是今日好肉</text>
   </view>
 
 </view>
@@ -280,7 +309,6 @@
 
     <!-- 空状态 -->
     <view class="cart-empty-panel" wx:else>
-      <text class="cart-empty-icon">🐷</text>
       <text class="cart-empty-text">购物车还是空的呢～</text>
     </view>
 
@@ -290,8 +318,8 @@
         <text class="cart-total-label">预估合计 (未含运费)</text>
         <text class="cart-total-amount">¥{{cartTotalAmount}}</text>
       </view>
-      <button class="cart-checkout-btn {{cartCount === 0 ? 'btn-disabled' : ''}}" bindtap="goToCartCheckout">
-        <text>立即下单 ({{cartCount}})</text>
+      <button class="cart-checkout-btn {{cartCount === 0 ? 'btn-disabled' : ''}} {{shopInfo.displayStatus === 3 ? 'cart-checkout-closed' : ''}}" bindtap="goToCartCheckout">
+        <text>{{shopInfo.displayStatus === 3 ? '门店歇业中，暂不接单' : '立即下单 (' + cartCount + ')'}}</text>
       </button>
     </view>
   </view>
@@ -335,7 +363,7 @@
           <text class="shop-item-name">{{item.name}}</text>
           <view class="shop-item-tags">
             <text class="shop-tag-dist" wx:if="{{item.distance && item.distance < 9000}}">📍 约{{item.distance}}km</text>
-            <text class="shop-tag-status {{item.status === 1 ? 'tag-open' : 'tag-close'}}">{{item.status === 1 ? '营业中' : '休息中'}}</text>
+            <text class="shop-tag-status tag-s{{item.displayStatus}}">{{item.statusText}}</text>
           </view>
         </view>
         <view class="shop-item-addr">📍 {{item.address}}</view>

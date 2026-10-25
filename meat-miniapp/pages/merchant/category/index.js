@@ -1,4 +1,4 @@
-// pages/merchant/category/index.js - 鲜肉铺 鲜肉分类管理 (门店专属独立分类)
+// pages/merchant/category/index.js - 分类管理 (门店专属独立分类)
 const request = require('../../../utils/request');
 const auth = require('../../../utils/auth');
 
@@ -29,7 +29,7 @@ Page({
     },
     submitting: false,
 
-    // 预设萌系生鲜肉铺常用 Emoji
+    // 预设萌系常用 Emoji
     presetIcons: ['🥩', '🍖', '🐖', '🐂', '🥓', '🍗', '🍲', '🥟']
   },
 

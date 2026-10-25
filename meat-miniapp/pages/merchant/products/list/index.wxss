@@ -1,4 +1,4 @@
-/* pages/merchant/products/list/index.wxss - 鲜肉铺 掌柜商品管理 */
+/* pages/merchant/products/list/index.wxss - 掌柜商品管理 */
 
 .container {
   padding-bottom: 40rpx;

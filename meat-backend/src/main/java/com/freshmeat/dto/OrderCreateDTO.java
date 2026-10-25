@@ -28,6 +28,9 @@ public class OrderCreateDTO {
     /** 自取人联系电话 (自提时可选) */
     private String pickupPhone;
 
+    /** 期望送达/到店自取时间 (格式: yyyy-MM-dd HH:mm，快递配送可不传) */
+    private String expectedTime;
+
     /** 购买商品ID (单商品下单兼容) */
     private String productId;
 

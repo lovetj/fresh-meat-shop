@@ -1,0 +1,14 @@
+# ==============================================================
+# 生产环境配置：启动时追加 --spring.profiles.active=prod
+# 说明：仅覆盖生产环境需要收紧的项，其余沿用 application.yml
+# ==============================================================
+
+# 关闭在线接口文档（Knife4j / Swagger），避免生产环境暴露全部接口
+knife4j:
+  enable: false
+  production: true
+
+logging:
+  level:
+    com.freshmeat: info
+    com.freshmeat.mapper: warn

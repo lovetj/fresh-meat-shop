@@ -58,7 +58,7 @@
   <scroll-view class="order-list" scroll-y bindscrolltolower="onLoadMore">
     <view wx:if="{{orderList.length === 0 && !loading}}" class="empty-box">
       <text class="empty-icon">📦</text>
-      <text class="empty-text">未找到符合条件的鲜肉订单</text>
+      <text class="empty-text">未找到符合条件的订单</text>
       <text class="empty-sub">切换状态或关键词试试看</text>
     </view>
 
@@ -66,15 +66,16 @@
       <!-- 订单头：配送方式 + 提货码 + 状态软色标签 -->
       <view class="order-header">
         <view class="header-left">
-          <text class="delivery-badge {{item.deliveryType === 1 ? 'badge-orange' : 'badge-blue'}}">{{item.deliveryTypeDesc}}</text>
+          <text class="delivery-badge dlv-{{item.deliveryType}}">{{item.deliveryTypeDesc}}</text>
           <text class="pickup-pill" wx:if="{{item.deliveryType === 1 && item.pickupCode}}">提货码 {{item.pickupCode}}</text>
         </view>
         <text class="status-chip st-{{item.status}}">{{item.statusDesc}}</text>
       </view>
 
-      <!-- 下单时间 -->
+      <!-- 下单时间与顾客期望送达/自取时间 -->
       <view class="order-time-row">
         <text class="order-time">下单时间：{{item.createTime}}</text>
+        <view class="expected-time-chip" wx:if="{{item.expectedTimeStr && item.status !== 4}}">{{item.deliveryType === 1 ? '期望自取' : '期望送达'}} {{item.expectedTimeStr}}</view>
       </view>
 
       <!-- 商品缩略图横排：图片区最多占屏幕 50%，超出时用「更多」提示 -->
@@ -123,19 +124,19 @@
           <button class="btn-cancel" wx:if="{{item.status === 2}}" catchtap="onAdminCancelOrder" data-id="{{item.id}}">
             协商退款
           </button>
-          <button class="btn-deliver" wx:if="{{item.status === 2 && item.deliveryType === 2}}" catchtap="onDeliverOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
+          <button class="btn-deliver btn-type-{{item.deliveryType}}" wx:if="{{item.status === 2 && item.deliveryType === 2}}" catchtap="onDeliverOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
             开始同城配送
           </button>
-          <button class="btn-finish" wx:if="{{item.status === 2 && item.deliveryType === 1}}" catchtap="onFinishOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
+          <button class="btn-finish btn-type-{{item.deliveryType}}" wx:if="{{item.status === 2 && item.deliveryType === 1}}" catchtap="onFinishOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
             到店提货核销
           </button>
           <!-- 快递配送：进入详情填写快递公司与单号 -->
-          <button class="btn-deliver" wx:if="{{item.status === 2 && item.deliveryType === 4}}" catchtap="goToDetail" data-id="{{item.id}}">
+          <button class="btn-deliver btn-type-{{item.deliveryType}}" wx:if="{{item.status === 2 && item.deliveryType === 4}}" catchtap="goToDetail" data-id="{{item.id}}">
             填写快递单号
           </button>
 
           <!-- 配送中(3) 时：确认送达完成 -->
-          <button class="btn-finish" wx:if="{{item.status === 3}}" catchtap="onFinishOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
+          <button class="btn-finish btn-type-{{item.deliveryType}}" wx:if="{{item.status === 3}}" catchtap="onFinishOrder" data-id="{{item.id}}" data-type="{{item.deliveryType}}">
             确认送达完成
           </button>
         </view>

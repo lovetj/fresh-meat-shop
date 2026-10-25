@@ -207,10 +207,10 @@
   min-width: 0;
 }
 
+/* 字号、字重、颜色统一由 .section-title 提供，与订单详情 .card-title 保持一致 */
 .qty-info .section-title {
   display: block;
   margin-bottom: 6rpx;
-  font-size: 26rpx;
   line-height: 1.35;
   white-space: nowrap;
 }
@@ -271,7 +271,7 @@
   margin: 0 6rpx;
 }
 
-/* ================= 3. 鲜肉品质说明与承诺 ================= */
+/* ================= 3. 品质说明与承诺 ================= */
 .desc-content {
   font-size: 26rpx;
   color: var(--text-sub);
@@ -293,6 +293,36 @@
   font-size: 24rpx;
   color: #D46B08;
   font-weight: 600;
+}
+
+/* 门店歇业提示（悬于底部操作栏之上） */
+.shop-closed-tip {
+  position: fixed;
+  left: 20rpx;
+  right: 20rpx;
+  bottom: calc(142rpx + env(safe-area-inset-bottom));
+  z-index: 99;
+  padding: 14rpx 22rpx;
+  border-radius: 16rpx;
+  background-color: #FFF4E5;
+  border: 2rpx solid #FFE0A3;
+  color: #B26A00;
+  font-size: 23rpx;
+  line-height: 1.5;
+  box-shadow: 0 6rpx 18rpx rgba(255, 169, 64, 0.18);
+}
+
+/* 歇业中：底部购买按钮置灰但保留点击（点击给出歇业说明） */
+.buy-now-btn.is-closed {
+  background: #E8E8E8;
+  color: #B4B4B4;
+  box-shadow: none;
+}
+
+.cart-checkout-btn.cart-checkout-closed {
+  background: #E0E0E0;
+  color: #9E9E9E;
+  box-shadow: none;
 }
 
 /* ================= 4. 底部固定胶囊操作栏 ================= */

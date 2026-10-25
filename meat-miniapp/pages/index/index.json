@@ -1,6 +1,6 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "鲜肉铺",
-  "enablePullDownRefresh": true,
-  "onReachBottomDistance": 100
+  "navigationBarTitleText": "商品选购",
+  "enablePullDownRefresh": false,
+  "disableScroll": true
 }

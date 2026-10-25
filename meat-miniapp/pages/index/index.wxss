@@ -1,14 +1,24 @@
 /* pages/index/index.wxss - 选肉首页 */
 
+/* 整页固定高度：横幅与搜索固定，下方分类/商品各自独立滚动 */
 .page-shell {
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background-color: var(--bg-cream);
-  padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
+  /* 底部预留自定义 tabBar 高度（108rpx + 16rpx + 安全区） */
+  padding-bottom: calc(124rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  /* 筛选区域统一字号：左侧分类与排序栏保持一致 */
+  --fs-filter: 22rpx;
 }
 
 /* ================= 1. 顶部卡通店铺横幅 ================= */
 .shop-banner {
   position: relative;
+  flex-shrink: 0;
   overflow: hidden;
   padding: 32rpx 32rpx 28rpx;
   background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 55%, #FFA98F 100%);
@@ -100,6 +110,11 @@
   background-color: currentColor;
 }
 
+/* 状态标签可点击查看营业时间 */
+.shop-status-hover {
+  opacity: 0.82;
+}
+
 .is-open {
   background-color: rgba(255, 255, 255, 0.94);
   color: #2E9E4F;
@@ -107,6 +122,32 @@
 
 .is-close {
   background-color: rgba(255, 255, 255, 0.86);
+  color: #E68600;
+}
+
+.is-closed {
+  background-color: rgba(255, 255, 255, 0.86);
+  color: #8A8A8A;
+}
+
+/* 休息中 / 歇业中 提示条 */
+.shop-state-tip {
+  position: relative;
+  z-index: 1;
+  margin-top: 14rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 12rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+
+.tip-rest {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #B26A00;
+}
+
+.tip-closed {
+  background-color: rgba(255, 255, 255, 0.9);
   color: #8A8A8A;
 }
 
@@ -117,24 +158,6 @@
   color: #FFF3F0;
   position: relative;
   z-index: 1;
-}
-
-.shop-meta-row {
-  display: flex;
-  gap: 12rpx;
-  margin-top: 16rpx;
-  position: relative;
-  z-index: 1;
-  flex-wrap: wrap;
-}
-
-.meta-item {
-  font-size: 21rpx;
-  padding: 6rpx 16rpx;
-  border-radius: var(--radius-round);
-  background-color: rgba(255, 255, 255, 0.2);
-  border: 1rpx solid rgba(255, 255, 255, 0.3);
-  color: #FFFFFF;
 }
 
 .shop-addr {
@@ -206,6 +229,7 @@
 
 /* ================= 2. 搜索胶囊 ================= */
 .search-box {
+  flex-shrink: 0;
   padding: 24rpx var(--gutter) 4rpx;
 }
 
@@ -242,29 +266,103 @@
   border-radius: 50%;
 }
 
-/* ================= 3. 吸顶：分类胶囊 + 排序栏 ================= */
-.chip-bar {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  background-color: var(--bg-cream);
-  padding: 16rpx 0 12rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.03);
+/* ================= 3. 左右布局：左侧分类 + 右侧商品 ================= */
+.catalog-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 16rpx;
+  padding: 16rpx var(--gutter) 8rpx;
+  overflow: hidden;
+  /* 左右占比：按屏宽动态分配，分类栏约占 1/4，商品区自动占满剩余空间 */
+  --category-ratio: 25%;
 }
 
-.chip-scroll {
-  width: 100%;
-  height: 72rpx;
-  box-sizing: border-box;
+/* 左侧分类栏：宽度按屏宽比例分配，并以「4 个字」宽度作为下限，独立滚动 */
+.category-sidebar {
+  flex: 0 0 var(--category-ratio);
+  width: var(--category-ratio);
+  /* 4em 为 4 个汉字的宽度，36rpx 为内边距 + 边框 + 滚动条预留 */
+  min-width: calc(4em + 36rpx);
+  font-size: var(--fs-filter);
+  height: 100%;
 }
 
-/* ================= 3.1 排序栏（分类下方，价格在前、销量在后） ================= */
-.sort-bar {
+.category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: 2rpx 2rpx 24rpx;
+}
+
+.category-item {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  margin-top: 12rpx;
-  padding: 0 var(--gutter);
+  justify-content: center;
+  height: 84rpx;
+  padding: 0 12rpx;
+  border-radius: 20rpx;
+  background-color: #FFFFFF;
+  border: 2rpx solid #FFF2EF;
+  box-shadow: 0 4rpx 12rpx rgba(255, 107, 107, 0.05);
+  transition: all 0.2s ease;
+}
+
+.category-item:active {
+  transform: scale(0.96);
+}
+
+.category-item-active {
+  background: var(--primary-gradient);
+  border-color: transparent;
+  box-shadow: 0 6rpx 16rpx rgba(255, 107, 107, 0.28);
+}
+
+/* 文字居中，铺满分类项宽度（至少可容纳 4 个字），超出省略；字号与排序栏一致 */
+.category-text {
+  width: 100%;
+  font-size: var(--fs-filter);
+  line-height: 1.2;
+  font-weight: 400;
+  color: var(--text-main);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-item-active .category-text {
+  color: #FFFFFF;
+}
+
+/* 右侧商品区：排序栏固定，商品列表独立滚动 */
+.goods-panel {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.goods-scroll {
+  flex: 1;
+  height: 0;
+  min-height: 0;
+}
+
+/* 底部留白，保证最后一张卡片能滚动到悬浮购物车球上方 */
+.goods-scroll-inner {
+  padding-bottom: 150rpx;
+}
+
+/* ================= 3.1 排序栏（商品区顶部，价格在前、销量在后） ================= */
+.sort-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 14rpx;
 }
 
 .sort-bar-label {
@@ -274,12 +372,12 @@
   gap: 6rpx;
   margin-right: 4rpx;
   color: var(--text-sub);
-  font-size: 24rpx;
+  font-size: var(--fs-filter);
   font-weight: 600;
 }
 
 .sort-bar-icon {
-  font-size: 24rpx;
+  font-size: var(--fs-filter);
   line-height: 1;
 }
 
@@ -294,7 +392,7 @@
   background-color: #FFFFFF;
   border: 2rpx solid #FFE9E4;
   color: var(--text-main);
-  font-size: 24rpx;
+  font-size: var(--fs-filter);
   font-weight: 600;
   box-sizing: border-box;
   transition: all 0.2s ease;
@@ -355,75 +453,20 @@
   color: #FFFFFF;
 }
 
-.chip-inner {
+/* ================= 4. 右侧商品单列横向卡片 ================= */
+.goods-list {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex-wrap: nowrap;
+  flex-direction: column;
   gap: 16rpx;
-  padding: 0 var(--gutter);
-  height: 100%;
-  box-sizing: border-box;
-}
-
-.chip {
-  flex-shrink: 0;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8rpx;
-  height: 64rpx;
-  padding: 0 32rpx;
-  border-radius: var(--radius-round);
-  background-color: var(--bg-pink);
-  color: var(--text-main);
-  font-size: 26rpx;
-  font-weight: 600;
-  border: 2rpx solid transparent;
-  box-sizing: border-box;
-  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.chip:active {
-  transform: scale(0.94);
-}
-
-.chip-active {
-  background: var(--primary-gradient);
-  color: #FFFFFF;
-  font-weight: 800;
-  box-shadow: 0 6rpx 16rpx rgba(255, 107, 107, 0.28);
-  transform: translateY(-2rpx);
-}
-
-/* 分类图标：取分类表 icon 字段（Emoji），未配置时不渲染 */
-.chip-icon {
-  display: inline-block;
-  font-size: 26rpx;
-  line-height: 1;
-  vertical-align: middle;
-}
-
-.chip-name {
-  display: inline-block;
-  line-height: 1;
-  vertical-align: middle;
-}
-
-/* ================= 4. 双列商品网格卡片 ================= */
-.goods-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20rpx;
-  padding: 8rpx var(--gutter) 0;
 }
 
 .goods-card {
-  width: calc((100% - 20rpx) / 2);
+  display: flex;
+  gap: 16rpx;
+  width: 100%;
   background-color: #FFFFFF;
   border-radius: var(--radius-card);
-  padding: 16rpx;
+  padding: 14rpx;
   box-shadow: var(--shadow-warm);
   border: 2rpx solid #FFF2EF;
   overflow: hidden;
@@ -437,8 +480,9 @@
 
 .goods-thumb-wrap {
   position: relative;
-  width: 100%;
-  height: 300rpx;
+  flex: 0 0 180rpx;
+  width: 180rpx;
+  height: 180rpx;
   border-radius: var(--radius-img);
   overflow: hidden;
   background-color: #FFF5F2;
@@ -448,6 +492,14 @@
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* 骨架屏缩略图：与商品图同尺寸 */
+.skeleton-thumb {
+  flex: 0 0 180rpx;
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: var(--radius-img);
 }
 
 /* 左上角特价角标 */
@@ -472,14 +524,14 @@
 .quick-add {
   flex-shrink: 0;
   margin-left: auto;
-  width: 56rpx;
-  height: 56rpx;
+  width: 48rpx;
+  height: 48rpx;
   border-radius: 50%;
   background: var(--primary-gradient);
   color: #FFFFFF;
-  font-size: 34rpx;
+  font-size: 30rpx;
   font-weight: 700;
-  line-height: 52rpx;
+  line-height: 45rpx;
   text-align: center;
   box-shadow: 0 6rpx 16rpx rgba(255, 107, 107, 0.4);
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -489,23 +541,40 @@
   transform: scale(0.86);
 }
 
+/* 门店歇业中：加购按钮置灰 */
+.quick-add-disabled {
+  background: #D9D9D9;
+  box-shadow: none;
+  color: #FFFFFF;
+}
+
+/* 门店歇业中：结算按钮置灰但保留点击（点击给出歇业说明） */
+.cart-checkout-btn.cart-checkout-closed {
+  background: #E0E0E0;
+  color: #9E9E9E;
+  box-shadow: none;
+}
+
 .goods-body {
-  padding: 14rpx 4rpx 4rpx;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 2rpx 0;
 }
 
 .goods-name {
-  font-size: 28rpx;
+  font-size: 26rpx;
   font-weight: 800;
   color: var(--text-main);
   line-height: 1.35;
-  min-height: 76rpx;
 }
 
 .goods-summary {
   display: block;
-  font-size: 21rpx;
+  font-size: 20rpx;
   color: var(--text-sub);
-  margin-top: 6rpx;
+  margin-top: 4rpx;
 }
 
 .goods-tags {
@@ -531,7 +600,18 @@
 .goods-price-row {
   display: flex;
   align-items: center;
-  margin-top: 12rpx;
+  margin-top: auto;
+  padding-top: 10rpx;
+}
+
+/* 横向卡片内价格字号略收，避免与加购按钮挤在一起 */
+.goods-card .price-value {
+  font-size: 34rpx;
+}
+
+.goods-card .price-original {
+  font-size: 20rpx;
+  margin-left: 6rpx;
 }
 
 /* ================= 5. 加载态与空状态 ================= */
@@ -540,6 +620,37 @@
   padding: 36rpx 0 20rpx;
   font-size: 24rpx;
   color: var(--text-light);
+}
+
+/* 右侧商品区较窄，空态与加载提示紧凑展示 */
+.goods-panel .load-more {
+  padding: 28rpx 0 16rpx;
+  font-size: 22rpx;
+}
+
+.goods-empty {
+  padding: 90rpx 10rpx;
+}
+
+.goods-empty .empty-icon {
+  font-size: 76rpx;
+  margin-bottom: 16rpx;
+}
+
+.goods-empty .empty-text {
+  font-size: 24rpx;
+}
+
+.goods-empty .empty-sub {
+  font-size: 20rpx;
+  line-height: 1.5;
+}
+
+.goods-empty .empty-btn {
+  height: 64rpx;
+  padding: 0 30rpx;
+  line-height: 64rpx;
+  font-size: 24rpx;
 }
 
 /* ================= 6. 规格选购弹窗 ================= */
@@ -944,12 +1055,18 @@
   font-weight: 700;
 }
 
-.tag-open {
+/* 三态：1-营业中, 2-休息中, 3-歇业中 */
+.tag-s1 {
   background-color: #E6F7ED;
   color: #2E9E4F;
 }
 
-.tag-close {
+.tag-s2 {
+  background-color: #FFF4E5;
+  color: #E68600;
+}
+
+.tag-s3 {
   background-color: #F0F0F0;
   color: #8C8C8C;
 }

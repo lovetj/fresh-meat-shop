@@ -1,6 +1,7 @@
 package com.freshmeat.controller;
 
 import com.freshmeat.annotation.RequireAdmin;
+import com.freshmeat.annotation.RequireLogin;
 import com.freshmeat.common.PageResult;
 import com.freshmeat.common.Result;
 import com.freshmeat.dto.OrderCreateDTO;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/order")
 @RequiredArgsConstructor
+// 订单接口全部需要登录（掌柜端接口另有 @RequireAdmin 强校验）
+@RequireLogin
 public class OrderController {
 
     private final OrderService orderService;
@@ -30,6 +33,18 @@ public class OrderController {
     public Result<OrderVO> createOrder(@RequestBody @Validated OrderCreateDTO dto) {
         OrderVO orderVO = orderService.createOrder(dto);
         return Result.success("下单成功", orderVO);
+    }
+
+    /**
+     * 顾客端：下单前统一校验（购物车/单品通用，只读不写库）
+     */
+    @ApiOperation(value = "下单前统一校验",
+            notes = "一次性校验商品是否已删除/下架、分类是否已删除/停用、门店是否歇业、配送范围与起送价、"
+                    + "商品价格与规格是否一致、期望送达时间是否满足、配送费/快递费与实付金额是否正确；"
+                    + "校验结论在 data.canOrder 中返回，失败不抛异常")
+    @PostMapping("/precheck")
+    public Result<com.freshmeat.dto.OrderPrecheckVO> precheck(@RequestBody com.freshmeat.dto.OrderPrecheckDTO dto) {
+        return Result.success(orderService.precheck(dto));
     }
 
     /**

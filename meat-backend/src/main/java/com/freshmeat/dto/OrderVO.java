@@ -54,6 +54,13 @@ public class OrderVO implements Serializable {
     private BigDecimal originalPayAmount;
     private String pickupCode;
 
+    /** 期望送达/自取时间 */
+    private LocalDateTime expectedTime;
+    /** 期望时间展示文案(如: 10-26 09:30) */
+    private String expectedTimeStr;
+    /** 期望时间语义(期望送达 / 期望到店自取) */
+    private String expectedTimeDesc;
+
     /** 快递配送：快递公司名称与快递单号（掌柜发货时填写） */
     private String expressCompany;
     private String expressNo;

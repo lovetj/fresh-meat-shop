@@ -1,5 +1,5 @@
 /**
- * 鲜肉铺 - 微信顾客与超级管理员鉴权体系（双轨解耦认证）
+ * 微信顾客与超级管理员鉴权体系（双轨解耦认证）
  */
 const { BASE_URL } = require('./config');
 
@@ -236,6 +236,27 @@ const auth = {
     this.clearCartStorage();
 
     // 顾客退出后，若原本就是管理员身份则保持掌柜态，否则回到未登录
+    this.setActiveRole(wasAdmin && this.getAdminToken() ? 'ADMIN' : '');
+  },
+
+  /**
+   * 仅清理指定身份的登录凭证（不清购物车等本地业务数据）
+   * 用于「账号已在其他设备登录」被顶下线：旧 Token 已失效，先移除凭证再引导重新登录
+   * @param {String} role 'ADMIN' | 'CUSTOMER'
+   */
+  clearToken(role) {
+    if (role === 'ADMIN') {
+      wx.removeStorageSync(KEY_ADMIN_TOKEN);
+      wx.removeStorageSync(KEY_ADMIN_USER);
+      this.setActiveRole(this.getCustomerToken() ? 'CUSTOMER' : '');
+      return;
+    }
+
+    const wasAdmin = wx.getStorageSync(KEY_ACTIVE_ROLE) === 'ADMIN';
+    wx.removeStorageSync(KEY_CUSTOMER_TOKEN);
+    wx.removeStorageSync(KEY_CUSTOMER_USER);
+    wx.removeStorageSync(KEY_LEGACY_TOKEN);
+    wx.removeStorageSync(KEY_LEGACY_USER);
     this.setActiveRole(wasAdmin && this.getAdminToken() ? 'ADMIN' : '');
   },
 

@@ -15,7 +15,7 @@ public class Result<T> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /** 状态码: 200 成功, 401 未登录, 403 无权限, 500 业务/系统错误 */
+    /** 状态码: 200 成功, 401 未登录, 403 无权限, 4011 账号已在其他设备登录(被顶下线), 500 业务/系统错误 */
     private Integer code;
 
     /** 响应消息提示 */

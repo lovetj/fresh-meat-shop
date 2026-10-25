@@ -24,14 +24,52 @@ Page({
     deliveryRules: [
       { minDistance: 0, maxDistance: 3.0, minOrderAmount: 20.0, deliveryFee: 3.0 }
     ],
+    // 预约时效配置（分钟）
+    pickupMinMinutes: 30,
+    merchantMinMinutes: 45,
+    takeoutMinMinutes: 45,
+    timeSlotMinutes: 30,
+    reserveDays: 1,
+    slotOptions: [15, 30, 45, 60],
+    slotOptionLabels: ['15 分钟', '30 分钟', '45 分钟', '60 分钟'],
+    slotIndex: 1,
+    reserveDayOptions: [
+      { value: 0, label: '仅当天' },
+      { value: 1, label: '当天 + 次日' },
+      { value: 2, label: '当天 + 2 天' },
+      { value: 3, label: '当天 + 3 天' }
+    ],
+    reserveDayIndex: 1,
     // 快递配送配置
     expressEnabled: 0,
     expressFee: '',
     expressRegions: [],
+    // 配送方式 × 支付方式开关: 1-开启, 0-关闭
+    // 到店自取
+    pickupWxpayEnabled: 0,
+    pickupCodEnabled: 1,
+    // 同城商家配送
+    merchantWxpayEnabled: 0,
+    merchantCodEnabled: 1,
+    // 外卖配送
+    takeoutWxpayEnabled: 0,
+    takeoutCodEnabled: 1,
+    // 快递配送
+    expressWxpayEnabled: 0,
+    expressCodEnabled: 1,
     // 特殊地区配送状态下拉选项：0-可发 1-停发
     deliverOptions: ['可发', '停发'],
     startTime: '06:00',
     endTime: '19:30',
+    // 营业状态三态：1-营业中(按每日营业时间自动判定), 2-休息中(手动，不受时间限制), 3-歇业中(禁止下单)
+    statusOptions: [
+      { value: 1, label: '营业中', color: 'open' },
+      { value: 2, label: '休息中', color: 'rest' },
+      { value: 3, label: '歇业中', color: 'closed' }
+    ],
+    statusHint: '',
+    statusColor: 'open',
+    previewStatusText: '营业中',
     submitting: false
   },
 
@@ -88,18 +126,41 @@ Page({
             deliverable: r.deliverable === 0 ? 0 : 1
           }));
 
+          const slotOptions = [15, 30, 45, 60];
+          const timeSlotMinutes = this.normalizeMinutes(res.timeSlotMinutes, 30);
+          let slotIndex = slotOptions.indexOf(timeSlotMinutes);
+          if (slotIndex < 0) slotIndex = 1;
+          const reserveDays = this.normalizeReserveDays(res.reserveDays);
+          const reserveIndex = this.data.reserveDayOptions.findIndex(o => o.value === reserveDays);
+
           this.setData({
-            shop: res,
+            shop: Object.assign({}, res, { status: this.normalizeStatus(res.status) }),
             shopId: res.id,
             merchantDeliveryEnabled: res.merchantDeliveryEnabled === 0 ? 0 : 1,
             takeoutEnabled: res.takeoutEnabled === 1 ? 1 : 0,
             deliveryRules: rules,
+            pickupMinMinutes: this.normalizeMinutes(res.pickupMinMinutes, 30),
+            merchantMinMinutes: this.normalizeMinutes(res.merchantMinMinutes, 45),
+            takeoutMinMinutes: this.normalizeMinutes(res.takeoutMinMinutes, 45),
+            timeSlotMinutes,
+            slotIndex,
+            reserveDays,
+            reserveDayIndex: reserveIndex >= 0 ? reserveIndex : 0,
             expressEnabled: res.expressEnabled === 1 ? 1 : 0,
             expressFee: res.expressFee === null || res.expressFee === undefined ? '' : res.expressFee,
             expressRegions,
+            // 支付方式开关：微信线上支付默认关闭，货到付款默认开启
+            pickupWxpayEnabled: res.pickupWxpayEnabled === 1 ? 1 : 0,
+            pickupCodEnabled: res.pickupCodEnabled === 0 ? 0 : 1,
+            merchantWxpayEnabled: res.merchantWxpayEnabled === 1 ? 1 : 0,
+            merchantCodEnabled: res.merchantCodEnabled === 0 ? 0 : 1,
+            takeoutWxpayEnabled: res.takeoutWxpayEnabled === 1 ? 1 : 0,
+            takeoutCodEnabled: res.takeoutCodEnabled === 0 ? 0 : 1,
+            expressWxpayEnabled: res.expressWxpayEnabled === 1 ? 1 : 0,
+            expressCodEnabled: res.expressCodEnabled === 0 ? 0 : 1,
             startTime: hours.startTime,
             endTime: hours.endTime
-          });
+          }, () => this.refreshStatusView());
         }
       })
       .catch(err => {
@@ -130,7 +191,7 @@ Page({
     this.setData({
       startTime,
       'shop.businessHours': businessHours
-    });
+    }, () => this.refreshStatusView());
   },
 
   onEndTimeChange(e) {
@@ -139,13 +200,101 @@ Page({
     this.setData({
       endTime,
       'shop.businessHours': businessHours
+    }, () => this.refreshStatusView());
+  },
+
+  /** 历史两态数据兼容：0（原休息中）-> 2，非法值回落为营业中 */
+  normalizeStatus(status) {
+    const value = Number(status);
+    if (value === 2 || value === 3) return value;
+    if (value === 0) return 2;
+    return 1;
+  },
+
+  /** 分钟数归一：非法或负数回落默认值 */
+  normalizeMinutes(value, fallback) {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 0 || num > 1440) return fallback;
+    return num;
+  },
+
+  /** 可预约天数归一：0 ~ 3，非法回落默认 1 天 */
+  normalizeReserveDays(value) {
+    const num = parseInt(value, 10);
+    if (isNaN(num) || num < 0 || num > 3) return 1;
+    return num;
+  },
+
+  /** 选择营业状态；歇业会关闭下单，需二次确认 */
+  onStatusSelect(e) {
+    const value = this.normalizeStatus(e.currentTarget.dataset.value);
+    if (value === Number(this.data.shop.status)) return;
+
+    if (value === 3) {
+      wx.showModal({
+        title: '确认歇业？',
+        content: '歇业相当于关门，顾客将无法下单。确认后请点击底部「保存」生效。',
+        confirmText: '确认歇业',
+        confirmColor: '#FF6B6B',
+        cancelText: '取消',
+        success: (res) => {
+          if (res.confirm) this.applyStatus(value);
+        }
+      });
+      return;
+    }
+    this.applyStatus(value);
+  },
+
+  applyStatus(value) {
+    this.setData({ 'shop.status': value }, () => this.refreshStatusView());
+  },
+
+  /** 刷新状态说明与「当前时间顾客端将展示的状态」预览 */
+  refreshStatusView() {
+    const status = this.normalizeStatus(this.data.shop.status);
+    const hints = {
+      1: '按「每日营业时间」自动切换：时段内展示营业中，超出时间自动展示休息中',
+      2: '主动休息：不受营业时间限制，始终展示休息中；顾客可正常下单，订单待你恢复营业后处理',
+      3: '歇业：相当于关门，顾客端将无法下单'
+    };
+    const colors = { 1: 'open', 2: 'rest', 3: 'closed' };
+    let previewStatusText = '歇业中';
+    if (status === 1) {
+      previewStatusText = this.isInBusinessHours() ? '营业中' : '休息中';
+    } else if (status === 2) {
+      previewStatusText = '休息中';
+    }
+
+    this.setData({
+      statusHint: hints[status],
+      statusColor: colors[status],
+      previewStatusText
     });
   },
 
-  onStatusChange(e) {
-    this.setData({
-      'shop.status': e.detail.value ? 1 : 0
-    });
+  /** 当前时间是否在每日营业时段内（支持跨天，如 22:00 - 02:00） */
+  isInBusinessHours() {
+    const toMinutes = (text) => {
+      const parts = String(text || '').split(':');
+      if (parts.length < 2) return null;
+      const hour = Number(parts[0]);
+      const minute = Number(parts[1]);
+      if (isNaN(hour) || isNaN(minute)) return null;
+      return hour * 60 + minute;
+    };
+
+    const start = toMinutes(this.data.startTime);
+    const end = toMinutes(this.data.endTime);
+    if (start === null || end === null) return true;
+    if (start === end) return true;
+
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    if (start < end) {
+      return nowMinutes >= start && nowMinutes < end;
+    }
+    return nowMinutes >= start || nowMinutes < end;
   },
 
   // ---------------- 多阶梯配送规则动态操作 ----------------
@@ -229,6 +378,30 @@ Page({
     this.setData({ deliveryRules: rules });
   },
 
+  // ---------------- 预约时效配置 ----------------
+  onMinMinutesInput(e) {
+    const field = e.currentTarget.dataset.field;
+    if (!field) return;
+    this.setData({ [field]: e.detail.value });
+  },
+
+  onTimeSlotChange(e) {
+    const index = Number(e.detail.value) || 0;
+    this.setData({
+      slotIndex: index,
+      timeSlotMinutes: this.data.slotOptions[index] || 30
+    });
+  },
+
+  onReserveDaysChange(e) {
+    const index = Number(e.detail.value) || 0;
+    const option = this.data.reserveDayOptions[index];
+    this.setData({
+      reserveDayIndex: index,
+      reserveDays: option ? option.value : 0
+    });
+  },
+
   // ---------------- 外卖配送开关 ----------------
   onTakeoutEnabledChange(e) {
     this.setData({ takeoutEnabled: e.detail.value ? 1 : 0 });
@@ -246,6 +419,13 @@ Page({
   // ---------------- 快递配送配置 ----------------
   onExpressEnabledChange(e) {
     this.setData({ expressEnabled: e.detail.value ? 1 : 0 });
+  },
+
+  // ---------------- 配送方式 × 支付方式开关 ----------------
+  onPaySwitchChange(e) {
+    const key = e.currentTarget.dataset.key;
+    if (!key) return;
+    this.setData({ [key]: e.detail.value ? 1 : 0 });
   },
 
   onExpressFeeInput(e) {
@@ -468,6 +648,40 @@ Page({
       });
     }
 
+    // 校验支付方式开关：已开通的配送方式至少保留一种可用支付方式
+    const payChecks = [
+      { label: '到店自取', active: true, wxKey: 'pickupWxpayEnabled', codKey: 'pickupCodEnabled' },
+      { label: '同城商家配送', active: merchantDeliveryEnabled === 1, wxKey: 'merchantWxpayEnabled', codKey: 'merchantCodEnabled' },
+      { label: '外卖配送', active: takeoutEnabled === 1, wxKey: 'takeoutWxpayEnabled', codKey: 'takeoutCodEnabled' },
+      { label: '快递配送', active: expressEnabled === 1, wxKey: 'expressWxpayEnabled', codKey: 'expressCodEnabled' }
+    ];
+    for (const check of payChecks) {
+      if (!check.active) continue;
+      if (this.data[check.wxKey] !== 1 && this.data[check.codKey] !== 1) {
+        wx.showToast({ title: `「${check.label}」至少开启一种支付方式`, icon: 'none' });
+        return;
+      }
+    }
+
+    // 校验预约时效配置（分钟数需为 0 ~ 1440 的整数）
+    const minuteFields = [
+      { key: 'pickupMinMinutes', label: '到店自取最小备货时间' },
+      { key: 'merchantMinMinutes', label: '商家配送最小送达时间' },
+      { key: 'takeoutMinMinutes', label: '外卖配送最小送达时间' }
+    ];
+    const appointment = {};
+    for (const field of minuteFields) {
+      const raw = this.data[field.key];
+      const num = parseInt(raw, 10);
+      if (isNaN(num) || num < 0 || num > 1440) {
+        wx.showToast({ title: `${field.label}需为 0~1440 的整数分钟`, icon: 'none' });
+        return;
+      }
+      appointment[field.key] = num;
+    }
+    appointment.timeSlotMinutes = Number(this.data.timeSlotMinutes) || 30;
+    appointment.reserveDays = Number(this.data.reserveDays) || 0;
+
     const payload = {
       id: id || this.data.shopId || null,
       name: values.name.trim(),
@@ -483,8 +697,19 @@ Page({
       expressEnabled,
       expressFee: isNaN(expressFeeNum) ? 0 : expressFeeNum,
       expressRegions: cleanRegions,
+      // 配送方式 × 支付方式开关
+      pickupWxpayEnabled: this.data.pickupWxpayEnabled === 1 ? 1 : 0,
+      pickupCodEnabled: this.data.pickupCodEnabled === 1 ? 1 : 0,
+      merchantWxpayEnabled: this.data.merchantWxpayEnabled === 1 ? 1 : 0,
+      merchantCodEnabled: this.data.merchantCodEnabled === 1 ? 1 : 0,
+      takeoutWxpayEnabled: this.data.takeoutWxpayEnabled === 1 ? 1 : 0,
+      takeoutCodEnabled: this.data.takeoutCodEnabled === 1 ? 1 : 0,
+      expressWxpayEnabled: this.data.expressWxpayEnabled === 1 ? 1 : 0,
+      expressCodEnabled: this.data.expressCodEnabled === 1 ? 1 : 0,
       status: status !== undefined ? status : 1
     };
+
+    Object.assign(payload, appointment);
 
     this.setData({ submitting: true });
     wx.showLoading({ title: '保存中...' });

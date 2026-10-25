@@ -212,7 +212,7 @@ Page({
 
     wx.showModal({
       title: '取消确认',
-      content: '确定要取消此鲜肉订单吗？若已付款将自动原路退款。',
+      content: '确定要取消此订单吗？若已付款将自动原路退款。',
       success: (res) => {
         if (!res.confirm) return;
         wx.showLoading({ title: '处理中...' });
@@ -269,7 +269,7 @@ Page({
   onConfirmOrder() {
     wx.showModal({
       title: '确认收货',
-      content: '确认已收到新鲜肉品？',
+      content: '确认已收到商品？',
       success: (res) => {
         if (res.confirm) {
           wx.showLoading({ title: '确认中...' });
@@ -290,7 +290,7 @@ Page({
     const id = this.data.orderId;
     wx.showModal({
       title: '确认接单',
-      content: '确认接下此鲜肉订单并开始切配？',
+      content: '确认接下此订单并开始切配？',
       success: (res) => {
         if (res.confirm) {
           wx.showLoading({ title: '处理中...' });
@@ -366,7 +366,7 @@ Page({
   onFinishOrder() {
     const id = this.data.orderId;
     const type = this.data.order.deliveryType;
-    const tip = type === 1 ? '确认顾客已到店提走鲜肉？' : '确认该笔鲜肉订单已配送送达？';
+    const tip = type === 1 ? '确认顾客已到店提走？' : '确认该笔订单已配送送达？';
 
     wx.showModal({
       title: '完成确认',

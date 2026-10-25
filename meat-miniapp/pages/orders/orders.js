@@ -88,10 +88,16 @@ Page({
     return `${role}:${user.userId || user.id || ''}`;
   },
 
+  /** 系统自带下拉刷新（列表区域下拉即可触发） */
   onPullDownRefresh() {
     this.loadOrders(true).then(() => {
       wx.stopPullDownRefresh();
     });
+  },
+
+  /** 页面触底加载更多（列表已随页面滚动） */
+  onReachBottom() {
+    this.onLoadMore();
   },
 
   onSwitchTab(e) {
@@ -261,7 +267,7 @@ Page({
 
     wx.showModal({
       title: '取消确认',
-      content: '确定要取消该鲜肉订单吗？',
+      content: '确定要取消该订单吗？',
       success: (res) => {
         if (!res.confirm) return;
         wx.showLoading({ title: '取消中...' });
@@ -319,7 +325,7 @@ Page({
     const id = e.currentTarget.dataset.id;
     wx.showModal({
       title: '确认收货',
-      content: '确认已收到新鲜肉品？',
+      content: '确认已收到商品？',
       success: (res) => {
         if (res.confirm) {
           wx.showLoading({ title: '确认中...' });

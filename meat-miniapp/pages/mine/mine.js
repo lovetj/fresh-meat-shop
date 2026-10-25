@@ -1,6 +1,7 @@
 // pages/mine/mine.js
 const auth = require('../../utils/auth');
 const request = require('../../utils/request');
+const { normalizeShopStatus } = require('../../utils/shop-status');
 const { formatImageUrl } = require('../../utils/util');
 const app = getApp();
 
@@ -110,7 +111,7 @@ Page({
   loadShopInfo() {
     return this.loadCurrentShop().then((res) => {
       if (res) {
-        this.setData({ shopInfo: res });
+        this.setData({ shopInfo: normalizeShopStatus(res) });
       }
     }).catch(console.error);
   },
@@ -288,7 +289,7 @@ Page({
       });
     } else {
       wx.showModal({
-        title: shop.name || '鲜肉铺',
+        title: shop.name || '',
         content: `地址: ${shop.address || '未配置'}\n营业时间: ${shop.businessHours || '全天'}\n公告: ${shop.notice || '欢迎光临'}`,
         showCancel: false
       });

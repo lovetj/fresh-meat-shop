@@ -1,8 +1,10 @@
 package com.freshmeat.controller;
 
 import cn.hutool.core.io.FileUtil;
+import com.freshmeat.annotation.RequireAdmin;
 import com.freshmeat.common.Result;
 import com.freshmeat.config.FileConfigProperties;
+import com.freshmeat.exception.BusinessException;
 import com.freshmeat.util.ImageCompressUtil;
 import com.freshmeat.util.SecurityContextUtil;
 import io.swagger.annotations.Api;
@@ -63,6 +65,10 @@ public class FileUploadController {
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
             HttpServletRequest request) {
 
+        // 安全校验：商品/分类/店铺等业务图片仅限登录管理员上传；
+        // 头像允许未登录上传（微信首次授权登录时，头像先于登录态上传）
+        requireUploadPermission(module, bizType);
+
         if (file == null || file.isEmpty()) {
             return Result.error("上传文件不能为空");
         }
@@ -86,6 +92,9 @@ public class FileUploadController {
             @RequestParam(value = "bizType", required = false) String bizType,
             @RequestParam(value = "userId", required = false) String paramUserId,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId) {
+
+        // 安全校验：批量上传同样仅头像允许未登录
+        requireUploadPermission(module, bizType);
 
         if (files == null || files.length == 0) {
             return Result.error("上传文件不能为空");
@@ -112,6 +121,7 @@ public class FileUploadController {
     }
 
     @ApiOperation(value = "删除已上传的图片文件", notes = "物理删除磁盘上存储的图片")
+    @RequireAdmin
     @DeleteMapping("/delete")
     public Result<Void> delete(@RequestParam("path") String path) {
         if (!StringUtils.hasText(path)) {
@@ -218,6 +228,24 @@ public class FileUploadController {
     }
 
     /**
+     * 上传权限校验
+     * - avatar 模块允许未登录（微信首次授权登录时头像先于登录态上传）；
+     * - 其余业务模块（product/category/shop/other）必须为已登录管理员。
+     */
+    private void requireUploadPermission(String module, String bizType) {
+        String cleanModule = resolveCleanModule(module, bizType);
+        if ("avatar".equals(cleanModule)) {
+            return;
+        }
+        if (SecurityContextUtil.getUserId() == null) {
+            throw new BusinessException(401, "请先登录");
+        }
+        if (!SecurityContextUtil.isAdmin()) {
+            throw new BusinessException(403, "无权上传业务图片");
+        }
+    }
+
+    /**
      * 解析实际物理存储根路径
      */
     private String resolveBaseUploadPath() {
@@ -262,20 +290,20 @@ public class FileUploadController {
      * 多途径提取用户 ID（用于头像目录分类）
      */
     private String resolveUserId(String paramUserId, String headerUserId) {
-        // 1. 优先传参
+        // 1. 已登录用户优先，避免客户端伪造 userId 把文件写进他人头像目录
+        String loginUserId = SecurityContextUtil.getUserId();
+        if (StringUtils.hasText(loginUserId)) {
+            return loginUserId;
+        }
+        // 2. 传参
         String id = sanitizeSegment(paramUserId);
         if (StringUtils.hasText(id)) {
             return id;
         }
-        // 2. 请求头 X-User-Id
+        // 3. 请求头 X-User-Id
         id = sanitizeSegment(headerUserId);
         if (StringUtils.hasText(id)) {
             return id;
-        }
-        // 3. 当前登录用户上下文
-        String loginUserId = SecurityContextUtil.getUserId();
-        if (StringUtils.hasText(loginUserId)) {
-            return loginUserId;
         }
         // 4. 兜底
         return "default";

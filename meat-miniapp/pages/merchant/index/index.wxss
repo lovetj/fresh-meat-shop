@@ -1,4 +1,4 @@
-/* pages/merchant/index/index.wxss - 鲜肉铺 商家掌柜工作台 */
+/* pages/merchant/index/index.wxss - 商家掌柜工作台 */
 
 .container {
   padding-bottom: 60rpx;
@@ -103,6 +103,21 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 歇业中提醒条 */
+.shop-closed-banner {
+  position: relative;
+  z-index: 1;
+  margin-top: 16rpx;
+  padding: 14rpx 20rpx;
+  border-radius: 14rpx;
+  background-color: rgba(255, 255, 255, 0.92);
+  border: 2rpx solid rgba(255, 255, 255, 0.6);
+  color: #8C6D3F;
+  font-size: 22rpx;
+  line-height: 1.5;
+  font-weight: 600;
 }
 
 /* ================= 空状态 ================= */
@@ -211,12 +226,18 @@
   border-radius: 8rpx;
 }
 
-.st-open {
+/* 三态：1-营业中, 2-休息中, 3-歇业中 */
+.st-1 {
   background: #E8F5E9;
   color: #2E7D32;
 }
 
-.st-close {
+.st-2 {
+  background: #FFF4E5;
+  color: #E68600;
+}
+
+.st-3 {
   background: #EEEEEE;
   color: #999999;
 }
@@ -241,13 +262,20 @@
   font-weight: 700;
 }
 
-.tag-open {
+/* 顶部三态状态标签 */
+.tag-s1 {
   background-color: #6BCB77;
   color: #FFFFFF;
   box-shadow: 0 4rpx 12rpx rgba(107, 203, 119, 0.35);
 }
 
-.tag-close {
+.tag-s2 {
+  background-color: #FFA940;
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 12rpx rgba(255, 169, 64, 0.32);
+}
+
+.tag-s3 {
   background-color: #C9C9C9;
   color: #FFFFFF;
 }

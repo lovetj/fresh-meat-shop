@@ -1,5 +1,6 @@
 package com.freshmeat.controller;
 
+import com.freshmeat.annotation.RequireLogin;
 import com.freshmeat.common.Result;
 import com.freshmeat.dto.WxPayParamsVO;
 import com.freshmeat.service.PaymentService;
@@ -22,6 +23,7 @@ public class PaymentController {
      * 发起微信线上支付 (生成前端调起 wx.requestPayment 所需签名参数)
      */
     @ApiOperation(value = "发起微信线上支付", notes = "生成小程序原生调起支付所需的timeStamp、nonceStr、package、paySign等参数")
+    @RequireLogin
     @PostMapping("/wx/prepay/{orderId}")
     public Result<WxPayParamsVO> createWxPrepay(@PathVariable String orderId) {
         WxPayParamsVO vo = paymentService.createWxPrepay(orderId);
@@ -32,6 +34,7 @@ public class PaymentController {
      * 模拟支付成功接口 (本地开发测试与演示无需申请真实微信商户号即可闭环体验)
      */
     @ApiOperation(value = "本地Mock模拟支付成功", notes = "在无真实微信商户号证书时，一键触发支付成功回调，推动订单流转至待接单")
+    @RequireLogin
     @PostMapping("/mock/success/{orderId}")
     public Result<Boolean> mockPaySuccess(@PathVariable String orderId) {
         boolean ok = paymentService.mockPaySuccess(orderId);

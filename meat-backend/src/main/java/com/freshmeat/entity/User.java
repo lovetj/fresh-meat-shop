@@ -50,6 +50,13 @@ public class User implements Serializable {
     /** 状态: 1-启用, 0-禁用 */
     private Integer status;
 
+    /**
+     * 当前有效登录会话标识（单设备登录）
+     * 每次登录都会刷新该值，Token 中携带同一标识，
+     * 与数据库不一致即说明账号已在其他设备登录，旧 Token 立即失效。
+     */
+    private String sessionKey;
+
     /** 最近登录时间 */
     private LocalDateTime lastLoginTime;
 

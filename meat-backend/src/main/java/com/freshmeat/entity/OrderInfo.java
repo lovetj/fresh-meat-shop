@@ -103,6 +103,9 @@ public class OrderInfo implements Serializable {
     /** 自提核销码(自取订单生成的提货凭证) */
     private String pickupCode;
 
+    /** 顾客期望送达/到店自取时间(下单时选择，按店铺时效配置生成可选范围) */
+    private LocalDateTime expectedTime;
+
     /** 备注要求 */
     private String remark;
 

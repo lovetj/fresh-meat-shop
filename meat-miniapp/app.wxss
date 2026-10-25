@@ -350,6 +350,35 @@ button::after {
   border: 1rpx solid rgba(250, 140, 22, 0.25);
 }
 
+/* ================= 配送方式标签（4 种类型各自一色，便于快速区分） ================= */
+/* 1-到店自取：暖橙 */
+.delivery-badge.dlv-1 {
+  background-color: #FFF2E8;
+  color: #D4380D;
+  border: 1rpx solid rgba(250, 140, 22, 0.3);
+}
+
+/* 2-商家配送/同城配送：天空蓝 */
+.delivery-badge.dlv-2 {
+  background-color: #EBF4FF;
+  color: #2F72D6;
+  border: 1rpx solid rgba(77, 150, 255, 0.35);
+}
+
+/* 3-外卖：薰衣草紫 */
+.delivery-badge.dlv-3 {
+  background-color: #F3EEFF;
+  color: #7C5CD6;
+  border: 1rpx solid rgba(124, 92, 214, 0.3);
+}
+
+/* 4-快递配送：薄荷青（与蓝色、橙色明显区分） */
+.delivery-badge.dlv-4 {
+  background-color: #E6FCF5;
+  color: #0B8A6B;
+  border: 1rpx solid rgba(11, 138, 107, 0.3);
+}
+
 /* 订单状态胶囊：不同状态不同柔和底色（st-0 ~ st-6） */
 .status-chip {
   display: inline-flex;

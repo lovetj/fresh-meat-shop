@@ -8,7 +8,6 @@
     <view class="avatar-wrap" bindtap="onLogin">
       <image wx:if="{{userInfo.avatarUrl}}" class="avatar" src="{{userInfo.avatarUrl}}" mode="aspectFill"/>
       <view wx:else class="avatar avatar-empty">
-        <text class="avatar-empty-icon">👤</text>
         <text class="avatar-empty-tip">点击获取微信头像</text>
       </view>
       <view class="avatar-camera" wx:if="{{isLogin}}">📷</view>
@@ -25,7 +24,7 @@
     <view class="user-info" bindtap="onLogin">
       <view class="name-row">
         <text class="user-name ellipsis">{{userInfo.nickname || (isLogin ? '微信顾客' : '点击登录微信账号')}}</text>
-        <view class="biz-tag {{shopInfo.status === 1 ? 'biz-open' : 'biz-close'}}" wx:if="{{isAdmin && (shopInfo.status === 0 || shopInfo.status === 1)}}" catchtap="preventBubble">{{shopInfo.status === 1 ? '营业中' : '休息中'}}</view>
+        <view class="biz-tag biz-{{shopInfo.statusClass}}" wx:if="{{isAdmin && shopInfo.displayStatus}}" catchtap="preventBubble">{{shopInfo.statusText}}</view>
         <text class="role-badge" wx:if="{{isAdmin}}">掌柜</text>
         <view class="logout-chip" wx:if="{{isLogin}}" catchtap="onLogoutCustomer">退出</view>
       </view>

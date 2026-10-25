@@ -145,7 +145,7 @@
   font-weight: 800;
 }
 
-/* 昵称后的营业状态标签（营业中 / 休息中） */
+/* 昵称后的营业状态标签（营业中 / 休息中 / 歇业中） */
 .biz-tag {
   flex-shrink: 0;
   display: inline-flex;
@@ -167,7 +167,13 @@
   box-shadow: 0 2rpx 8rpx rgba(150, 40, 40, 0.16);
 }
 
-.biz-close {
+.biz-rest {
+  color: #B26A00;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2rpx 8rpx rgba(150, 40, 40, 0.12);
+}
+
+.biz-closed {
   color: #8C8C8C;
   background-color: rgba(255, 255, 255, 0.9);
   box-shadow: 0 2rpx 8rpx rgba(150, 40, 40, 0.12);

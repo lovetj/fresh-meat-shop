@@ -1,5 +1,5 @@
 /**
- * 鲜肉铺 - 前端购物车本地缓存模块
+ * 前端购物车本地缓存模块
  * 
  * 核心特性：
  * 1. 用户与门店双维度严格隔离 (MEAT_CART_{userId}_{shopId})
@@ -13,10 +13,15 @@ const CART_PREFIX = 'MEAT_CART_';
 
 /**
  * 获取当前用户标识
+ * 注意：后端登录/用户信息返回的用户标识字段是 userId（LoginResultVO），
+ * 历史代码只读 id 会永远取不到，导致所有购物车都落在 guest 名下 ——
+ * 退出登录后购物车依然展示、不同账号共用同一购物车。
  */
 function getCurrentUserId() {
   const user = auth.getUserInfo();
-  return (user && user.id) ? user.id : 'guest';
+  if (!user) return 'guest';
+  const uid = user.userId || user.id;
+  return uid ? String(uid) : 'guest';
 }
 
 /**
@@ -30,6 +35,31 @@ function buildKey(shopId, userId) {
   return `${CART_PREFIX}${uid}_${sid}`;
 }
 
+/**
+ * 历史版本购物车使用 guest 作为用户标识，这里把残留数据归到当前登录用户名下，
+ * 避免退出登录后 guest 购物车仍然被读取出来（同时清理脏数据）
+ */
+function migrateLegacyGuestCart(shopId) {
+  const user = auth.getUserInfo();
+  const uid = user && (user.userId || user.id);
+  if (!uid) return;
+
+  const sid = shopId || 'default';
+  const legacyKey = `${CART_PREFIX}guest_${sid}`;
+  const targetKey = `${CART_PREFIX}${uid}_${sid}`;
+
+  try {
+    const legacy = wx.getStorageSync(legacyKey);
+    if (!legacy) return;
+
+    const current = wx.getStorageSync(targetKey);
+    if ((!Array.isArray(current) || current.length === 0) && Array.isArray(legacy) && legacy.length) {
+      wx.setStorageSync(targetKey, legacy);
+    }
+    wx.removeStorageSync(legacyKey);
+  } catch (e) {}
+}
+
 const cart = {
   /**
    * 获取指定门店的购物车列表
@@ -39,6 +69,7 @@ const cart = {
   getCart(shopId) {
     if (!shopId) return [];
     try {
+      migrateLegacyGuestCart(shopId);
       const key = buildKey(shopId);
       const list = wx.getStorageSync(key);
       return Array.isArray(list) ? list : [];

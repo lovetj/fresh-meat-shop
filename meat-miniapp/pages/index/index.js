@@ -2,6 +2,7 @@
 const request = require('../../utils/request');
 const auth = require('../../utils/auth');
 const cart = require('../../utils/cart');
+const { normalizeShopStatus, isOrderBlocked } = require('../../utils/shop-status');
 const { formatImageUrl, normalizeSpecsList } = require('../../utils/util');
 const app = getApp();
 
@@ -17,6 +18,11 @@ const ALL_CATEGORY_ID = '0';
  */
 const DEFAULT_SORT_KEY = '';
 const DEFAULT_PRICE_ORDER = 'asc';
+
+// 定位只用于「就近排序」，不能阻塞首屏出数据：最多等待 1.2s，超时按无坐标加载
+const LOCATION_TIMEOUT = 1200;
+// 定位结果缓存有效期（10 分钟），避免每次切回页签都重新定位
+const LOCATION_CACHE_TTL = 10 * 60 * 1000;
 
 Page({
   data: {
@@ -47,8 +53,15 @@ Page({
     pageNum: 1,
     pageSize: 4,
     hasMore: true,
-    loading: false,
+    // 首屏默认进入骨架屏，避免请求发出前先闪一下空态
+    loading: true,
     loadingMore: false,
+    // 商品首屏加载失败标记（空态展示「重新加载」）
+    loadError: false,
+    // 商品列表独立滚动：滚动位置控制（切换分类/排序后回到顶部）
+    goodsScrollTop: 0,
+    // 商品列表下拉刷新状态
+    refreshing: false,
 
     // 选购规格弹窗
     showSpecModal: false,
@@ -95,72 +108,174 @@ Page({
 
   /**
    * 刷新本页涉及的全部接口：店铺列表与信息 / 分类列表 / 商品首屏
+   * 并发去重：onShow / 下拉刷新短时间重复触发时复用同一次刷新
    * @returns {Promise} 全部请求结束（单个失败不阻断其它接口）
    */
-  async refreshPageData() {
-    await this.loadShopInfo();
-    return Promise.all([
-      this.loadCategories(),
-      this.loadGoods(true)
-    ]);
+  refreshPageData() {
+    if (this._pageRefreshPromise) return this._pageRefreshPromise;
+
+    this._pageRefreshPromise = this.doRefreshPageData()
+      .catch((err) => {
+        console.error('[商品选购] 首屏刷新异常:', err);
+      })
+      .finally(() => {
+        this._pageRefreshPromise = null;
+        // 兜底复位，避免任一环节异常导致骨架屏常驻
+        if (this.data.loading || this.data.loadingMore) {
+          this.setData({ loading: false, loadingMore: false });
+        }
+      });
+
+    return this._pageRefreshPromise;
   },
 
-  // 页面滚动到底部（触底追加分页）
-  onReachBottom() {
-    console.log('[商品选购] 滚动触底，触发追加分页: hasMore =', this.data.hasMore, 'loading =', this.data.loading);
+  /**
+   * 首屏加载：门店（含定位）与分类/商品并行，不再串行等待定位授权
+   * 门店确定后若与首屏使用的门店不一致，再静默按新门店刷新一次
+   */
+  async doRefreshPageData() {
+    // 优先使用已生效门店：页面选中 > 本地缓存 > 全局
+    const cachedShopId = this.data.currentShopId
+      || wx.getStorageSync('currentShopId')
+      || app.globalData.currentShopId
+      || '';
+
+    // 门店列表与定位在后台加载，不阻塞商品首屏
+    const shopTask = this.loadShopInfo();
+
+    if (!cachedShopId) {
+      // 冷启动且没有历史门店：必须先确定门店，否则可能拉到其它门店的商品
+      await shopTask;
+      await Promise.all([this.loadCategories(), this.loadGoods(true)]);
+      return;
+    }
+
+    // 有历史门店：立即按缓存门店渲染首屏
+    if (!this.data.currentShopId) {
+      this.setData({ currentShopId: cachedShopId });
+    }
+    await Promise.all([shopTask, this.loadCategories(), this.loadGoods(true)]);
+
+    // 历史门店已失效或被切换：按最终门店再静默刷新一次
+    const resolvedShopId = this.data.currentShopId;
+    if (resolvedShopId && resolvedShopId !== cachedShopId) {
+      console.log('[商品选购] 生效门店变更，按新门店重新加载:', cachedShopId, '->', resolvedShopId);
+      this.setData({ currentCategoryId: ALL_CATEGORY_ID, pageNum: 1, hasMore: true });
+      await Promise.all([this.loadCategories(), this.loadGoods(true)]);
+    }
+  },
+
+  // 商品列表滚动到底部（触底追加分页）
+  onGoodsScrollLower() {
+    console.log('[商品选购] 列表触底，触发追加分页: hasMore =', this.data.hasMore, 'loading =', this.data.loading);
     this.onLoadMore();
   },
 
-  // 顶部下拉刷新
-  onPullDownRefresh() {
+  // 商品列表下拉刷新（页面固定高度不可滚动，刷新由列表自身的 refresher 承担）
+  onGoodsRefresh() {
+    this.setData({ refreshing: true });
     this.refreshPageData().finally(() => {
-      wx.stopPullDownRefresh();
+      this.setData({ refreshing: false });
     });
   },
 
   /**
    * 加载门店首屏并解析当前生效商铺
+   * 定位只用于就近排序：带超时 + 会话内缓存，绝不阻塞首屏出数据
    */
   loadShopInfo() {
     return new Promise((resolve) => {
-      // 尝试获取当前用户经纬度辅助测距排序
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+
       const load = (coords) => {
         this._coords = coords || null;
         this.loadShopPage(true)
           .then((page) => this.resolveCurrentShop(page.list))
-          .then(resolve)
+          .then(finish)
           .catch((err) => {
             console.error('[商品选购] 加载门店列表失败，回退单店:', err);
             request.get('/shop/info', {}, { silent: true }).then((shop) => {
               if (shop) {
                 this.applyCurrentShop(shop);
               }
-              resolve(shop || null);
-            }).catch(() => resolve(null));
+              finish(shop || null);
+            }).catch(() => finish(null));
           });
       };
 
-      if (wx.getLocation) {
-        wx.getLocation({
-          type: 'gcj02',
-          success: (res) => {
-            load({ latitude: res.latitude, longitude: res.longitude });
-          },
-          fail: () => {
-            load();
-          }
-        });
-      } else {
-        load();
+      // 命中未过期的定位缓存（含「上次定位失败」的结果），直接使用
+      const cachedCoords = this.getCachedCoords();
+      if (cachedCoords !== undefined) {
+        load(cachedCoords);
+        return;
       }
+
+      if (!wx.getLocation) {
+        this.saveCachedCoords(null);
+        load(null);
+        return;
+      }
+
+      let located = false;
+      const proceed = (coords, cacheIt) => {
+        if (located) return;
+        located = true;
+        // 超时兜底不写缓存，下次进入可重新尝试定位
+        if (cacheIt) {
+          this.saveCachedCoords(coords);
+        }
+        load(coords);
+      };
+
+      // 首次进入会弹定位授权框，用户不响应时回调不会触发，
+      // 因此最多等 1.2s，超时先按无坐标加载
+      const timer = setTimeout(() => proceed(null, false), LOCATION_TIMEOUT);
+      wx.getLocation({
+        type: 'gcj02',
+        success: (res) => {
+          clearTimeout(timer);
+          const coords = { latitude: res.latitude, longitude: res.longitude };
+          if (located) {
+            // 超时之后才拿到坐标：仅写入缓存，供下次刷新直接复用
+            this.saveCachedCoords(coords);
+            return;
+          }
+          proceed(coords, true);
+        },
+        fail: () => {
+          clearTimeout(timer);
+          proceed(null, true);
+        }
+      });
     });
+  },
+
+  /** 读取未过期的定位缓存；命中失败结果时返回 null，未命中返回 undefined */
+  getCachedCoords() {
+    const cache = this._locationCache;
+    if (!cache || Date.now() - cache.time > LOCATION_CACHE_TTL) {
+      return undefined;
+    }
+    return cache.coords || null;
+  },
+
+  /** 缓存本次定位结果，减少反复定位与授权等待 */
+  saveCachedCoords(coords) {
+    this._locationCache = { time: Date.now(), coords: coords || null };
   },
 
   /**
    * 将阶梯配送规则解析为便于展示的字段
    */
-  formatShopDeliveryInfo(shop) {
-    if (!shop) return null;
+  formatShopDeliveryInfo(rawShop) {
+    if (!rawShop) return null;
+    // 归一化营业状态：displayStatus 1-营业中 / 2-休息中 / 3-歇业中
+    const shop = normalizeShopStatus(rawShop);
     const rules = Array.isArray(shop.deliveryRules) ? shop.deliveryRules : [];
     // 仅统计有截止距离的有效阶梯（历史遗留的无截止距离规则不参与计算）
     const validRules = rules.filter(r => r.maxDistance !== null && r.maxDistance !== undefined && Number(r.maxDistance) > 0);
@@ -383,9 +498,14 @@ Page({
       // 记录用户主动选择，后续进入首页优先展示该门店
       wx.setStorageSync('selectedShopId', selectedShop.id);
       this.closeShopModal();
-      wx.showToast({ title: `已切换至: ${selectedShop.name}`, icon: 'none' });
+      if (selectedShop.displayStatus === 3) {
+        wx.showToast({ title: '该门店歇业中，暂不接单', icon: 'none' });
+      } else {
+        wx.showToast({ title: `已切换至: ${selectedShop.name}`, icon: 'none' });
+      }
       // 切换门店后重置选中分类，并重新刷新该门店专属的分类和商品
       this.setData({ currentCategoryId: ALL_CATEGORY_ID });
+      this.resetGoodsScroll();
       Promise.all([
         this.loadCategories(),
         this.loadGoods(true)
@@ -412,7 +532,7 @@ Page({
     });
   },
 
-  loadGoods(reset = false) {
+  loadGoods(reset = false, attempt = 0) {
     // 追加分页时避免重复请求；重置请求（页签切回/分类切换）始终发起
     if (!reset && this.data.loading) return Promise.resolve();
 
@@ -420,7 +540,11 @@ Page({
     const seq = (this._goodsReqSeq = (this._goodsReqSeq || 0) + 1);
     const pageNum = reset ? 1 : this.data.pageNum;
     // 仅追加分页展示底部加载动画，重置首屏不展示（首屏用骨架屏）
-    this.setData({ loading: true, loadingMore: !reset });
+    const loadingPatch = { loading: true, loadingMore: !reset };
+    if (reset) {
+      loadingPatch.loadError = false;
+    }
+    this.setData(loadingPatch);
 
     const params = {
       pageNum,
@@ -450,12 +574,12 @@ Page({
       // 已有更新的请求在途，忽略本次过期数据
       if (seq !== this._goodsReqSeq) return;
       console.log('[商品选购] 商品列表返回结果:', res);
-      const rawList = res.list || res.records || [];
+      const rawList = Array.isArray(res) ? res : ((res && (res.list || res.records)) || []);
       const list = rawList.map((item) => ({
         ...item,
         coverImage: formatImageUrl(item.coverImage)
       }));
-      const total = res.total !== undefined ? res.total : rawList.length;
+      const total = res && res.total !== undefined ? res.total : rawList.length;
       const currentList = reset ? list : this.data.goodsList.concat(list);
       const hasMore = currentList.length < total;
 
@@ -464,13 +588,29 @@ Page({
         pageNum: pageNum + 1,
         hasMore,
         loading: false,
-        loadingMore: false
+        loadingMore: false,
+        loadError: false
       });
     }).catch((err) => {
       if (seq !== this._goodsReqSeq) return;
       console.error('[商品选购] 加载商品列表异常:', err);
-      this.setData({ loading: false, loadingMore: false });
+      // 首屏首次失败时静默重试一次，规避冷启动首帧请求失败导致的空白
+      if (reset && attempt < 1 && this.data.goodsList.length === 0) {
+        console.warn('[商品选购] 商品首屏加载失败，300ms 后自动重试一次');
+        return new Promise((r) => setTimeout(r, 300)).then(() => this.loadGoods(true, attempt + 1));
+      }
+      this.setData({
+        loading: false,
+        loadingMore: false,
+        loadError: reset ? true : this.data.loadError
+      });
     });
+  },
+
+  /** 空态点击「重新加载」 */
+  onRetryLoadGoods() {
+    this.setData({ loadError: false, pageNum: 1, hasMore: true });
+    this.loadGoods(true);
   },
 
   /**
@@ -489,6 +629,7 @@ Page({
       goodsList: [],
       loading: true
     }, () => {
+      this.resetGoodsScroll();
       this.loadGoods(true);
     });
   },
@@ -527,8 +668,18 @@ Page({
       goodsList: [],
       loading: true
     }, () => {
+      // 切换分类后商品列表回到顶部，避免停留在上一分类的滚动位置
+      this.resetGoodsScroll();
       this.loadGoods(true);
     });
+  },
+
+  /**
+   * 商品列表回到顶部：
+   * scroll-view 的 scroll-top 值未变化时不会触发滚动，这里交替一个极小值强制生效
+   */
+  resetGoodsScroll() {
+    this.setData({ goodsScrollTop: this.data.goodsScrollTop === 0 ? 1 : 0 });
   },
 
   onKeywordInput(e) {
@@ -573,8 +724,41 @@ Page({
     });
   },
 
+  /** 歇业提示 */
+  tipShopClosed() {
+    wx.showModal({
+      title: '门店已歇业',
+      content: (this.data.shopInfo && this.data.shopInfo.statusTip) || '该门店当前处于歇业状态，暂不接单。可切换其他门店或稍后再来～',
+      showCancel: false,
+      confirmText: '我知道了'
+    });
+  },
+
+  /**
+   * 点击右上角营业状态标签：展示该门店的营业时间
+   * （营业时间不再常驻展示在店铺横幅上，避免信息堆叠）
+   */
+  onTapShopStatus() {
+    const shop = this.data.shopInfo || {};
+    const statusText = shop.statusText || '营业中';
+    const hours = (shop.businessHours || '').trim() || '06:30 - 20:00';
+
+    wx.showModal({
+      title: statusText,
+      content: `营业时间：${hours}`,
+      showCancel: false,
+      confirmText: '我知道了',
+      confirmColor: '#FF6B6B'
+    });
+  },
+
   // ---------------- 选规格与直接购买 ----------------
   openSpecModal(e) {
+    // 歇业中相当于关门：不允许加购
+    if (isOrderBlocked(this.data.shopInfo)) {
+      this.tipShopClosed();
+      return;
+    }
     const product = e.currentTarget.dataset.item;
     const specsList = normalizeSpecsList(product.specsJson);
 
@@ -682,7 +866,11 @@ Page({
   // 刷新当前门店购物车
   refreshCart() {
     const shopId = this.data.currentShopId || (this.data.shopInfo && this.data.shopInfo.id) || app.globalData.currentShopId || '';
-    if (!shopId) return;
+    if (!shopId) {
+      // 无门店时也要复位，避免退出登录/切换身份后角标仍保留旧数量
+      this.setData({ cartCount: 0, cartTotalAmount: '0.00', cartList: [] });
+      return;
+    }
 
     const summary = cart.getCartSummary(shopId);
     this.setData({
@@ -694,7 +882,13 @@ Page({
 
   // 规格弹窗中点击「加入购物车」
   onConfirmAddToCart() {
-    if (!auth.requireLogin({ content: '登录后才能将鲜肉加入购物车' })) return;
+    if (!auth.requireLogin({ content: '登录后才能将商品加入购物车' })) return;
+
+    // 歇业中相当于关门：不允许加购
+    if (isOrderBlocked(this.data.shopInfo)) {
+      this.tipShopClosed();
+      return;
+    }
 
     const product = this.data.currentProduct;
     const quantity = this.data.buyQuantity;
@@ -787,6 +981,12 @@ Page({
   goToCartCheckout() {
     if (this.data.cartCount <= 0) {
       wx.showToast({ title: '购物车还是空的哦～', icon: 'none' });
+      return;
+    }
+
+    // 歇业中相当于关门，直接拦截下单入口
+    if (isOrderBlocked(this.data.shopInfo)) {
+      this.tipShopClosed();
       return;
     }
 

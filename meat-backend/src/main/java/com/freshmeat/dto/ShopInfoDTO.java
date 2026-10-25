@@ -37,6 +37,21 @@ public class ShopInfoDTO {
     /** 是否开通外卖配送: 1-开通, 0-未开通 */
     private Integer takeoutEnabled;
 
+    /** 到店自取最小备货时间(分钟) */
+    private Integer pickupMinMinutes;
+
+    /** 同城商家配送最小送达时间(分钟) */
+    private Integer merchantMinMinutes;
+
+    /** 外卖配送最小送达时间(分钟) */
+    private Integer takeoutMinMinutes;
+
+    /** 期望时间可选档位间隔(分钟)：15/30/45/60 */
+    private Integer timeSlotMinutes;
+
+    /** 可预约天数(含当天)：0-仅当天, 1-当天+次日 ... */
+    private Integer reserveDays;
+
     /** 多阶梯同城配送规则列表 */
     private java.util.List<com.freshmeat.entity.ShopDeliveryRule> deliveryRules;
 
@@ -49,6 +64,33 @@ public class ShopInfoDTO {
     /** 快递特殊地区规则（运费差异 / 停发地区） */
     private java.util.List<com.freshmeat.entity.ShopExpressRegion> expressRegions;
 
+    /* ================= 配送方式 × 支付方式开关（1-开启, 0-关闭，不传则保持原值） ================= */
+
+    /** 到店自取-微信线上支付 */
+    private Integer pickupWxpayEnabled;
+
+    /** 到店自取-货到付款 */
+    private Integer pickupCodEnabled;
+
+    /** 同城商家配送-微信线上支付 */
+    private Integer merchantWxpayEnabled;
+
+    /** 同城商家配送-货到付款 */
+    private Integer merchantCodEnabled;
+
+    /** 外卖配送-微信线上支付 */
+    private Integer takeoutWxpayEnabled;
+
+    /** 外卖配送-货到付款 */
+    private Integer takeoutCodEnabled;
+
+    /** 快递配送-微信线上支付 */
+    private Integer expressWxpayEnabled;
+
+    /** 快递配送-货到付款 */
+    private Integer expressCodEnabled;
+
+    /** 营业状态: 1-营业中(按每日营业时间自动判定), 2-休息中(手动), 3-歇业中(停止接单)；不传则保持原值 */
     private Integer status;
 
     private Integer sortOrder;

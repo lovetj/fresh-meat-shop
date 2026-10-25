@@ -21,6 +21,7 @@ CREATE TABLE `sys_user` (
   `phone` VARCHAR(20) DEFAULT '' COMMENT '联系电话',
   `role` VARCHAR(20) NOT NULL DEFAULT 'CUSTOMER' COMMENT '角色: CUSTOMER-顾客, ADMIN-商家管理员',
   `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态: 1-启用, 0-禁用',
+  `session_key` VARCHAR(64) DEFAULT NULL COMMENT '当前有效登录会话标识(单设备登录，登录时刷新)',
   `last_login_time` DATETIME DEFAULT NULL COMMENT '最近登录时间',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -52,13 +53,26 @@ CREATE TABLE `shop_info` (
   `address` VARCHAR(200) NOT NULL DEFAULT '深圳市南山区科技园肉菜综合批发市场A区102' COMMENT '商铺详细地址',
   `longitude` DECIMAL(10, 7) NOT NULL DEFAULT 113.9463160 COMMENT '店铺经度',
   `latitude` DECIMAL(10, 7) NOT NULL DEFAULT 22.5401390 COMMENT '店铺纬度',
-  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '营业状态: 1-正常营业, 0-休息中',
+  `status` TINYINT NOT NULL DEFAULT 1 COMMENT '营业状态: 1-营业中(按每日营业时间自动判定), 2-休息中(手动,不受时间限制), 3-歇业中(停止接单)',
   `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序权重(越大越前)',
   `merchant_delivery_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '是否开通同城商家配送: 1-开通, 0-未开通',
   `takeout_enabled` TINYINT NOT NULL DEFAULT 0 COMMENT '是否开通外卖配送: 1-开通, 0-未开通(需求待定, 暂作配置预留)',
   `express_enabled` TINYINT NOT NULL DEFAULT 0 COMMENT '是否开通快递配送: 1-开通, 0-未开通',
   `express_fee` DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '快递基础运费(元)',
   `express_regions` TEXT DEFAULT NULL COMMENT '快递特殊地区规则JSON: [{region,fee,deliverable}]',
+  `pickup_min_minutes` INT NOT NULL DEFAULT 30 COMMENT '到店自取最小备货时间(分钟)',
+  `merchant_min_minutes` INT NOT NULL DEFAULT 45 COMMENT '同城商家配送最小送达时间(分钟)',
+  `takeout_min_minutes` INT NOT NULL DEFAULT 45 COMMENT '外卖配送最小送达时间(分钟)',
+  `time_slot_minutes` INT NOT NULL DEFAULT 30 COMMENT '期望时间可选档位间隔(分钟)',
+  `reserve_days` INT NOT NULL DEFAULT 1 COMMENT '可预约天数(含当天): 0-仅当天, 1-当天+次日',
+  `pickup_wxpay_enabled` TINYINT NOT NULL DEFAULT 0 COMMENT '到店自取-微信线上支付: 1-开启, 0-关闭',
+  `pickup_cod_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '到店自取-货到付款: 1-开启, 0-关闭',
+  `merchant_wxpay_enabled` TINYINT NOT NULL DEFAULT 0 COMMENT '同城商家配送-微信线上支付: 1-开启, 0-关闭',
+  `merchant_cod_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '同城商家配送-货到付款: 1-开启, 0-关闭',
+  `takeout_wxpay_enabled` TINYINT NOT NULL DEFAULT 0 COMMENT '外卖配送-微信线上支付: 1-开启, 0-关闭',
+  `takeout_cod_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '外卖配送-货到付款: 1-开启, 0-关闭',
+  `express_wxpay_enabled` TINYINT NOT NULL DEFAULT 0 COMMENT '快递配送-微信线上支付: 1-开启, 0-关闭',
+  `express_cod_enabled` TINYINT NOT NULL DEFAULT 1 COMMENT '快递配送-货到付款: 1-开启, 0-关闭',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`)
@@ -243,6 +257,9 @@ CREATE TABLE `order_info` (
   
   -- 自提核销凭据
   `pickup_code` VARCHAR(16) DEFAULT NULL COMMENT '自提核销码(自取订单生成的提货凭据)',
+
+  -- 顾客期望送达/自取时间（按店铺预约时效配置生成的可选档位）
+  `expected_time` DATETIME DEFAULT NULL COMMENT '顾客期望送达/到店自取时间',
 
   -- 快递配送信息
   `express_company` VARCHAR(50) DEFAULT NULL COMMENT '快递公司名称(快递配送)',

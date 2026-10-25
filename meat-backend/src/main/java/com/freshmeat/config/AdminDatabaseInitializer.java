@@ -145,7 +145,54 @@ public class AdminDatabaseInitializer implements ApplicationRunner {
                 } catch (Exception ignored) {}
             }
 
-            // (5) 初始化多店铺示例数据
+            // (5) sys_user 增加 session_key 列（单设备登录会话标识）
+            Integer hasSessionKey = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'session_key'",
+                    Integer.class
+            );
+            if (hasSessionKey == null || hasSessionKey == 0) {
+                log.info("检测到 sys_user 表缺少 session_key 列，自动执行添加...");
+                jdbcTemplate.execute("ALTER TABLE `sys_user` ADD COLUMN `session_key` VARCHAR(64) DEFAULT NULL COMMENT '当前有效登录会话标识(单设备登录)' AFTER `status`");
+            }
+
+            // (6) 营业状态三态重构：1-营业中, 2-休息中, 3-歇业中（历史 0「休息中」迁移为 2）
+            Integer threeStateReady = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'shop_info' AND COLUMN_NAME = 'status' AND COLUMN_COMMENT LIKE '%歇业%'",
+                    Integer.class
+            );
+            if (threeStateReady == null || threeStateReady == 0) {
+                log.info("检测到店铺营业状态仍为两态，自动升级为三态并迁移历史数据...");
+                try {
+                    jdbcTemplate.execute("ALTER TABLE `shop_info` MODIFY COLUMN `status` TINYINT NOT NULL DEFAULT 1 " +
+                            "COMMENT '营业状态: 1-营业中(按每日营业时间自动判定), 2-休息中(手动,不受时间限制), 3-歇业中(停止接单)'");
+                    int migrated = jdbcTemplate.update("UPDATE `shop_info` SET `status` = 2 WHERE `status` = 0");
+                    log.info("营业状态三态迁移完成，历史休息中数据迁移 {} 条", migrated);
+                } catch (Exception e) {
+                    log.warn("营业状态三态迁移失败，请手动执行 sql/upgrade_shop_status_three_state.sql: {}", e.getMessage());
+                }
+            }
+
+            // (6.1) 预约时效配置 + 订单期望送达时间：老库平滑升级
+            ensureColumn("shop_info", "pickup_min_minutes",
+                    "ALTER TABLE `shop_info` ADD COLUMN `pickup_min_minutes` INT NOT NULL DEFAULT 30 " +
+                            "COMMENT '到店自取最小备货时间(分钟)' AFTER `express_regions`");
+            ensureColumn("shop_info", "merchant_min_minutes",
+                    "ALTER TABLE `shop_info` ADD COLUMN `merchant_min_minutes` INT NOT NULL DEFAULT 45 " +
+                            "COMMENT '同城商家配送最小送达时间(分钟)' AFTER `pickup_min_minutes`");
+            ensureColumn("shop_info", "takeout_min_minutes",
+                    "ALTER TABLE `shop_info` ADD COLUMN `takeout_min_minutes` INT NOT NULL DEFAULT 45 " +
+                            "COMMENT '外卖配送最小送达时间(分钟)' AFTER `merchant_min_minutes`");
+            ensureColumn("shop_info", "time_slot_minutes",
+                    "ALTER TABLE `shop_info` ADD COLUMN `time_slot_minutes` INT NOT NULL DEFAULT 30 " +
+                            "COMMENT '期望时间可选档位间隔(分钟)' AFTER `takeout_min_minutes`");
+            ensureColumn("shop_info", "reserve_days",
+                    "ALTER TABLE `shop_info` ADD COLUMN `reserve_days` INT NOT NULL DEFAULT 1 " +
+                            "COMMENT '可预约天数(含当天): 0-仅当天' AFTER `time_slot_minutes`");
+            ensureColumn("order_info", "expected_time",
+                    "ALTER TABLE `order_info` ADD COLUMN `expected_time` DATETIME DEFAULT NULL " +
+                            "COMMENT '顾客期望送达/到店自取时间' AFTER `pickup_code`");
+
+            // (7) 初始化多店铺示例数据
             Integer shopCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM `shop_info`", Integer.class);
             if (shopCount == null || shopCount <= 1) {
                 log.info("初始化预置多门店示例 (西丽万科分店、前海中心店)...");
@@ -160,6 +207,22 @@ public class AdminDatabaseInitializer implements ApplicationRunner {
             log.info("管理员鉴权与多店铺数据库结构自检完成！超级管理员账号 (admin / admin123) 与分店已就绪。");
         } catch (Exception e) {
             log.warn("管理员鉴权数据库自检轻微异常(可能受限于只读权限或连接延迟): {}", e.getMessage());
+        }
+    }
+
+    /** 列缺失时自动补齐 DDL，便于老库平滑升级 */
+    private void ensureColumn(String table, String column, String alterSql) {
+        try {
+            Integer exists = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                    Integer.class, table, column);
+            if (exists == null || exists == 0) {
+                log.info("检测到 {} 表缺少 {} 列，自动执行添加...", table, column);
+                jdbcTemplate.execute(alterSql);
+            }
+        } catch (Exception e) {
+            log.warn("自动补齐 {}.{} 列失败，请手动执行 sql/upgrade_expected_delivery_time.sql: {}",
+                    table, column, e.getMessage());
         }
     }
 }

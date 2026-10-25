@@ -1,4 +1,4 @@
-/* pages/merchant/shop-setting/index.wxss - 鲜肉铺 掌柜店铺与配送范围设置 */
+/* pages/merchant/shop-setting/index.wxss - 掌柜店铺与配送范围设置 */
 
 .container {
   padding: 24rpx;
@@ -17,11 +17,30 @@
   border: 2rpx solid #FFF2EF;
 }
 
+/* 一级标题：卡片标题（左侧主色竖条，字号/字重最高，便于与正文区分） */
 .section-title {
-  font-size: 30rpx;
+  position: relative;
+  display: flex;
+  align-items: center;
+  font-size: 34rpx;
   font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0.5rpx;
   color: var(--text-main);
-  margin-bottom: 16rpx;
+  margin-bottom: 12rpx;
+  padding-left: 20rpx;
+}
+
+.section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8rpx;
+  height: 30rpx;
+  border-radius: 4rpx;
+  background: var(--primary-gradient);
 }
 
 .section-header-row {
@@ -56,11 +75,13 @@
   border: 1rpx solid #BAE7FF;
 }
 
+/* 二级说明文字：卡片标题下的辅助说明 */
 .section-desc {
-  font-size: 22rpx;
-  color: var(--text-sub);
   display: block;
-  margin: 10rpx 0 16rpx;
+  font-size: 23rpx;
+  line-height: 1.6;
+  color: #9A9A9A;
+  margin: 10rpx 0 20rpx;
 }
 
 .form-item {
@@ -85,10 +106,12 @@
   flex-direction: column;
 }
 
+/* 表单标签：介于卡片标题与正文之间，字重略轻于标题 */
 .label {
-  font-size: 28rpx;
-  font-weight: 700;
-  color: var(--text-main);
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #5C514C;
+  letter-spacing: 0.2rpx;
 }
 
 .sub-label {
@@ -105,7 +128,8 @@
 
 .input {
   flex: 1;
-  font-size: 28rpx;
+  font-size: 27rpx;
+  font-weight: 500;
   text-align: right;
   color: var(--text-main);
 }
@@ -185,6 +209,87 @@
   color: var(--primary);
 }
 
+/* 营业状态三态选择 */
+.status-seg {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 16rpx;
+  padding: 8rpx;
+  background-color: #FFF9F5;
+  border: 2rpx solid #FFE5DB;
+  border-radius: 16rpx;
+}
+
+.seg-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  height: 72rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #999999;
+  transition: all 0.15s ease;
+}
+
+.seg-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background-color: #CCCCCC;
+}
+
+.seg-active .seg-dot {
+  background-color: #FFFFFF;
+}
+
+.seg-active.seg-open {
+  background-color: var(--mint-green);
+  color: #FFFFFF;
+}
+
+.seg-active.seg-rest {
+  background-color: #FFA940;
+  color: #FFFFFF;
+}
+
+.seg-active.seg-closed {
+  background-color: #B0B0B0;
+  color: #FFFFFF;
+}
+
+.status-hint {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 23rpx;
+  line-height: 1.6;
+}
+
+.status-hint-open {
+  color: #2E9E4F;
+}
+
+.status-hint-rest {
+  color: #B26A00;
+}
+
+.status-hint-closed {
+  color: #8C8C8C;
+}
+
+.status-preview {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  color: var(--text-sub);
+}
+
+.preview-val {
+  font-weight: 700;
+}
+
 .textarea {
   width: 100%;
   height: 140rpx;
@@ -198,6 +303,63 @@
   margin-top: 14rpx;
 }
 
+/* ================= 配送方式 × 支付方式开关 ================= */
+.pay-config {
+  margin-top: 4rpx;
+  padding: 16rpx 20rpx;
+  background-color: #FFF9F5;
+  border: 2rpx solid #FFE5DB;
+  border-radius: 16rpx;
+}
+
+.pay-config-title {
+  display: block;
+  font-size: 23rpx;
+  font-weight: 700;
+  letter-spacing: 0.3rpx;
+  color: #9A9A9A;
+  margin-bottom: 6rpx;
+}
+
+.pay-switch-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 14rpx 0;
+  border-bottom: 1rpx dashed #FFE9E0;
+}
+
+.pay-switch-item:last-child {
+  border-bottom: none;
+  padding-bottom: 4rpx;
+}
+
+.pay-switch-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pay-switch-name {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #5C514C;
+}
+
+.pay-switch-desc {
+  margin-top: 4rpx;
+  font-size: 21rpx;
+  line-height: 1.5;
+  color: var(--text-light);
+}
+
+.pay-switch-item switch {
+  flex: 0 0 auto;
+  transform: scale(0.82);
+}
+
 /* 提示卡片 */
 .rule-tip-card {
   background-color: #FFFBE6;
@@ -209,18 +371,19 @@
 }
 
 .rule-tip-title {
-  font-size: 26rpx;
+  font-size: 28rpx;
   font-weight: 800;
-  color: #D48806;
-  margin-bottom: 10rpx;
+  letter-spacing: 0.3rpx;
+  color: #B26A00;
+  margin-bottom: 12rpx;
 }
 
 .rule-tip-p {
-  font-size: 22rpx;
-  color: #874D00;
-  line-height: 1.5;
   display: block;
-  margin-bottom: 6rpx;
+  font-size: 23rpx;
+  line-height: 1.65;
+  color: #8C5A00;
+  margin-bottom: 8rpx;
 }
 
 /* 添加阶梯 / 添加地区按钮（靠右对齐） */
@@ -319,9 +482,11 @@
   flex-direction: column;
 }
 
+/* 阶梯卡片内的字段说明：字号最小、颜色最浅 */
 .rule-grid-label {
   font-size: 22rpx;
-  color: var(--text-sub);
+  font-weight: 500;
+  color: #9A9A9A;
   margin-bottom: 8rpx;
 }
 
@@ -421,10 +586,11 @@
   border-top: 2rpx dashed #FFEDE7;
 }
 
+/* 三级小标题：卡片内的分组标题 */
 .region-head-title {
-  font-size: 26rpx;
+  font-size: 27rpx;
   font-weight: 700;
-  color: var(--text-main);
+  color: #5C514C;
 }
 
 .region-list {

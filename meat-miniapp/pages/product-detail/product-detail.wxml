@@ -24,7 +24,7 @@
   <!-- 规格与加工服务 (两级联动：先选加工方式，再选具体规格) -->
   <view class="card spec-section" wx:if="{{specsList.length > 0}}">
     <view class="spec-header-row">
-      <text class="section-title">🔪 选购加工与规格定制</text>
+      <text class="section-title">选购加工与规格定制</text>
     </view>
 
     <!-- 步骤一：选择加工方式 -->
@@ -65,7 +65,7 @@
   <!-- 购买数量 -->
   <view class="card qty-section">
     <view class="qty-info">
-      <text class="section-title">⚖️ 购买数量</text>
+      <text class="section-title">购买数量</text>
       <text class="qty-unit">计价单位：{{product.unit}}</text>
     </view>
     <view class="stepper">
@@ -77,7 +77,7 @@
 
   <!-- 图文介绍 -->
   <view class="card desc-section">
-    <text class="section-title">📖 鲜肉品质与加工说明</text>
+    <text class="section-title">品质与加工说明</text>
     <view class="desc-content">
       <text>{{product.description}}</text>
     </view>
@@ -89,14 +89,19 @@
     </view>
   </view>
 
-  <!-- 底部操作栏 (鲜肉详情中不下单，改为加入购物车) -->
+  <!-- 门店歇业提示 -->
+  <view class="shop-closed-tip" wx:if="{{shopClosed}}">
+    <text>🚪 {{shopStatusTip || '门店已歇业，暂不接单'}}</text>
+  </view>
+
+  <!-- 底部操作栏 (详情中不下单，改为加入购物车) -->
   <view class="bottom-bar">
     <button class="action-btn" bindtap="callShop">
       <text class="action-icon">📞</text>
       <text class="action-text">联系肉铺</text>
     </button>
-    <button class="btn-primary buy-now-btn" bindtap="onAddToCart">
-      <text>加入购物车</text>
+    <button class="btn-primary buy-now-btn {{shopClosed ? 'is-closed' : ''}}" bindtap="onAddToCart">
+      <text>{{shopClosed ? '门店歇业中' : '加入购物车'}}</text>
     </button>
   </view>
 
@@ -149,7 +154,6 @@
 
       <!-- 空状态 -->
       <view class="cart-empty-panel" wx:else>
-        <text class="cart-empty-icon">🐷</text>
         <text class="cart-empty-text">购物车还是空的呢～</text>
       </view>
 
@@ -159,8 +163,8 @@
           <text class="cart-total-label">预估合计 (未含运费)</text>
           <text class="cart-total-amount">¥{{cartTotalAmount}}</text>
         </view>
-        <button class="cart-checkout-btn {{cartCount === 0 ? 'btn-disabled' : ''}}" bindtap="goToCartCheckout">
-          <text>立即下单 ({{cartCount}})</text>
+        <button class="cart-checkout-btn {{cartCount === 0 ? 'btn-disabled' : ''}} {{shopClosed ? 'cart-checkout-closed' : ''}}" bindtap="goToCartCheckout">
+          <text>{{shopClosed ? '门店歇业中' : '立即下单 (' + cartCount + ')'}}</text>
         </button>
       </view>
     </view>

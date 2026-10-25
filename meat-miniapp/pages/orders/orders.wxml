@@ -1,33 +1,36 @@
 <!-- pages/orders/orders.wxml -->
 <view class="container">
-  <!-- 配送方式筛选：全部 / 仅到店自取 / 仅同城配送 / 仅快递配送 -->
-  <view class="type-filter-row">
-    <view class="type-pill {{deliveryType === '' ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="">
-      全部配送
-    </view>
-    <view class="type-pill {{deliveryType === 1 ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="{{1}}">
-      仅到店自取
-    </view>
-    <view class="type-pill {{deliveryType === 2 ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="{{2}}">
-      仅同城配送
-    </view>
-    <view class="type-pill {{deliveryType === 4 ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="{{4}}">
-      仅快递配送
-    </view>
-  </view>
-
-  <!-- 顶部状态筛选胶囊 -->
-  <scroll-view class="status-tabs-scroll" scroll-x enable-flex>
-    <view class="status-tabs">
-      <view wx:for="{{tabs}}" wx:key="status" class="tab-item {{currentStatus === item.status ? 'tab-active' : ''}}" bindtap="onSwitchTab" data-status="{{item.status}}">
-        <text>{{item.label}}</text>
-        <view class="badge" wx:if="{{statusCounts[item.countKey] > 0}}">{{statusCounts[item.countKey] > 99 ? '99+' : statusCounts[item.countKey]}}</view>
+  <!-- 顶部筛选区（吸顶） -->
+  <view class="filter-header">
+    <!-- 配送方式筛选：全部 / 仅到店自取 / 仅同城配送 / 仅快递配送 -->
+    <view class="type-filter-row">
+      <view class="type-pill {{deliveryType === '' ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="">
+        全部配送
+      </view>
+      <view class="type-pill {{deliveryType === 1 ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="{{1}}">
+        仅到店自取
+      </view>
+      <view class="type-pill {{deliveryType === 2 ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="{{2}}">
+        仅同城配送
+      </view>
+      <view class="type-pill {{deliveryType === 4 ? 'pill-active' : ''}}" bindtap="onDeliveryTypeChange" data-type="{{4}}">
+        仅快递配送
       </view>
     </view>
-  </scroll-view>
 
-  <!-- 订单列表 -->
-  <scroll-view class="order-list" scroll-y bindscrolltolower="onLoadMore">
+    <!-- 顶部状态筛选胶囊 -->
+    <scroll-view class="status-tabs-scroll" scroll-x enable-flex>
+      <view class="status-tabs">
+        <view wx:for="{{tabs}}" wx:key="status" class="tab-item {{currentStatus === item.status ? 'tab-active' : ''}}" bindtap="onSwitchTab" data-status="{{item.status}}">
+          <text>{{item.label}}</text>
+          <view class="badge" wx:if="{{statusCounts[item.countKey] > 0}}">{{statusCounts[item.countKey] > 99 ? '99+' : statusCounts[item.countKey]}}</view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 订单列表：直接随页面滚动，下拉即触发系统自带的下拉刷新 -->
+  <view class="order-list">
     <view wx:if="{{orderList.length === 0 && !loading}}" class="empty-box">
       <text class="empty-icon">🍖</text>
       <text class="empty-text">{{deliveryType === '' ? '还没有订单哦～' : '没有该配送方式的订单'}}</text>
@@ -44,15 +47,16 @@
       <!-- 订单头：配送方式 + 状态软色标签 -->
       <view class="order-header">
         <view class="header-left">
-          <text class="delivery-badge {{item.deliveryType === 1 ? 'badge-orange' : 'badge-blue'}}">{{item.deliveryTypeDesc}}</text>
+          <text class="delivery-badge dlv-{{item.deliveryType}}">{{item.deliveryTypeDesc}}</text>
           <text class="pickup-pill" wx:if="{{item.deliveryType === 1 && item.pickupCode}}">提货码 {{item.pickupCode}}</text>
         </view>
         <text class="status-chip st-{{item.status}}">{{item.statusDesc}}</text>
       </view>
 
-      <!-- 下单时间 -->
+      <!-- 下单时间与期望送达/自取时间 -->
       <view class="order-time-row">
         <text class="order-time">下单时间：{{item.createTime}}</text>
+        <view class="expected-time-chip" wx:if="{{item.expectedTimeStr && item.status !== 4}}">{{item.deliveryType === 1 ? '期望自取' : '期望送达'}} {{item.expectedTimeStr}}</view>
       </view>
 
       <!-- 商品缩略图横排：图片区最多占屏幕 50%，超出时用「更多」提示 -->
@@ -101,5 +105,5 @@
       <text wx:elif="{{hasMore}}">上拉加载更多...</text>
       <text wx:else>已加载全部订单</text>
     </view>
-  </scroll-view>
+  </view>
 </view>

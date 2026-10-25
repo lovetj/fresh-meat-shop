@@ -1,6 +1,7 @@
 // pages/merchant/index/index.js
 const auth = require('../../../utils/auth');
 const request = require('../../../utils/request');
+const { normalizeShopStatus } = require('../../../utils/shop-status');
 const app = getApp();
 
 Page({
@@ -31,7 +32,7 @@ Page({
 
   loadMyShops() {
     request.get('/shop/admin/my-shops', {}, { silent: true }).then((list) => {
-      const myShops = Array.isArray(list) ? list : [];
+      const myShops = (Array.isArray(list) ? list : []).map(normalizeShopStatus);
       let savedShopId = wx.getStorageSync('adminShopId');
       let currentShop = myShops.find(s => s.id === savedShopId);
 

@@ -85,4 +85,15 @@ public interface ShopInfoService extends IService<ShopInfo> {
      * 按店铺快递配置与收货地址计算快递运费与是否可发货（下单时复用，防止前端传值）
      */
     ExpressCheckVO calculateExpress(ShopInfo shop, UserAddress address);
+
+    /**
+     * 顾客端：查询门店当前是否允许下单（歇业中禁止下单）
+     */
+    com.freshmeat.dto.ShopOrderCheckVO checkShopOrderable(String shopId);
+
+    /**
+     * 顾客端：获取「期望送达 / 期望到店自取」时间可选项
+     * 由店铺最小备货/配送时效、档位间隔、可预约天数与每日营业时间计算
+     */
+    com.freshmeat.dto.DeliveryTimeOptionsVO getDeliveryTimeOptions(String shopId, Integer deliveryType);
 }

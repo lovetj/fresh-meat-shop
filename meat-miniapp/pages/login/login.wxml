@@ -5,7 +5,6 @@
     <view class="brand-deco">🥩</view>
     <view class="brand-deco-2">🐷</view>
     <view class="brand-logo">🐷</view>
-    <text class="brand-name">鲜肉铺</text>
     <text class="brand-slogan">登录后同步订单、收货地址与偏好</text>
   </view>
 
@@ -16,7 +15,6 @@
       <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
         <image wx:if="{{avatarUrl}}" class="avatar-img" src="{{avatarUrl}}" mode="aspectFill"/>
         <view wx:else class="avatar-placeholder">
-          <text class="avatar-icon">👤</text>
           <text class="avatar-tip">点击获取微信头像</text>
         </view>
       </button>

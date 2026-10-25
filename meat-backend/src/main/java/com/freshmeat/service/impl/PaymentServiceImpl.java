@@ -189,9 +189,22 @@ public class PaymentServiceImpl extends ServiceImpl<PaymentRecordMapper, Payment
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean mockPaySuccess(String orderId) {
+        // 1. 仅 Mock 支付模式可用，避免真实环境被直接置为已支付
+        if (!Boolean.TRUE.equals(wechatProperties.getPay().getMock())) {
+            throw new BusinessException(403, "未开启模拟支付，禁止调用该接口");
+        }
+
+        // 2. 必须登录且只能操作本人订单
+        String currentUserId = SecurityContextUtil.getUserId();
+        if (currentUserId == null) {
+            throw new BusinessException(401, "请先登录");
+        }
         OrderInfo order = orderMapper.selectById(orderId);
         if (order == null) {
             throw new BusinessException("订单不存在");
+        }
+        if (!currentUserId.equals(order.getUserId())) {
+            throw new BusinessException(403, "无权操作该订单");
         }
         if (order.getStatus() != OrderInfo.STATUS_PENDING_PAY) {
             throw new BusinessException("订单不是待支付状态");

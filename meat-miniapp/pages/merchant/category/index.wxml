@@ -1,4 +1,4 @@
-<!-- pages/merchant/category/index.wxml - 鲜肉铺 鲜肉分类管理 -->
+<!-- pages/merchant/category/index.wxml - 分类管理 -->
 <view class="container">
   <!-- 0. 门店切换栏 (分店独立分类管理) -->
   <view class="shop-switch-bar" wx:if="{{shopList.length > 0}}">
@@ -97,7 +97,7 @@
   <view class="empty-box" wx:elif="{{filteredList.length === 0}}">
     <text class="empty-icon">📑</text>
     <text class="empty-text">{{searchKeyword ? '未搜索到匹配分类' : '当前门店暂无分类数据'}}</text>
-    <text class="empty-sub">{{searchKeyword ? '换个关键词试试吧' : '立即为本店创建分类，方便顾客挑选新鲜肉品'}}</text>
+    <text class="empty-sub">{{searchKeyword ? '换个关键词试试吧' : '立即为本店创建分类，方便顾客挑选商品'}}</text>
     <button class="empty-btn" bindtap="openAddModal" wx:if="{{!searchKeyword}}">+ 新增分类</button>
   </view>
 
@@ -197,7 +197,7 @@
       <view class="sheet-drag-bar"></view>
       <view class="sheet-header">
         <view class="sheet-title-box">
-          <text class="sheet-title">{{isEdit ? '编辑鲜肉分类' : '新增鲜肉分类'}}</text>
+          <text class="sheet-title">{{isEdit ? '编辑分类' : '新增分类'}}</text>
           <text class="sheet-sub">设置当前门店选购分类名称与展示排序</text>
         </view>
         <view class="sheet-close" bindtap="closeModal">✕</view>

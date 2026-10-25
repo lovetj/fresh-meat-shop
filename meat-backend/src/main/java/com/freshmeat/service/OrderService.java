@@ -3,6 +3,7 @@ package com.freshmeat.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.freshmeat.common.PageResult;
 import com.freshmeat.dto.OrderCreateDTO;
+import com.freshmeat.dto.OrderPrecheckDTO;
 import com.freshmeat.dto.OrderQueryDTO;
 import com.freshmeat.dto.OrderStatusUpdateDTO;
 import com.freshmeat.dto.OrderVO;
@@ -14,6 +15,17 @@ public interface OrderService extends IService<OrderInfo> {
      * 顾客直接下单 (自取 / 商家配送 / 距离校验 / 扣减库存)
      */
     OrderVO createOrder(OrderCreateDTO dto);
+
+    /**
+     * 下单前统一校验（只读，不写库）
+     *
+     * <p>一次性校验：商品是否已删除/下架、分类是否已删除/停用、门店是否歇业、配送范围/起送价是否满足、
+     * 商品价格与规格是否与页面一致、期望送达时间是否满足、配送费/快递费与实付金额是否正确。</p>
+     *
+     * @param dto 下单参数 + 页面展示快照
+     * @return 校验结论（canOrder=false 时 message 可直接提示顾客）
+     */
+    com.freshmeat.dto.OrderPrecheckVO precheck(OrderPrecheckDTO dto);
 
     /**
      * 顾客端：查询我的订单列表 (分页、状态筛选)

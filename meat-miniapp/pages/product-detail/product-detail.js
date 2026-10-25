@@ -3,6 +3,7 @@ const app = getApp();
 const request = require('../../utils/request');
 const auth = require('../../utils/auth');
 const cart = require('../../utils/cart');
+const { normalizeShopStatus, isOrderBlocked } = require('../../utils/shop-status');
 const { formatImageUrl, normalizeSpecsList } = require('../../utils/util');
 
 Page({
@@ -21,7 +22,11 @@ Page({
     cartCount: 0,
     cartTotalAmount: '0.00',
     cartList: [],
-    showCartDrawer: false
+    showCartDrawer: false,
+
+    // 门店是否歇业（歇业中禁止加购与下单）
+    shopClosed: false,
+    shopStatusTip: ''
   },
 
   onLoad(options) {
@@ -29,10 +34,39 @@ Page({
       this.setData({ productId: options.id });
       this.loadDetail(options.id);
     }
+    this.refreshShopStatus();
   },
 
   onShow() {
     this.refreshCart();
+    this.refreshShopStatus();
+  },
+
+  /** 刷新门店营业状态：歇业中禁用加购与下单入口 */
+  refreshShopStatus() {
+    const shopId = (this.data.product && this.data.product.shopId)
+      || app.globalData.currentShopId
+      || '';
+    const params = shopId ? { shopId } : {};
+    request.get('/shop/info', params, { silent: true }).then((res) => {
+      if (!res) return;
+      const shop = normalizeShopStatus(res);
+      app.globalData.shopInfo = shop;
+      this.setData({
+        shopClosed: shop.displayStatus === 3,
+        shopStatusTip: shop.statusTip || ''
+      });
+    }).catch(() => {});
+  },
+
+  /** 歇业提示 */
+  tipShopClosed() {
+    wx.showModal({
+      title: '门店已歇业',
+      content: this.data.shopStatusTip || '该门店当前处于歇业状态，暂不接单。可返回首页切换其他门店或稍后再来～',
+      showCancel: false,
+      confirmText: '我知道了'
+    });
   },
 
   loadDetail(id) {
@@ -78,7 +112,11 @@ Page({
   // 刷新当前门店购物车缓存状态
   refreshCart() {
     const shopId = (this.data.product && this.data.product.shopId) || app.globalData.currentShopId || '';
-    if (!shopId) return;
+    if (!shopId) {
+      // 无门店时也要复位，避免退出登录/切换身份后角标仍保留旧数量
+      this.setData({ cartCount: 0, cartTotalAmount: '0.00', cartList: [] });
+      return;
+    }
 
     const summary = cart.getCartSummary(shopId);
     this.setData({
@@ -138,7 +176,13 @@ Page({
 
   // 加入购物车（详情页中不下单）
   onAddToCart() {
-    if (!auth.requireLogin({ content: '登录后才能将鲜肉加入购物车' })) return;
+    if (!auth.requireLogin({ content: '登录后才能将商品加入购物车' })) return;
+
+    // 歇业中相当于关门：不允许加购
+    if (this.data.shopClosed) {
+      this.tipShopClosed();
+      return;
+    }
 
     const { product, buyQuantity, specsList, selectedMethod, selectedOption } = this.data;
     if (!product) return;
@@ -223,6 +267,12 @@ Page({
   goToCartCheckout() {
     if (this.data.cartCount <= 0) {
       wx.showToast({ title: '购物车还是空的哦～', icon: 'none' });
+      return;
+    }
+
+    // 歇业中相当于关门，直接拦截下单入口
+    if (this.data.shopClosed || isOrderBlocked(app.globalData.shopInfo)) {
+      this.tipShopClosed();
       return;
     }
 

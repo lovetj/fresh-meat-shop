@@ -6,6 +6,16 @@
   min-height: 100vh;
 }
 
+/* 卡片标题字号与「订单详情」保持一致（28rpx / 800 粗） */
+.section-title {
+  font-size: 28rpx;
+}
+
+/* 标题行内与右侧已选时间标签垂直对齐 */
+.time-head-row .section-title {
+  margin-bottom: 0;
+}
+
 /* ================= 1. 配送方式三选一可爱大图标卡片 ================= */
 .delivery-tabs-card {
   display: flex;
@@ -16,6 +26,46 @@
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-warm);
   border: 2rpx solid #FFF2EF;
+}
+
+/* 门店营业状态提示：休息中 / 歇业中 */
+.shop-state-bar {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin: 0 24rpx 24rpx;
+  padding: 18rpx 22rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.state-rest {
+  background-color: #FFF7E6;
+  border: 2rpx solid #FFE0A3;
+  color: #B26A00;
+}
+
+.state-closed {
+  background-color: #F5F5F5;
+  border: 2rpx solid #E0E0E0;
+  color: #8C8C8C;
+}
+
+.state-bar-icon {
+  flex-shrink: 0;
+  font-size: 26rpx;
+}
+
+.state-bar-text {
+  flex: 1;
+}
+
+.state-bar-action {
+  flex-shrink: 0;
+  padding-left: 12rpx;
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 .tab-item {
@@ -502,6 +552,19 @@
   margin-top: 4rpx;
   font-size: 21rpx;
   color: var(--text-sub);
+}
+
+/* 当前配送方式无可用的支付方式时的提示 */
+.pay-empty-tip {
+  display: block;
+  margin-top: 16rpx;
+  padding: 14rpx 18rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #B26A00;
+  background-color: #FFF7E6;
+  border: 1rpx dashed #FFE0A3;
+  border-radius: 14rpx;
 }
 
 /* 备注框（多行输入，留足高度便于填写切配要求） */
@@ -999,4 +1062,179 @@
   to {
     transform: translateY(0);
   }
+}
+
+/* ================= 期望送达 / 期望到店自取时间 ================= */
+.time-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.time-selected {
+  flex-shrink: 0;
+  height: 40rpx;
+  line-height: 40rpx;
+  margin-left: 16rpx;
+  padding: 0 18rpx;
+  box-sizing: border-box;
+  border-radius: var(--radius-round);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 24rpx;
+  font-weight: 800;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.time-tip {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  line-height: 1.5;
+  color: #B08D82;
+}
+
+.time-day-tabs {
+  display: flex;
+  white-space: nowrap;
+  margin-top: 20rpx;
+}
+
+.time-day-tab {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 132rpx;
+  margin-right: 16rpx;
+  padding: 14rpx 20rpx;
+  border-radius: 18rpx;
+  background-color: #FBF6F3;
+  border: 2rpx solid transparent;
+  transition: all 0.2s ease;
+}
+
+.time-day-tab.day-active {
+  background-color: #FFF4F4;
+  border-color: var(--primary);
+  box-shadow: 0 6rpx 16rpx rgba(255, 107, 107, 0.16);
+}
+
+.day-label {
+  font-size: 26rpx;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text-main);
+}
+
+.day-active .day-label {
+  color: var(--primary);
+}
+
+.day-date {
+  margin-top: 4rpx;
+  font-size: 20rpx;
+  line-height: 1.2;
+  color: var(--text-sub);
+}
+
+/* 折叠容器：默认最多展示 3 行（3 × 66rpx + 2 × 16rpx 间距 = 230rpx） */
+.time-slot-wrap {
+  position: relative;
+  margin-top: 20rpx;
+  max-height: 230rpx;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+}
+
+.time-slot-wrap.is-expanded {
+  max-height: none;
+}
+
+.time-slot-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.time-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 132rpx;
+  height: 66rpx;
+  padding: 0 16rpx;
+  box-sizing: border-box;
+  border-radius: 16rpx;
+  background-color: #FBF6F3;
+  border: 2rpx solid transparent;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+/* 用 flex 居中，避免 line-height 与边框叠加导致文字偏上/偏下 */
+.time-slot-label {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* 「展示全部 / 收起时段」入口 */
+.time-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+  margin-top: 12rpx;
+  padding: 12rpx 0 4rpx;
+}
+
+.time-toggle-text {
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.time-toggle-arrow {
+  font-size: 26rpx;
+  line-height: 1;
+  color: var(--primary);
+  transition: transform 0.2s ease;
+}
+
+.time-toggle-arrow.is-up {
+  transform: rotate(180deg);
+}
+
+.time-slot.slot-active {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.time-slot:active {
+  transform: scale(0.96);
+}
+
+.time-empty {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+
+.time-express-note {
+  margin: 0 24rpx 24rpx;
+  padding: 16rpx 22rpx;
+  border-radius: 16rpx;
+  background-color: #F7F4F1;
+  color: #8C7A72;
+  font-size: 24rpx;
+  line-height: 1.5;
 }

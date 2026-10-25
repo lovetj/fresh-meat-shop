@@ -41,7 +41,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception e) {
+        // 完整堆栈仅记录日志，响应体不返回异常原文，避免泄露内部实现与SQL细节
         log.error("系统未捕获未知异常: ", e);
-        return Result.error(500, "系统繁忙，请稍后再试: " + e.getMessage());
+        return Result.error(500, "系统繁忙，请稍后再试");
     }
 }

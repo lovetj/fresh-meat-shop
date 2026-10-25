@@ -29,6 +29,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final WechatProperties wechatProperties;
     private final JwtUtil jwtUtil;
+    private final com.freshmeat.service.TokenSessionService tokenSessionService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -81,8 +82,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             throw new BusinessException(403, "账号已被禁用，请联系客服");
         }
 
-        // 3. 微信登录强制签发顾客态 Token（有效期30天，角色为 CUSTOMER）
-        String token = jwtUtil.generateToken(user.getId(), user.getOpenid(), "CUSTOMER");
+        // 3. 单设备登录：刷新会话标识，使该账号在其他设备上此前的登录态立即失效
+        String sessionKey = tokenSessionService.renewSession(user.getId());
+
+        // 4. 微信登录强制签发顾客态 Token（有效期30天，角色为 CUSTOMER）
+        String token = jwtUtil.generateToken(user.getId(), user.getOpenid(), "CUSTOMER", sessionKey);
 
         return LoginResultVO.builder()
                 .token(token)
@@ -155,8 +159,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         adminUser.setLastLoginTime(LocalDateTime.now());
         this.updateById(adminUser);
 
-        // 6. 签发管理员专属高权 JWT Token (专属 7 天登录态)
-        String token = jwtUtil.generateToken(adminUser.getId(), adminUser.getOpenid(), "ADMIN");
+        // 6. 单设备登录：刷新会话标识，使该管理员在其他设备上的登录态立即失效
+        String sessionKey = tokenSessionService.renewSession(adminUser.getId());
+
+        // 7. 签发管理员专属高权 JWT Token (专属 7 天登录态)
+        String token = jwtUtil.generateToken(adminUser.getId(), adminUser.getOpenid(), "ADMIN", sessionKey);
 
         return LoginResultVO.builder()
                 .token(token)
@@ -187,7 +194,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
 
         String effectiveRole = "CUSTOMER".equalsIgnoreCase(targetRole) ? "CUSTOMER" : "ADMIN";
-        String token = jwtUtil.generateToken(user.getId(), user.getOpenid(), effectiveRole);
+        // 身份切换不改变会话归属，沿用当前有效会话标识，避免把自己其他端顶下线
+        String token = jwtUtil.generateToken(user.getId(), user.getOpenid(), effectiveRole, user.getSessionKey());
 
         return LoginResultVO.builder()
                 .token(token)

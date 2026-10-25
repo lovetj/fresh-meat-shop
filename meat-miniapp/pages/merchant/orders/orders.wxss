@@ -1,4 +1,4 @@
-/* pages/merchant/orders/orders.wxss - 鲜肉铺 掌柜订单管理 */
+/* pages/merchant/orders/orders.wxss - 掌柜订单管理 */
 
 .container {
   padding-bottom: 50rpx;
@@ -253,13 +253,35 @@
 
 /* 下单时间 */
 .order-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
   margin-top: 12rpx;
 }
 
 .order-time {
+  flex: 1;
+  min-width: 0;
   font-size: 22rpx;
   color: var(--text-light);
   line-height: 1.3;
+}
+
+/* 顾客期望送达 / 自取时间：与下单时间垂直居中对齐，并靠右展示 */
+.expected-time-chip {
+  flex-shrink: 0;
+  height: 40rpx;
+  line-height: 40rpx;
+  padding: 0 16rpx;
+  box-sizing: border-box;
+  border-radius: var(--radius-round);
+  background-color: var(--primary-soft);
+  color: var(--primary);
+  font-size: 22rpx;
+  font-weight: 700;
+  text-align: center;
+  white-space: nowrap;
 }
 
 /* ================= 商品缩略图横排 ================= */
@@ -428,6 +450,31 @@
   background: var(--primary-gradient);
   color: #FFFFFF;
   box-shadow: 0 4rpx 14rpx rgba(255, 107, 107, 0.3);
+}
+
+/* 配送相关操作按钮：与本单配送方式标签同色系（1自取橙 / 2同城蓝 / 3外卖紫 / 4快递青） */
+.action-buttons .btn-type-1 {
+  background: linear-gradient(135deg, #D4380D 0%, #FA8C16 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 14rpx rgba(212, 56, 13, 0.28);
+}
+
+.action-buttons .btn-type-2 {
+  background: linear-gradient(135deg, #2F72D6 0%, #4D96FF 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 14rpx rgba(47, 114, 214, 0.28);
+}
+
+.action-buttons .btn-type-3 {
+  background: linear-gradient(135deg, #7C5CD6 0%, #9B7BE8 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 14rpx rgba(124, 92, 214, 0.28);
+}
+
+.action-buttons .btn-type-4 {
+  background: linear-gradient(135deg, #0B8A6B 0%, #20C997 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4rpx 14rpx rgba(11, 138, 107, 0.28);
 }
 
 .load-more {

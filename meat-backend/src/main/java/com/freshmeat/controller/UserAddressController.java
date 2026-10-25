@@ -1,5 +1,6 @@
 package com.freshmeat.controller;
 
+import com.freshmeat.annotation.RequireLogin;
 import com.freshmeat.common.Result;
 import com.freshmeat.dto.AddressDTO;
 import com.freshmeat.entity.UserAddress;
@@ -16,6 +17,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/address")
 @RequiredArgsConstructor
+// 收货地址均为本人数据，全部要求登录
+@RequireLogin
 public class UserAddressController {
 
     private final UserAddressService addressService;

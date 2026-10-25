@@ -3,7 +3,7 @@
   <form bindsubmit="onSubmitShopInfo">
     <!-- 基础营业信息 -->
     <view class="card form-card">
-      <view class="section-title">🏪 门店营业基础信息</view>
+      <view class="section-title">门店营业基础信息</view>
 
       <view class="form-item">
         <text class="label required">店铺名称</text>
@@ -33,12 +33,22 @@
         <input name="businessHours" value="{{shop.businessHours}}" style="display:none;"/>
       </view>
 
-      <view class="form-item form-item-switch">
+      <view class="form-item-block">
         <text class="label">营业状态</text>
-        <view class="switch-box">
-          <text class="status-txt {{shop.status === 1 ? 'txt-open' : 'txt-close'}}">{{shop.status === 1 ? '正常营业' : '暂停歇业'}}</text>
-          <switch checked="{{shop.status === 1}}" color="#FF6B6B" bindchange="onStatusChange"/>
+        <view class="status-seg">
+          <view
+            wx:for="{{statusOptions}}"
+            wx:key="value"
+            class="seg-item {{shop.status === item.value ? 'seg-active seg-' + item.color : ''}}"
+            data-value="{{item.value}}"
+            bindtap="onStatusSelect"
+          >
+            <text class="seg-dot"></text>
+            <text class="seg-label">{{item.label}}</text>
+          </view>
         </view>
+        <text class="status-hint status-hint-{{statusColor}}">{{statusHint}}</text>
+        <text class="status-preview">按当前时间，顾客端将展示：<text class="preview-val status-hint-{{statusColor}}">{{previewStatusText}}</text></text>
       </view>
 
       <view class="form-item-block">
@@ -50,8 +60,8 @@
     <!-- 门店实体定位设置 -->
     <view class="card form-card">
       <view class="section-header-row">
-        <view class="section-title">📍 门店地址</view>
-        <button class="choose-loc-btn" bindtap="chooseLocationOnMap">🗺️ 地图选点</button>
+        <view class="section-title">门店地址</view>
+        <button class="choose-loc-btn" bindtap="chooseLocationOnMap">地图选点</button>
       </view>
       <text class="section-desc">此坐标用于计算顾客下单收货地址距离，请务必准确定位</text>
 
@@ -71,16 +81,60 @@
       </view>
     </view>
 
+    <!-- 到店自取配置：仅配置该配送方式支持的支付方式 -->
+    <view class="card form-card">
+      <view class="section-header-row">
+        <view class="section-title">到店自取</view>
+      </view>
+      <text class="section-desc">顾客到店凭提货码自提，无配送费；可单独配置该方式支持的支付方式，至少开启一种</text>
+
+      <view class="pay-config">
+        <text class="pay-config-title">支付方式</text>
+        <view class="pay-switch-item">
+          <view class="pay-switch-info">
+            <text class="pay-switch-name">微信线上支付</text>
+            <text class="pay-switch-desc">顾客下单后在微信内完成支付，支付成功再备货</text>
+          </view>
+          <switch checked="{{pickupWxpayEnabled === 1}}" color="#FF6B6B" data-key="pickupWxpayEnabled" bindchange="onPaySwitchChange"/>
+        </view>
+        <view class="pay-switch-item">
+          <view class="pay-switch-info">
+            <text class="pay-switch-name">货到付款</text>
+            <text class="pay-switch-desc">顾客到店提货时现场付款</text>
+          </view>
+          <switch checked="{{pickupCodEnabled === 1}}" color="#FF6B6B" data-key="pickupCodEnabled" bindchange="onPaySwitchChange"/>
+        </view>
+      </view>
+    </view>
+
     <!-- 同城配送规则配置 (多阶梯多区间) -->
     <view class="card form-card">
       <view class="section-header-row">
-        <view class="section-title">🛵 同城商家配送</view>
+        <view class="section-title">同城商家配送</view>
         <view class="switch-box">
           <text class="status-txt {{merchantDeliveryEnabled === 1 ? 'txt-open' : 'txt-close'}}">{{merchantDeliveryEnabled === 1 ? '已开通' : '未开通'}}</text>
           <switch checked="{{merchantDeliveryEnabled === 1}}" color="#FF6B6B" bindchange="onMerchantDeliveryChange"/>
         </view>
       </view>
       <text class="section-desc">开通后顾客下单可选择「商家配送」，按距离阶梯收取配送费并校验起送价；关闭后顾客仅可选择「到店自取」或「快递配送」</text>
+
+      <view class="pay-config">
+        <text class="pay-config-title">支付方式</text>
+        <view class="pay-switch-item">
+          <view class="pay-switch-info">
+            <text class="pay-switch-name">微信线上支付</text>
+            <text class="pay-switch-desc">顾客下单后在微信内完成支付，支付成功再备货</text>
+          </view>
+          <switch checked="{{merchantWxpayEnabled === 1}}" color="#FF6B6B" data-key="merchantWxpayEnabled" bindchange="onPaySwitchChange"/>
+        </view>
+        <view class="pay-switch-item">
+          <view class="pay-switch-info">
+            <text class="pay-switch-name">货到付款</text>
+            <text class="pay-switch-desc">配送员送达后现场收款</text>
+          </view>
+          <switch checked="{{merchantCodEnabled === 1}}" color="#FF6B6B" data-key="merchantCodEnabled" bindchange="onPaySwitchChange"/>
+        </view>
+      </view>
 
       <block wx:if="{{merchantDeliveryEnabled === 1}}">
         <view class="region-head-row">
@@ -98,7 +152,7 @@
             </view>
             <view class="rule-header-actions">
               <view class="rule-del-btn" bindtap="deleteDeliveryRule" data-index="{{index}}" wx:if="{{deliveryRules.length > 1}}">
-                🗑️ 删除
+                删除
               </view>
             </view>
           </view>
@@ -128,16 +182,98 @@
       <text class="region-empty" wx:else>同城商家配送已关闭，顾客无法选择商家配送下单；已配置的阶梯在重新开启后继续生效</text>
     </view>
 
+    <!-- 预约时效配置：决定顾客下单时「期望送达/自取时间」的可选档位 -->
+    <view class="card form-card">
+      <view class="section-header-row">
+        <view class="section-title">预约时间与送达时效</view>
+      </view>
+      <text class="section-desc">顾客下单时需选择「期望送达 / 期望到店自取」时间。档位仅在每日营业时间内铺开，且不早于「当前时间 + 对应时长」，下方时长越长可预约时间越晚</text>
+
+      <view class="form-item">
+        <text class="label">到店自取最小备货时间(分钟)</text>
+        <input
+          class="input"
+          type="number"
+          placeholder="如 30，0 表示无需等待"
+          value="{{pickupMinMinutes}}"
+          data-field="pickupMinMinutes"
+          bindinput="onMinMinutesInput"
+        />
+      </view>
+
+      <view class="form-item">
+        <text class="label">商家配送最小送达时间(分钟)</text>
+        <input
+          class="input"
+          type="number"
+          placeholder="如 45，含切配与路上耗时"
+          value="{{merchantMinMinutes}}"
+          data-field="merchantMinMinutes"
+          bindinput="onMinMinutesInput"
+        />
+      </view>
+
+      <view class="form-item">
+        <text class="label">外卖配送最小送达时间(分钟)</text>
+        <input
+          class="input"
+          type="number"
+          placeholder="如 45"
+          value="{{takeoutMinMinutes}}"
+          data-field="takeoutMinMinutes"
+          bindinput="onMinMinutesInput"
+        />
+      </view>
+
+      <view class="form-item">
+        <text class="label">时间档位间隔</text>
+        <picker mode="selector" range="{{slotOptionLabels}}" value="{{slotIndex}}" bindchange="onTimeSlotChange">
+          <view class="time-picker-btn">
+            <text class="time-val">{{slotOptionLabels[slotIndex]}}</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="form-item">
+        <text class="label">可预约天数</text>
+        <picker mode="selector" range="{{reserveDayOptions}}" range-key="label" value="{{reserveDayIndex}}" bindchange="onReserveDaysChange">
+          <view class="time-picker-btn">
+            <text class="time-val">{{reserveDayOptions[reserveDayIndex].label}}</text>
+          </view>
+        </picker>
+      </view>
+
+      <text class="region-empty">示例：营业时间 06:30-20:00、档位 30 分钟、自取备货 30 分钟，则顾客 10:00 下单可选的最早自取时间为 10:30</text>
+    </view>
+
     <!-- 快递配送配置 -->
     <view class="card form-card">
       <view class="section-header-row">
-        <view class="section-title">📦 快递配送与特殊地区</view>
+        <view class="section-title">快递配送与特殊地区</view>
         <view class="switch-box">
           <text class="status-txt {{expressEnabled === 1 ? 'txt-open' : 'txt-close'}}">{{expressEnabled === 1 ? '已开通' : '未开通'}}</text>
           <switch checked="{{expressEnabled === 1}}" color="#FF6B6B" bindchange="onExpressEnabledChange"/>
         </view>
       </view>
       <text class="section-desc">开通后顾客下单可选择快递配送，掌柜接单后手动填写快递公司与单号发货。特殊地区可单独设置运费，或直接停发</text>
+
+      <view class="pay-config">
+        <text class="pay-config-title">支付方式</text>
+        <view class="pay-switch-item">
+          <view class="pay-switch-info">
+            <text class="pay-switch-name">微信线上支付</text>
+            <text class="pay-switch-desc">顾客下单后在微信内完成支付，支付成功再发货</text>
+          </view>
+          <switch checked="{{expressWxpayEnabled === 1}}" color="#FF6B6B" data-key="expressWxpayEnabled" bindchange="onPaySwitchChange"/>
+        </view>
+        <view class="pay-switch-item">
+          <view class="pay-switch-info">
+            <text class="pay-switch-name">货到付款</text>
+            <text class="pay-switch-desc">快递签收时现场付款</text>
+          </view>
+          <switch checked="{{expressCodEnabled === 1}}" color="#FF6B6B" data-key="expressCodEnabled" bindchange="onPaySwitchChange"/>
+        </view>
+      </view>
 
       <view class="form-item" wx:if="{{expressEnabled === 1}}">
         <text class="label">快递基础运费(元)</text>
@@ -195,22 +331,41 @@
     <!-- 外卖配送配置（需求待定，暂仅作配置预留） -->
     <view class="card form-card">
       <view class="section-header-row">
-        <view class="section-title">🥡 外卖配送</view>
+        <view class="section-title">外卖配送</view>
         <view class="switch-box">
           <text class="status-txt {{takeoutEnabled === 1 ? 'txt-open' : 'txt-close'}}">{{takeoutEnabled === 1 ? '已开通' : '未开通'}}</text>
           <switch checked="{{takeoutEnabled === 1}}" color="#FF6B6B" bindchange="onTakeoutEnabledChange"/>
         </view>
       </view>
       <text class="section-desc">第三方外卖平台对接需求尚未确认，当前仅保留开关配置；开启后顾客端「外卖配送」下单方式暂不开放，待需求明确后再接入</text>
+
+      <view class="pay-config">
+        <text class="pay-config-title">支付方式</text>
+        <view class="pay-switch-item">
+          <view class="pay-switch-info">
+            <text class="pay-switch-name">微信线上支付</text>
+            <text class="pay-switch-desc">顾客下单后在微信内完成支付</text>
+          </view>
+          <switch checked="{{takeoutWxpayEnabled === 1}}" color="#FF6B6B" data-key="takeoutWxpayEnabled" bindchange="onPaySwitchChange"/>
+        </view>
+        <view class="pay-switch-item">
+          <view class="pay-switch-info">
+            <text class="pay-switch-name">货到付款</text>
+            <text class="pay-switch-desc">骑手送达后现场收款</text>
+          </view>
+          <switch checked="{{takeoutCodEnabled === 1}}" color="#FF6B6B" data-key="takeoutCodEnabled" bindchange="onPaySwitchChange"/>
+        </view>
+      </view>
     </view>
 
     <!-- 配送距离计算原理说明 -->
     <view class="rule-tip-card">
-      <view class="rule-tip-title">ℹ️ 配送方式说明</view>
+      <view class="rule-tip-title">配送方式说明</view>
       <text class="rule-tip-p">1. 同城商家配送：系统基于 Haversine 大圆距离公式对收货地址与门店坐标实时测距，落入对应阶梯后按该阶梯收取配送费并校验起送价。</text>
       <text class="rule-tip-p">2. 每一档阶梯都必须填写明确的截止距离；超出最后一档截止距离的地址不再提供同城配送，可提示顾客改为「到店自取」或「快递配送」。</text>
       <text class="rule-tip-p">3. 快递配送：运费按「基础运费 + 特殊地区规则」计算；命中停发地区的地址无法下单快递，可提示顾客更换地址。</text>
       <text class="rule-tip-p">4. 外卖配送：第三方外卖平台对接需求待定，当前仅保留开关配置，暂不影响顾客下单方式。</text>
+      <text class="rule-tip-p">5. 期望送达时间：顾客在结算页必须选择到店自取/送达时间，档位由「最小备货(配送)时长 + 档位间隔 + 可预约天数 + 营业时间」实时生成，提交时后端会二次校验，防止选择过期时间。</text>
     </view>
 
     <!-- 底部保存按钮 -->

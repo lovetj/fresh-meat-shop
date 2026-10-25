@@ -9,12 +9,12 @@
       </view>
       <text class="banner-sub" wx:if="{{order.status === 0}}">请在尽快完成支付，肉铺将及时备肉</text>
       <text class="banner-sub" wx:elif="{{order.status === 1}}">肉铺已收到订单，掌柜即将接单切肉</text>
-      <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 1}}">鲜肉已备齐，请凭电话或提货码到店自提</text>
+      <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 1}}">已备齐，请凭电话或提货码到店自提</text>
       <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 4}}">肉铺已接单，正在打包，寄出后可在本页查看快递单号</text>
       <text class="banner-sub" wx:elif="{{order.status === 2 && order.deliveryType === 2}}">肉铺已接单，师傅正在排单切配</text>
       <text class="banner-sub" wx:elif="{{order.status === 3 && order.deliveryType === 4}}">快递已寄出，请凭单号在快递App查询物流</text>
       <text class="banner-sub" wx:elif="{{order.status === 3}}">骑手/掌柜专人配送中，请保持电话畅通</text>
-      <text class="banner-sub" wx:elif="{{order.status === 4}}">鲜肉订单已完成，祝您用餐愉快！</text>
+      <text class="banner-sub" wx:elif="{{order.status === 4}}">订单已完成，祝您用餐愉快！</text>
       <text class="banner-sub" wx:elif="{{order.status === 5}}">订单已取消{{order.cancelReason ? '：' + order.cancelReason : ''}}</text>
       <text class="banner-sub" wx:elif="{{order.status === 6}}">商家已拒单{{order.rejectReason ? '：' + order.rejectReason : ''}}</text>
     </view>
@@ -170,7 +170,7 @@
 
   <!-- 商品明细 -->
   <view class="card items-card">
-    <text class="card-title">鲜肉清单明细</text>
+    <text class="card-title">清单明细</text>
     <view class="goods-item" wx:for="{{order.items}}" wx:key="id">
       <image class="goods-img" src="{{item.productImage}}" mode="aspectFill"/>
       <view class="goods-detail">
@@ -227,6 +227,10 @@
       <text class="info-label">下单时间：</text>
       <text class="info-val">{{order.createTime}}</text>
     </view>
+    <view class="info-item" wx:if="{{order.expectedTime}}">
+      <text class="info-label">{{order.deliveryType === 1 ? '期望自取时间：' : '期望送达时间：'}}</text>
+      <text class="info-val">{{order.expectedTime}}</text>
+    </view>
     <view class="info-item" wx:if="{{order.payTime}}">
       <text class="info-label">支付时间：</text>
       <text class="info-val">{{order.payTime}}</text>
@@ -274,18 +278,18 @@
       <button class="btn-secondary" wx:if="{{order.status === 2}}" bindtap="onAdminCancelOrder">
         协商退款
       </button>
-      <button class="btn-primary" wx:if="{{order.status === 2 && order.deliveryType === 2}}" bindtap="onDeliverOrder">
+      <button class="btn-primary btn-type-{{order.deliveryType}}" wx:if="{{order.status === 2 && order.deliveryType === 2}}" bindtap="onDeliverOrder">
         开始同城配送
       </button>
-      <button class="btn-primary" wx:if="{{order.status === 2 && order.deliveryType === 1}}" bindtap="onFinishOrder">
+      <button class="btn-primary btn-type-{{order.deliveryType}}" wx:if="{{order.status === 2 && order.deliveryType === 1}}" bindtap="onFinishOrder">
         到店提货核销
       </button>
-      <button class="btn-primary" wx:if="{{order.status === 2 && order.deliveryType === 4}}" bindtap="openExpressModal">
+      <button class="btn-primary btn-type-{{order.deliveryType}}" wx:if="{{order.status === 2 && order.deliveryType === 4}}" bindtap="openExpressModal">
         填写快递单号发货
       </button>
 
       <!-- 配送中(3) 时：确认送达完成 -->
-      <button class="btn-primary" wx:if="{{order.status === 3}}" bindtap="onFinishOrder">
+      <button class="btn-primary btn-type-{{order.deliveryType}}" wx:if="{{order.status === 3}}" bindtap="onFinishOrder">
         确认送达完成
       </button>
     </block>

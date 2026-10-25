@@ -45,7 +45,7 @@ Page({
     }
   },
 
-  onLoad() {
+  onLoad(options) {
     // 仅在当前为顾客身份时回填资料，避免把掌柜信息带到顾客授权流程
     const user = auth.getActiveRole() === 'CUSTOMER' ? (auth.getUserInfo() || {}) : {};
     const nickName = user.nickname && user.nickname !== DEFAULT_NICKNAME ? user.nickname : '';
@@ -56,6 +56,11 @@ Page({
       avatarUrl,
       isUpdate: !!(nickName || avatarUrl)
     });
+
+    // 掌柜登录态失效 / 被顶下线后跳转过来，直接弹出账号密码登录框
+    if (options && (options.admin === '1' || options.admin === 1)) {
+      setTimeout(() => this.openAdminModal(), 300);
+    }
   },
 
   /**
